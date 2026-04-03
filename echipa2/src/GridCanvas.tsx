@@ -169,6 +169,10 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, onCanv
         }
       }
 
+      linesRef.current.forEach(line => {
+      drawLine(ctx, line.x1, line.y1, line.x2, line.y2);
+      });
+
       // apelam din nou functia sa pregatim urmatorul cadru (frame)
       animationFrameId = requestAnimationFrame(draw);
     };
@@ -219,6 +223,14 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, onCanv
   const handleInternalClick = () => {
     const { x, y } = mousePosRef.current;
     const { offsetX, offsetY, dotSpacing } = layoutRef.current;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    //onClickWithWall({x, y});
+    //drawLine(ctx, 0, 0, 500, 500);
+    handleWallClick
 
     const col = Math.round((x - offsetX) / dotSpacing);
     const row = Math.round((y - offsetY) / dotSpacing);
@@ -231,6 +243,75 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, onCanv
       onCanvasClick(col, row);
     }
   };
+
+  // daca se da click pe un punct de pe grid dupa ce selectam perete din bara de jos
+  
+
+  const drawLine = (
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+) => {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = isDarkMode ? '#FFFFFF' : '#000000';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+};
+
+const toCanvasCoords = (col: number, row: number) => {
+  const { offsetX, offsetY, dotSpacing } = layoutRef.current;
+
+  return {
+    x: offsetX + col * dotSpacing,
+    y: offsetY + row * dotSpacing,
+  };
+};
+
+
+const handleWallClick = () => {
+  const { x, y } = mousePosRef.current;
+  const { offsetX, offsetY, dotSpacing } = layoutRef.current;
+
+  const col = Math.round((x - offsetX) / dotSpacing);
+  const row = Math.round((y - offsetY) / dotSpacing);
+
+  const targetX = offsetX + col * dotSpacing;
+  const targetY = offsetY + row * dotSpacing;
+
+  if (Math.hypot(targetX - x, targetY - y) < dotSpacing * 0.5) {
+    const firstPointRef = useRef<{ col: number; row: number } | null>(null);
+    if (!firstPointRef.current) {
+      // first click
+      firstPointRef.current = { col, row };
+    } else {
+      // second click → draw line
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!ctx) return;
+
+      const p1 = toCanvasCoords(firstPointRef.current.col, firstPointRef.current.row);
+      const p2 = toCanvasCoords(col, row);
+
+      //drawLine(ctx, p1.x, p1.y, p2.x, p2.y);
+
+      linesRef.current.push({
+      x1: p1.x,
+      y1: p1.y,
+      x2: p2.x,
+      y2: p2.y,
+      });
+
+      firstPointRef.current = null;
+    }
+  }
+};
+const linesRef = useRef<
+  { x1: number; y1: number; x2: number; y2: number }[]
+>([]);
 
   return (
     <canvas

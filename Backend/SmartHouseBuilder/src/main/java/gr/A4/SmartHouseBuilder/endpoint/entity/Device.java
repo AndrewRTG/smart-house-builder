@@ -24,6 +24,7 @@ public class Device {
     @Column(nullable = false)
     private String name;
 
+    @Column(name = "brand", columnDefinition = "TEXT")
     private String brand;
 
     @Column(columnDefinition = "TEXT")

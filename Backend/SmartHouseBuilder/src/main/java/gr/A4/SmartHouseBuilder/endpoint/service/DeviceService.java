@@ -55,4 +55,20 @@ public class DeviceService {
                         d.getBestPrice(),d.getBestPriceUrl()
                 )).toList();
     }
+    public List<DeviceResponse> getFilteredDevices(Integer categoryId, String brand, Double maxPrice) {
+        return deviceRepository.findWithFilters(categoryId, brand, maxPrice).stream()
+                .map(d -> new DeviceResponse(
+                        d.getId(),
+                        d.getCategory().getId(),
+                        d.getCategory().getName(),
+                        d.getName(),
+                        d.getBrand(),
+                        d.getDescription(),
+                        d.getImageUrl(),
+                        d.getCommunicationProtocol(),
+                        d.getSpecifications(),
+                        d.getBestPrice(),
+                        d.getBestPriceUrl()
+                )).toList();
+    }
 }

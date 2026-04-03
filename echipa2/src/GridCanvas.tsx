@@ -1,17 +1,21 @@
 import React, { useRef, useEffect } from 'react';
 
-// preia proprietatea de tema pentru a sti cand sa schimbe culorile interiorului
+
+
+
+
 interface GridCanvasProps {
   isDarkMode: boolean;
+  placedIcons: { col: number; row: number; type: string }[];
+  onCanvasClick: (col: number, row: number) => void;
+  onUpdate: (data: { offsetX: number; offsetY: number; dotSpacing: number }) => void;
 }
 
-const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
+const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, onCanvasClick, onUpdate }) => {
   // referinta catre elementul html de tip canvas unde desenam
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  // FIX BUG #1: mousePos e acum un ref in loc de state
-  // Asta previne re-montarea intregului useEffect la fiecare miscare de mouse
   const mousePosRef = useRef<{ x: number; y: number }>({ x: -100, y: -100 });
+  const layoutRef = useRef({ offsetX: 0, offsetY: 0, dotSpacing: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,7 +35,7 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
       if (parent) {
         const rect = parent.getBoundingClientRect();
 
-        // protectie impotriva flash-ului: aplicam setarile de marime doar daca containerul parinte chiar s-a marit/micsorat
+       
         if (rect.width !== currentWidth || rect.height !== currentHeight) {
           currentWidth = rect.width;
           currentHeight = rect.height;
@@ -45,14 +49,11 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
           canvas.style.width = `${rect.width}px`;
           canvas.style.height = `${rect.height}px`;
 
-          // FIX BUG #2: resetam transformul inainte de scale
-          // Fara acest reset, ctx.scale se acumula la fiecare resize (2x -> 4x -> 8x...)
-          // si gridul ajungea sa se deseneze complet in afara canvas-ului
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.scale(dpr, dpr);
         }
       }
-    };
+    }
 
     // se apeleaza prima oara inainte sa incepem desenul
     resizeCanvas();
@@ -64,11 +65,11 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
       const w = rect.width;
       const h = rect.height;
 
-      // curata cadrul precedent pentru a nu ramane "urme" pe ecran
+      // curata cadrul precedent 
       ctx.clearRect(0, 0, w, h);
 
-      // setarea fixa de randuri si coloane din specificatie
-      const cols = 24;
+      
+      const cols = 25;
       const rows = 19;
 
       // margine de 5% dinamica sa nu se lipeasca gridul de bordura peretilor
@@ -89,22 +90,32 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
       const offsetX = (w - gridWidth) / 2;
       const offsetY = (h - gridHeight) / 2;
 
+      if (
+        Math.abs(layoutRef.current.offsetX - offsetX) > 0.1 ||
+        Math.abs(layoutRef.current.offsetY - offsetY) > 0.1 ||
+        Math.abs(layoutRef.current.dotSpacing - dotSpacing) > 0.1
+      ) {
+        const newLayout = { offsetX, offsetY, dotSpacing };
+        layoutRef.current = newLayout;
+        // Folosim un mic delay sau requestAnimationFrame pentru a scoate apelul din ciclul de randare curent
+        setTimeout(() => onUpdate(newLayout), 0);
+      }
+
       // raze dinamice de desen pentru punctul default si raza lui de evidentiere cand stam pe el
       const baseRadius = Math.max(1.8, dotSpacing * 0.05);
       const highlightRadius = baseRadius * 3;
       const highlightDistance = dotSpacing * 0.6;
 
       // extragerea culorilor corecte in functie de switch
-      const bgColor = isDarkMode ? '#2D4E6C' : '#C2C9CC';
+      const bgColor = isDarkMode ? '#5293DE' : '#C2C9CC';
       const dotColor = isDarkMode ? '#FFFFFF' : '#2C3E50';
-      const highlightColor = '#00B4D8';
+      const highlightColor = isDarkMode ? '#2C3E50' : '#00B4D8';
 
       // umplem backgroudul cu culoarea de baza
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, w, h);
 
-      // FIX BUG #1 (continuare): citim pozitia din ref in loc de state
-      // Ref-ul e intotdeauna actual fara sa declanseze re-render sau re-mount
+     
       const mousePos = mousePosRef.current;
 
       // algoritm sa gasim direct coordonata matematica cel mai aproape de cursorul mouse-ului
@@ -129,6 +140,10 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
       // motorul vizual - randam fiecare punct pe baza calculelor geometrice de deasupra
       for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
+
+          // Verific daca este icpn
+          const hasIcon = placedIcons.some(icon => icon.col === i && icon.row === j);
+          if (hasIcon) continue;
           const x = offsetX + i * dotSpacing;
           const y = offsetY + j * dotSpacing;
 
@@ -148,7 +163,7 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
           if (isHovered) {
             ctx.beginPath();
             ctx.arc(x, y, highlightRadius + (dotSpacing * 0.2), 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(0, 180, 216, 0.25)';
+            ctx.fillStyle = isDarkMode ? 'rgba(44, 62, 80, 0.25)' : 'rgba(0, 180, 216, 0.25)';
             ctx.fill();
           }
         }
@@ -180,11 +195,11 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
       resizeObserver.disconnect();
       cancelAnimationFrame(animationFrameId);
     };
-  // FIX BUG #1 (continuare): mousePos a fost eliminat din dependency array
-  // useEffect-ul se re-ruleaza acum doar cand se schimba tema, nu la fiecare pixel de mouse
-  }, [isDarkMode]);
+    
+    // useEffect-ul se re-ruleaza acum doar cand se schimba tema, nu la fiecare pixel de mouse
+  }, [isDarkMode, placedIcons]);
 
-  // FIX BUG #1 (continuare): scriem direct in ref, fara setState
+  
   // Asta nu declanseaza niciun re-render, dar draw() va citi intotdeauna valoarea actuala
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
@@ -200,11 +215,29 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode }) => {
     mousePosRef.current = { x: -100, y: -100 };
   };
 
+  // detecteaza pe ce punct sunt si trimite catre App.tsx
+  const handleInternalClick = () => {
+    const { x, y } = mousePosRef.current;
+    const { offsetX, offsetY, dotSpacing } = layoutRef.current;
+
+    const col = Math.round((x - offsetX) / dotSpacing);
+    const row = Math.round((y - offsetY) / dotSpacing);
+
+    // verificare daca clickul este langa un punct de pe grid
+    const targetX = offsetX + col * dotSpacing;
+    
+
+    if (Math.hypot(targetX - x, (offsetY + row * dotSpacing) - y) < dotSpacing * 0.5) {
+      onCanvasClick(col, row);
+    }
+  };
+
   return (
     <canvas
       ref={canvasRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onClick={handleInternalClick}
       className="absolute inset-0 w-full h-full cursor-crosshair rounded-3xl"
     />
   );

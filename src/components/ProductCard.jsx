@@ -6,7 +6,6 @@ export default function ProductCard({device}){
                                                                         backgroundColor: '#d2d2d2',
                                                                         padding: '10px',
                                                                         boxShadow: '0px 5px 20px rgba(0, 0, 0, 0.40)'}}>
-            {/* Imaginea produsului */}
             <div className="bg-white rounded-4 mb-3 d-flex justify-content-center align-items-center" style={{height: '200px'}}>
                 <img
                 src={device.imageUrl}
@@ -16,12 +15,10 @@ export default function ProductCard({device}){
             </div>
 
             <div className="card-body p-0 d-flex flex-column">
-                {/*Titlul produsului*/}
                 <h6 className="card-title fw-bold text-truncate mb-2">
                     {device.name}
                 </h6>
 
-                {/* Tag-urile (Overall pick, Kitchen) extrase din JSON-ul de specifications */}
                 <div className="d-flex gap-2 mb-3">
                     {device.specifications?.overallPick && (
                         <span className="badge rounded-pill text-dark" style={{ backgroundColor: '#d0e1f9', fontSize: '0.7rem' }}>
@@ -35,7 +32,6 @@ export default function ProductCard({device}){
                     )}
                 </div>
 
-                {/* Prețul și Magazinul */}
                 <div className="mt-auto d-flex justify-content-between align-items-end mb-3">
                     <span className="fs-5 fw-bold" style={{ color: '#1a365d' }}>
                         {device.bestPrice}RON
@@ -45,7 +41,6 @@ export default function ProductCard({device}){
                     </span>
                 </div>
 
-                {/* Butonul de adăugare */}
                 <button className="btn w-100 rounded-pill fw-bold shadow-sm" style={{ backgroundColor: '#ffffff', color: '#1a365d' }}>
                     Add to Cart
                 </button>

@@ -1,7 +1,7 @@
 export const mockDevices = [
     {
         id: 1,
-        categoryId: 2, // Presupunem că 2 este ID-ul pentru "Senzori" în tabelul categories
+        categoryId: 2,
         name: "Aqara Door and Window Sensor",
         brand: "Aqara",
         description: "Senzor inteligent wireless pentru monitorizarea stării ușilor și ferestrelor în timp real.",
@@ -11,7 +11,6 @@ export const mockDevices = [
         bestStoreName: "eMAG",
         storeUrl: "https://www.emag.ro/aqara-door-window-sensor",
         specifications: {
-            // Aici punem datele specifice care diferă de la produs la produs și detaliile de UI din Figma
             roomTag: "Kitchen",
             overallPick: true,
             batteryType: "CR1632",
@@ -20,7 +19,7 @@ export const mockDevices = [
     },
     {
         id: 2,
-        categoryId: 5, // Presupunem că 5 este ID-ul pentru "Prize & Relee"
+        categoryId: 5,
         name: "Sonoff Basic R2 Smart Switch",
         brand: "Sonoff",
         description: "Releu inteligent Wi-Fi pentru controlul de la distanță al aparatelor electrocasnice.",
@@ -38,7 +37,7 @@ export const mockDevices = [
     },
     {
         id: 3,
-        categoryId: 8, // Presupunem că 8 este ID-ul pentru "Electrocasnice"
+        categoryId: 8,
         name: "Electric Hand Mixer Hamilton",
         brand: "Hamilton Beach",
         description: "Mixer de mână electric, ideal pentru preparate rapide, cu consum redus de energie.",

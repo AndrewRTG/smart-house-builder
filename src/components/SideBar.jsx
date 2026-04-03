@@ -9,14 +9,12 @@ export default function Sidebar() {
 
     return (
       <div className="p-3 rounded-4" style={{backgroundColor: '#5b9bd5', minHeight:'80vh'}}>
-          {/* Caseta New Setup */}
           <div className="rounded-3 p-3 mb-3 d-flex justify-content-center align-items-center shadow-sm" style={{ backgroundColor: '#cde0f5', cursor: 'pointer' }}>
                 <span className="fw-bold d-flex align-items-center gap-2" style={{ color: '#1a365d' }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
                     New Setup
                 </span>
           </div>
-          {/* Caseta Summary */}
           <div className="rounded-3 p-3 mb-3 text-dark" style={{ backgroundColor: '#cde0f5' }}>
               <h6 className="fw-bold text-center mb-3">Summary</h6>
               <div className="d-flex justify-content-around small">
@@ -30,20 +28,16 @@ export default function Sidebar() {
                   </div>
               </div>
           </div>
-          {/* ---------------- FILTRUL 1: PRICE & CATEGORY ---------------- */}
           <div className="rounded-3 p-3 mb-3 text-dark" style={{ backgroundColor: '#cde0f5' }}>
-              {/* Header-ul filtrului (Aici dăm click pentru a deschide/închide) */}
               <div
                   className="d-flex justify-content-between align-items-center"
                   style={{ cursor: 'pointer' }}
                   onClick={() => setIsPriceOpen(!isPriceOpen)}
               >
                   <h6 className="fw-bold mb-0">Price</h6>
-                  {/* Afișăm minus dacă e deschis, plus dacă e închis */}
                   <span className="fw-bold fs-5">{isPriceOpen ? '-' : '+'}</span>
               </div>
 
-              {/* Conținutul filtrului se randează DOAR dacă isPriceOpen este true */}
               {isPriceOpen && (
                   <div className="mt-3">
                       <div className="d-flex justify-content-between small fw-bold mb-1">
@@ -51,7 +45,6 @@ export default function Sidebar() {
                           <span>1000</span>
                       </div>
 
-                      {/* ---------------- SLIDER DINAMIC ---------------- */}
                       <div className="position-relative mt-4 mb-4">
 
                           <div
@@ -108,7 +101,6 @@ export default function Sidebar() {
               )}
           </div>
 
-          {/* ---------------- FILTRUL 2: PROTOCOL ---------------- */}
           <div className="rounded-3 p-3 mb-3 text-dark" style={{ backgroundColor: '#cde0f5' }}>
               <div
                   className="d-flex justify-content-between align-items-center"

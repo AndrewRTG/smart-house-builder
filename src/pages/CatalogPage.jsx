@@ -10,9 +10,8 @@ export default function CatalogPage() {
     const [searchTerm, setSearchTerm] = useState(""); // Starea pentru search
 
     useEffect(() => {
-        setLoading(true); // Afișăm iar "Se încarcă..." când scriem ceva nou
+        setLoading(true);
 
-        // Construim link-ul dinamic
         let url = new URL('http://localhost:20025/api/devices');
         if (searchTerm) {
             url.searchParams.append('brand', searchTerm);
@@ -28,7 +27,7 @@ export default function CatalogPage() {
                 console.error("Eroare la preluarea dispozitivelor:", error);
                 setLoading(false);
             });
-    }, [searchTerm]); // Când searchTerm se modifică, useEffect-ul se rulează din nou
+    }, [searchTerm]);
 
     return (
         <div className="min-vh-100" style={{ backgroundColor: '#efefef' }}>
@@ -39,7 +38,6 @@ export default function CatalogPage() {
                     <Sidebar />
                 </div>
 
-                {/* BARA DE CĂUTARE ȘI SORTARE */}
                 <div className="col-12 col-md-9 float-md-end mb-4 order-1">
                     <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
 
@@ -48,7 +46,6 @@ export default function CatalogPage() {
                               <span className="input-group-text bg-white border-0 ps-3 text-muted">
                                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                               </span>
-                                {/* Input-ul actualizat pentru a comunica cu searchTerm */}
                                 <input
                                     type="text"
                                     className="form-control border-0 shadow-none py-2"
@@ -80,7 +77,6 @@ export default function CatalogPage() {
                     </div>
                 </div>
 
-                {/* Secțiunea de Produse Actualizată */}
                 <div className="col-12 col-md-9 float-md-end order-3">
                     <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                         {loading ? (

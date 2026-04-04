@@ -204,12 +204,10 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, lines,
           ctx.arc(x, y, isHovered ? highlightRadius : baseRadius, 0, Math.PI * 2);
           ctx.fillStyle = isHovered ? highlightColor : dotColor;
 
-          // punctele stau la o transparenta scazuta decat atunci cand au mouse-ul pe ele
           ctx.globalAlpha = isHovered ? 1 : (isDarkMode ? 0.4 : 0.4);
           ctx.fill();
           ctx.globalAlpha = 1;
 
-          // zona de "glow/aura" a punctului peste care stam
           if (isHovered) {
             ctx.beginPath();
             ctx.arc(x, y, highlightRadius + (dotSpacing * 0.2), 0, Math.PI * 2);
@@ -219,13 +217,11 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, lines,
         }
       }
 
-      // apelam din nou functia sa pregatim urmatorul cadru (frame)
       animationFrameId = requestAnimationFrame(draw);
     };
 
     draw();
 
-    // tehnica de debounce: asteapta 50ms inainte sa traga de ecran, face ca animatia sa curga fin cand dam maximize
     let resizeTimeout: ReturnType<typeof setTimeout>;
     const resizeObserver = new ResizeObserver(() => {
       clearTimeout(resizeTimeout);
@@ -234,22 +230,18 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, lines,
       }, 50);
     });
 
-    // incepe urmarirea redimensionarii panoului div
     if (canvas.parentElement) {
       resizeObserver.observe(canvas.parentElement);
     }
 
-    // actiune de curatare - cand componenta dispare de pe ecran, oprim timeout-ul si canvas ul
     return () => {
       clearTimeout(resizeTimeout);
       resizeObserver.disconnect();
       cancelAnimationFrame(animationFrameId);
     };
     
-    // useEffect-ul se re-ruleaza acum doar cand se schimba tema, nu la fiecare pixel de mouse
   }, [isDarkMode, placedIcons, lines, activeTool]); // reporneste daca se schimba lista de linii sau unealta
   
-  // Asta nu declanseaza niciun re-render, dar draw() va citi intotdeauna valoarea actuala
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -259,7 +251,6 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, lines,
     };
   };
 
-  // aruncam mouse-ul cand iesim din zona desenata - ca sa se stinga efectul
   const handleMouseLeave = () => {
     mousePosRef.current = { x: -100, y: -100 };
   };

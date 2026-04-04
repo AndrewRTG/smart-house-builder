@@ -6,10 +6,10 @@ import { LogoIcon, ControllerIcon, SenzorIcon, LockIcon, RouterIcon, TvIcon, Int
 interface Wall {
   id: string;
   type: 'wall';
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
   thickness: number;
 }
 
@@ -75,6 +75,12 @@ const App: React.FC = () => {
   // stocare stare pentru tema curenta (dark sau light mode)
   const [isDarkMode, setIsDarkMode] = useState(true);
   
+  const generateLayoutId = () => {
+    const randomSegment = () => Math.floor(1000 + Math.random() * 9000).toString();
+    return `layout-uuid-${randomSegment()}-${randomSegment()}`;
+  };
+  const [layoutId] = useState(generateLayoutId);
+
   // starea pentru dispozitivul selectat din catalog
   const [selectedDevice, setSelectedDevice] = useState<{ id: string, name: string, brand: string, type: string, status: string } | null>(null);
   const [hoveredIconIndex, setHoveredIconIndex] = useState<number | null>(null);
@@ -203,43 +209,46 @@ const App: React.FC = () => {
 
   // functie pentru generarea JSON pentru pereti
   const generateWallJSON = (line: { id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }): Wall => {
+    const scale = layout.dotSpacing || 1;
     return {
       id: line.id,
       type: 'wall',
-      startX: line.start.col,
-      startY: line.start.row,
-      endX: line.end.col,
-      endY: line.end.row,
+      x1: Math.trunc(line.start.col * scale),
+      y1: Math.trunc(line.start.row * scale),
+      x2: Math.trunc(line.end.col * scale),
+      y2: Math.trunc(line.end.row * scale),
       thickness: 0.2 // grosime standard pentru pereti
     };
   };
 
   // functie pentru generarea JSON pentru ferestre
   const generateWindowJSON = (line: { id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }): Window => {
+    const scale = layout.dotSpacing || 1;
     const width = Math.abs(line.end.col - line.start.col);
     const height = Math.abs(line.end.row - line.start.row);
     return {
       id: line.id,
       type: 'window',
-      positionX: Math.min(line.start.col, line.end.col),
-      positionY: Math.min(line.start.row, line.end.row),
-      width: width || 2, // latime minima
-      height: height || 1, // inaltime minima
+      positionX: Math.trunc(Math.min(line.start.col, line.end.col) * scale),
+      positionY: Math.trunc(Math.min(line.start.row, line.end.row) * scale),
+      width: Math.trunc((width || 2) * scale),
+      height: Math.trunc((height || 1) * scale),
       wallId: undefined // poate fi setat ulterior daca se afla pe un perete
     };
   };
 
   // functie pentru generarea JSON pentru usi
   const generateDoorJSON = (line: { id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }): Door => {
+    const scale = layout.dotSpacing || 1;
     const width = Math.abs(line.end.col - line.start.col);
     const height = Math.abs(line.end.row - line.start.row);
     return {
       id: line.id,
       type: 'door',
-      positionX: Math.min(line.start.col, line.end.col),
-      positionY: Math.min(line.start.row, line.end.row),
-      width: width || 1, // latime minima pentru usa
-      height: height || 2, // inaltime minima pentru usa
+      positionX: Math.trunc(Math.min(line.start.col, line.end.col) * scale),
+      positionY: Math.trunc(Math.min(line.start.row, line.end.row) * scale),
+      width: Math.trunc((width || 1) * scale),
+      height: Math.trunc((height || 2) * scale),
       wallId: undefined // poate fi setat ulterior daca se afla pe un perete
     };
   };
@@ -258,13 +267,14 @@ const App: React.FC = () => {
 
   // functie pentru generarea JSON pentru device-uri
   const generateDeviceJSON = (icon: { col: number, row: number, type: string, id: string, name: string, brand: string, status: string }): Device => {
+    const scale = layout.dotSpacing || 1;
     return {
       id: icon.id,
       type: icon.type,
       name: icon.name,
       brand: icon.brand,
-      positionX: icon.col,
-      positionY: icon.row,
+      positionX: Math.trunc(icon.col * scale),
+      positionY: Math.trunc(icon.row * scale),
       status: icon.status,
       properties: {
         // proprietati specifice pentru diferite tipuri de device-uri
@@ -282,14 +292,53 @@ const App: React.FC = () => {
       }
     };
   };
-
+  const exampleDevices: Device[] = [
+    {
+      id: 'sample-1',
+      type: 'bec',
+      name: 'Philips Hue E27',
+      brand: 'Philips',
+      positionX: 2,
+      positionY: 3,
+      status: 'online',
+      properties: { brightness: 100, color: '#FFFFFF' }
+    },
+    {
+      id: 'sample-2',
+      type: 'senzor',
+      name: 'Nest Thermostat',
+      brand: 'Google',
+      positionX: 5,
+      positionY: 2,
+      status: 'online',
+      properties: { sensorType: 'temperature', threshold: 22 }
+    },
+    {
+      id: 'sample-3',
+      type: 'tv',
+      name: 'Samsung Smart TV',
+      brand: 'Samsung',
+      positionX: 8,
+      positionY: 6,
+      status: 'offline',
+      properties: { isOn: false, volume: 20 }
+    }
+  ];
   // functie pentru actualizarea datelor de export cand se adauga elemente
   const updateExportData = () => {
     const walls: Wall[] = lines.filter(line => line.type === 'wall').map(generateWallJSON);
     const windows: Window[] = lines.filter(line => line.type === 'window').map(generateWindowJSON);
     const doors: Door[] = lines.filter(line => line.type === 'door').map(generateDoorJSON);
     const furniture: Furniture[] = lines.filter(line => line.type === 'furniture').map(generateFurnitureJSON);
-    const devices: Device[] = placedIcons.map(generateDeviceJSON);
+    const scale = layout.dotSpacing || 1;
+    const devices: Device[] = [
+      ...exampleDevices.map(device => ({
+        ...device,
+        positionX: Math.trunc(device.positionX * scale),
+        positionY: Math.trunc(device.positionY * scale)
+      })),
+      ...placedIcons.map(generateDeviceJSON)
+    ];
 
     setExportData({ walls, windows, doors, devices, furniture });
   };
@@ -303,7 +352,11 @@ const App: React.FC = () => {
   const exportToJSON = () => {
     const dataToExport = {
       house: {
+        id: layoutId,
         name: "Smart House Setup",
+        scale: "cm",
+        maxBudget: 15000,
+        targetEcosystem: "Apple HomeKit",
         createdAt: new Date().toISOString(),
         elements: exportData
       }
@@ -329,7 +382,11 @@ const App: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          id: layoutId,
           name: "Smart House Setup",
+          scale: "m",
+          maxBudget: 15000,
+          targetEcosystem: "Apple HomeKit",
           createdAt: new Date().toISOString(),
           elements: exportData
         })

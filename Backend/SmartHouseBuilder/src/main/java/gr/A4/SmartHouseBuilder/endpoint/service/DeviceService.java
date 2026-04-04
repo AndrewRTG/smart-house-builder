@@ -1,6 +1,5 @@
 package gr.A4.SmartHouseBuilder.endpoint.service;
 
-
 import gr.A4.SmartHouseBuilder.endpoint.dto.DeviceRequest;
 import gr.A4.SmartHouseBuilder.endpoint.dto.DeviceResponse;
 import gr.A4.SmartHouseBuilder.endpoint.entity.Category;
@@ -9,6 +8,9 @@ import gr.A4.SmartHouseBuilder.endpoint.exception.ResourceNotFoundException;
 import gr.A4.SmartHouseBuilder.endpoint.repository.CategoryRepository;
 import gr.A4.SmartHouseBuilder.endpoint.repository.DeviceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -46,6 +48,7 @@ public class DeviceService {
                 device.getBestPrice(),
                 device.getBestPriceUrl());
     }
+
     public List<DeviceResponse> getAllDevices() {
         return deviceRepository.findAll().stream()
                 .map(d -> new DeviceResponse(
@@ -55,6 +58,7 @@ public class DeviceService {
                         d.getBestPrice(),d.getBestPriceUrl()
                 )).toList();
     }
+
     public List<DeviceResponse> getFilteredDevices(Integer categoryId, String brand, Double maxPrice) {
         return deviceRepository.findWithFilters(categoryId, brand, maxPrice).stream()
                 .map(d -> new DeviceResponse(
@@ -70,5 +74,23 @@ public class DeviceService {
                         d.getBestPrice(),
                         d.getBestPriceUrl()
                 )).toList();
+    }
+
+    public Page<DeviceResponse> getFilteredDevicesPageable(Integer categoryId, String brand, Double maxPrice, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return deviceRepository.findWithFiltersPageable(categoryId, brand, maxPrice, pageable)
+                .map(d -> new DeviceResponse(
+                        d.getId(),
+                        d.getCategory().getId(),
+                        d.getCategory().getName(),
+                        d.getName(),
+                        d.getBrand(),
+                        d.getDescription(),
+                        d.getImageUrl(),
+                        d.getCommunicationProtocol(),
+                        d.getSpecifications(),
+                        d.getBestPrice(),
+                        d.getBestPriceUrl()
+                ));
     }
 }

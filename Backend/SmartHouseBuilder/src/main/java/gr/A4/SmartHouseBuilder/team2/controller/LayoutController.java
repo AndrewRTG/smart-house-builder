@@ -16,7 +16,6 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/team2/layouts")
 public class LayoutController {
-
     private final LayoutService layoutService;
     private final ObjectMapper objectMapper;
 
@@ -25,16 +24,29 @@ public class LayoutController {
         this.objectMapper = objectMapper;
     }
 
+    // Salvează layout-ul primit de la frontend
     @PostMapping("/save")
     public ResponseEntity<String> saveLayout(@RequestBody SetupBuildDTO data) {
         Long id = layoutService.saveLayout(data);
         return ResponseEntity.ok("OK" + id);
     }
 
+    // Salvează layout-ul, îl trimite la echipa cealaltă și returnează răspunsul lor
+    @PostMapping("/send")
+    public ResponseEntity<Object> sendLayout(@RequestBody SetupBuildDTO data) {
+        Long id = layoutService.saveLayout(data);
+        StoredLayout layout = layoutService.getLayoutById(id);
+        Object raspuns = layoutService.sendAndReceive(layout);
+        return ResponseEntity.ok(raspuns);
+    }
+
+    // Returnează toate layout-urile salvate ca JSON
     @GetMapping("/all")
     public ResponseEntity<List<StoredLayout>> getAllLayouts() {
         return ResponseEntity.ok(layoutService.getAllLayouts());
     }
+
+    // Returnează toate layout-urile ca pagină HTML vizuală
     @GetMapping(value = "/view", produces = MediaType.TEXT_HTML_VALUE)
     public String viewLayoutsAsHtml() throws JsonProcessingException {
         String json = objectMapper.writerWithDefaultPrettyPrinter()
@@ -62,4 +74,11 @@ public class LayoutController {
                 </html>
                 """.formatted(escaped);
     }
+    @PostMapping("/validate")
+public ResponseEntity<SetupBuildDTO> validateLayout(@RequestBody SetupBuildDTO data) {
+    Long id = layoutService.saveLayout(data);
+    StoredLayout layout = layoutService.getLayoutById(id);
+    SetupBuildDTO raspuns = layoutService.validateLayout(layout);
+    return ResponseEntity.ok(raspuns);
+}
 }

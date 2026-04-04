@@ -4,56 +4,67 @@ import { LogoIcon, ControllerIcon, SenzorIcon, LockIcon, RouterIcon, TvIcon, Int
 
 // Definirea interfetelor pentru JSON export
 interface Wall {
-  id: string;
-  type: 'wall';
+  
   x1: number;
   y1: number;
   x2: number;
   y2: number;
-  thickness: number;
 }
 
 interface Window {
-  id: string;
-  type: 'window';
-  positionX: number;
-  positionY: number;
-  width: number;
-  height: number;
-  wallId?: string;
+  x: number;
+  y: number;
 }
 
 interface Door {
-  id: string;
-  type: 'door';
-  positionX: number;
-  positionY: number;
-  width: number;
-  height: number;
-  wallId?: string;
+  x: number;
+  y: number;
 }
 
 interface Device {
-  id: string;
-  type: string;
-  name: string;
-  brand: string;
-  positionX: number;
-  positionY: number;
-  status: string;
-  properties?: Record<string, any>;
+  coordinates: { x: number; y: number };
+  rotationAngle: number;
+  device:{
+    id: string;
+    name: string;
+    price: number;
+    ecosystem: string;
+    protocol: string;
+    lumens: number;
+    requiresPlug: boolean;
+    rangeRadius: number;
+    deviceType: string;
+    mountType: string;
+    fieldofView: number;
+    powerConsumption: number;
+    comunicationFrequency: string;
+    width: number;
+  }
 }
 
 interface Furniture {
-  id: string;
-  type: 'furniture';
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 }
 
-type HouseElement = Wall | Window | Door | Device | Furniture;
+interface Plug{
+  x: number;
+  y: number;
+}
+
+interface Room{
+  id: string;
+  squareMeters: number;
+  wallType: string;
+  walls: Wall[];
+  doors: Door[];
+  windows: Window[];
+  plugs: Plug[];
+}
+
+type HouseElement = Wall | Window | Door | Device | Furniture | Room | Plug;
 
 // mapare icon cu denumire element
 const ICON_MAP: Record<string, React.FC<{ color: string }>> = {
@@ -99,17 +110,17 @@ const App: React.FC = () => {
 
   // state pentru JSON-urile generate pentru export
   const [exportData, setExportData] = useState<{
-    walls: Wall[];
     windows: Window[];
     doors: Door[];
     devices: Device[];
     furniture: Furniture[];
+    rooms: Room[];
   }>({
-    walls: [],
     windows: [],
     doors: [],
     devices: [],
-    furniture: []
+    furniture: [],
+    rooms: []
   });
 
   // efect care aplica clasa 'dark' pe elementul html de baza
@@ -211,57 +222,39 @@ const App: React.FC = () => {
   const generateWallJSON = (line: { id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }): Wall => {
     const scale = layout.dotSpacing || 1;
     return {
-      id: line.id,
-      type: 'wall',
       x1: Math.trunc(line.start.col * scale),
       y1: Math.trunc(line.start.row * scale),
       x2: Math.trunc(line.end.col * scale),
-      y2: Math.trunc(line.end.row * scale),
-      thickness: 0.2 // grosime standard pentru pereti
+      y2: Math.trunc(line.end.row * scale)
     };
   };
 
   // functie pentru generarea JSON pentru ferestre
   const generateWindowJSON = (line: { id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }): Window => {
     const scale = layout.dotSpacing || 1;
-    const width = Math.abs(line.end.col - line.start.col);
-    const height = Math.abs(line.end.row - line.start.row);
     return {
-      id: line.id,
-      type: 'window',
-      positionX: Math.trunc(Math.min(line.start.col, line.end.col) * scale),
-      positionY: Math.trunc(Math.min(line.start.row, line.end.row) * scale),
-      width: Math.trunc((width || 2) * scale),
-      height: Math.trunc((height || 1) * scale),
-      wallId: undefined // poate fi setat ulterior daca se afla pe un perete
+      x: Math.trunc(Math.min(line.start.col, line.end.col) * scale),
+      y: Math.trunc(Math.min(line.start.row, line.end.row) * scale)
     };
   };
 
   // functie pentru generarea JSON pentru usi
   const generateDoorJSON = (line: { id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }): Door => {
     const scale = layout.dotSpacing || 1;
-    const width = Math.abs(line.end.col - line.start.col);
-    const height = Math.abs(line.end.row - line.start.row);
     return {
-      id: line.id,
-      type: 'door',
-      positionX: Math.trunc(Math.min(line.start.col, line.end.col) * scale),
-      positionY: Math.trunc(Math.min(line.start.row, line.end.row) * scale),
-      width: Math.trunc((width || 1) * scale),
-      height: Math.trunc((height || 2) * scale),
-      wallId: undefined // poate fi setat ulterior daca se afla pe un perete
+      x: Math.trunc(Math.min(line.start.col, line.end.col) * scale),
+      y: Math.trunc(Math.min(line.start.row, line.end.row) * scale)
     };
   };
 
   // functie pentru generarea JSON pentru mobilier
   const generateFurnitureJSON = (line: { id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }): Furniture => {
+    const scale = layout.dotSpacing || 1;
     return {
-      id: line.id,
-      type: 'furniture',
-      startX: line.start.col,
-      startY: line.start.row,
-      endX: line.end.col,
-      endY: line.end.row
+      x1: Math.trunc(line.start.col * scale),
+      y1: Math.trunc(line.start.row * scale),
+      x2: Math.trunc(line.end.col * scale),
+      y2: Math.trunc(line.end.row * scale)
     };
   };
 
@@ -269,78 +262,130 @@ const App: React.FC = () => {
   const generateDeviceJSON = (icon: { col: number, row: number, type: string, id: string, name: string, brand: string, status: string }): Device => {
     const scale = layout.dotSpacing || 1;
     return {
-      id: icon.id,
-      type: icon.type,
-      name: icon.name,
-      brand: icon.brand,
-      positionX: Math.trunc(icon.col * scale),
-      positionY: Math.trunc(icon.row * scale),
-      status: icon.status,
-      properties: {
-        // proprietati specifice pentru diferite tipuri de device-uri
-        ...(icon.type === 'bec' && { brightness: 100, color: '#FFFFFF' }),
-        ...(icon.type === 'senzor' && { sensorType: 'temperature', threshold: 25 }),
-        ...(icon.type === 'lock' && { isLocked: false, batteryLevel: 85 }),
-        ...(icon.type === 'router' && { wifiEnabled: true, connectedDevices: 0 }),
-        ...(icon.type === 'tv' && { isOn: false, volume: 50 }),
-        ...(icon.type === 'interfon' && { hasCamera: true, nightVision: false }),
-        ...(icon.type === 'prelungitor' && { outlets: 4, powerConsumption: 0 }),
-        ...(icon.type === 'soundsystem' && { isPlaying: false, volume: 30 }),
-        ...(icon.type === 'priza' && { isPowered: true, currentLoad: 0 }),
-        ...(icon.type === 'aspirator' && { isCleaning: false, batteryLevel: 100 }),
-        ...(icon.type === 'hub' && { connectedDevices: [], firmwareVersion: '1.0.0' })
+      coordinates: {
+        x: Math.trunc(icon.col * scale),
+        y: Math.trunc(icon.row * scale)
+      },
+      rotationAngle: 0,
+      device: {
+        id: icon.id,
+        name: icon.name,
+        price: 59,
+        ecosystem: 'Apple HomeKit',
+        protocol: icon.type === 'router' ? 'WiFi' : 'Zigbee',
+        lumens: icon.type === 'bec' ? 800 : 0,
+        requiresPlug: icon.type !== 'bec',
+        rangeRadius: icon.type === 'senzor' ? 10 : 0,
+        deviceType: icon.type,
+        mountType: icon.type === 'tv' ? 'wall' : 'table',
+        fieldofView: icon.type === 'interfon' ? 120 : 0,
+        powerConsumption: icon.type === 'bec' ? 10 : 5,
+        comunicationFrequency: icon.type === 'router' ? '2.4GHz' : '868MHz',
+        width: 10
       }
     };
   };
   const exampleDevices: Device[] = [
     {
-      id: 'sample-1',
-      type: 'bec',
-      name: 'Philips Hue E27',
-      brand: 'Philips',
-      positionX: 2,
-      positionY: 3,
-      status: 'online',
-      properties: { brightness: 100, color: '#FFFFFF' }
+      coordinates: { x: 120, y: 80 },
+      rotationAngle: 0,
+      device: {
+        id: 'sample-1',
+        name: 'Philips Hue E27',
+        price: 49,
+        ecosystem: 'Apple HomeKit',
+        protocol: 'Zigbee',
+        lumens: 800,
+        requiresPlug: false,
+        rangeRadius: 10,
+        deviceType: 'bec',
+        mountType: 'ceiling',
+        fieldofView: 0,
+        powerConsumption: 10,
+        comunicationFrequency: '2.4GHz',
+        width: 6
+      }
     },
     {
-      id: 'sample-2',
-      type: 'senzor',
-      name: 'Nest Thermostat',
-      brand: 'Google',
-      positionX: 5,
-      positionY: 2,
-      status: 'online',
-      properties: { sensorType: 'temperature', threshold: 22 }
+      coordinates: { x: 200, y: 120 },
+      rotationAngle: 0,
+      device: {
+        id: 'sample-2',
+        name: 'Nest Thermostat',
+        price: 279,
+        ecosystem: 'Apple HomeKit',
+        protocol: 'WiFi',
+        lumens: 0,
+        requiresPlug: true,
+        rangeRadius: 15,
+        deviceType: 'senzor',
+        mountType: 'wall',
+        fieldofView: 0,
+        powerConsumption: 3,
+        comunicationFrequency: '2.4GHz',
+        width: 8
+      }
     },
     {
-      id: 'sample-3',
-      type: 'tv',
-      name: 'Samsung Smart TV',
-      brand: 'Samsung',
-      positionX: 8,
-      positionY: 6,
-      status: 'offline',
-      properties: { isOn: false, volume: 20 }
+      coordinates: { x: 320, y: 60 },
+      rotationAngle: 0,
+      device: {
+        id: 'sample-3',
+        name: 'Samsung Smart TV',
+        price: 638,
+        ecosystem: 'Apple HomeKit',
+        protocol: 'WiFi',
+        lumens: 0,
+        requiresPlug: true,
+        rangeRadius: 0,
+        deviceType: 'tv',
+        mountType: 'wall',
+        fieldofView: 0,
+        powerConsumption: 120,
+        comunicationFrequency: '2.4GHz',
+        width: 120
+      }
     }
   ];
   // functie pentru actualizarea datelor de export cand se adauga elemente
   const updateExportData = () => {
+    const scale = layout.dotSpacing || 1;
     const walls: Wall[] = lines.filter(line => line.type === 'wall').map(generateWallJSON);
     const windows: Window[] = lines.filter(line => line.type === 'window').map(generateWindowJSON);
     const doors: Door[] = lines.filter(line => line.type === 'door').map(generateDoorJSON);
     const furniture: Furniture[] = lines.filter(line => line.type === 'furniture').map(generateFurnitureJSON);
-    const scale = layout.dotSpacing || 1;
+    const plugs: Plug[] = placedIcons
+      .filter(icon => icon.type === 'priza')
+      .map(icon => ({
+        x: Math.trunc(icon.col * scale),
+        y: Math.trunc(icon.row * scale)
+      }));
+
+    const roomSquareMeters = (() => {
+      if (!walls.length) return 10;
+      const xs = walls.flatMap(w => [w.x1, w.x2]);
+      const ys = walls.flatMap(w => [w.y1, w.y2]);
+      const widthCm = Math.max(...xs) - Math.min(...xs);
+      const heightCm = Math.max(...ys) - Math.min(...ys);
+      return Math.max(1, Math.trunc((widthCm / 100) * (heightCm / 100)));
+    })();
+
+    const rooms: Room[] = [{
+      id: 'room-001',
+      squareMeters: roomSquareMeters,
+      wallType: 'concrete',
+      walls,
+      doors,
+      windows,
+      plugs
+    }];
+
     const devices: Device[] = [
-      ...exampleDevices.map(device => ({
-        ...device,
-        positionX: Math.trunc(device.positionX * scale),
-        positionY: Math.trunc(device.positionY * scale)
-      })),
+      ...exampleDevices,
       ...placedIcons.map(generateDeviceJSON)
     ];
 
-    setExportData({ walls, windows, doors, devices, furniture });
+    setExportData({ devices, furniture, rooms });
   };
 
   // efect pentru actualizarea datelor de export cand se schimba elementele
@@ -357,8 +402,9 @@ const App: React.FC = () => {
         scale: "cm",
         maxBudget: 15000,
         targetEcosystem: "Apple HomeKit",
-        createdAt: new Date().toISOString(),
-        elements: exportData
+        rooms: exportData.rooms,
+        devices: exportData.devices,
+        furniture: exportData.furniture
       }
     };
 
@@ -371,36 +417,6 @@ const App: React.FC = () => {
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
-  };
-
-  // functie pentru trimiterea datelor catre backend
-  const sendToBackend = async () => {
-    try {
-      const response = await fetch('http://localhost:8080/api/house-configurations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: layoutId,
-          name: "Smart House Setup",
-          scale: "m",
-          maxBudget: 15000,
-          targetEcosystem: "Apple HomeKit",
-          createdAt: new Date().toISOString(),
-          elements: exportData
-        })
-      });
-
-      if (response.ok) {
-        alert('Datele au fost trimise cu succes către backend!');
-      } else {
-        alert('Eroare la trimiterea datelor către backend.');
-      }
-    } catch (error) {
-      console.error('Eroare:', error);
-      alert('Eroare de conexiune la backend.');
-    }
   };
 
   return (
@@ -462,12 +478,6 @@ const App: React.FC = () => {
               className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain}`}
             >
               <span className="opacity-60">💾</span> Export JSON
-            </button>
-            <button 
-              onClick={sendToBackend}
-              className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain}`}
-            >
-              <span className="opacity-60">🚀</span> Send to Backend
             </button>
           </div>
         </div>

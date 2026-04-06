@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.mail.MailException;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +19,7 @@ public class EmailService {
     @Value("${app.base-url}")
     private String baseUrl;
 
-    @Value("${spring.mail.username}")
+    @Value("${app.mail.from}")
     private String fromAddress;
 
     public void sendVerificationEmail(String to, String token) {
@@ -49,7 +50,7 @@ public class EmailService {
             helper.setSubject("Verify your SmartHouseBuilder account");
             helper.setText(html, true);
             mailSender.send(message);
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
             throw new RuntimeException("Failed to send verification email to " + to, e);
         }
     }

@@ -2,6 +2,7 @@ package gr.A4.SmartHouseBuilder.controller;
 
 import gr.A4.SmartHouseBuilder.dto.*;
 import gr.A4.SmartHouseBuilder.service.AuthService;
+import gr.A4.SmartHouseBuilder.service.MfaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,12 +10,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+    private final MfaService mfaService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -65,4 +68,18 @@ public class AuthController {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.processForgotPassword(request.email());
+        return ResponseEntity.ok("If an account exists with this email, a reset link has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok("Password has been successfully reset.");
+    }
+
+
 }

@@ -79,6 +79,7 @@ public class AuthService {
 
         if (user.isMfaEnabled()) {
             // Don't issue full tokens yet — return an MFA challenge
+            log.info("MFA required for user: {}", email);
             return MfaChallengeResponse.builder()
                     .mfaRequired(true)
                     .mfaToken(jwtUtil.generateMfaToken(user.getEmail()))
@@ -200,5 +201,44 @@ public class AuthService {
     public void logout(String requestToken) {
         refreshTokenService.findByToken(requestToken)
                 .ifPresent(refreshTokenService::deleteToken);
+    }
+
+    @Transactional
+    public void processForgotPassword(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit!"));
+
+
+        String token = java.util.UUID.randomUUID().toString();
+
+
+        user.setResetToken(token);
+        user.setResetTokenExpiry(java.time.LocalDateTime.now().plusHours(1));
+        userRepository.save(user);
+
+
+        emailService.sendResetPasswordEmail(user.getEmail(), token);
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Cod de resetare invalid!"));
+
+
+        if (user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now())) {
+            throw new RuntimeException("Codul de resetare a expirat!");
+        }
+
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+
+        userRepository.save(user);
     }
 }

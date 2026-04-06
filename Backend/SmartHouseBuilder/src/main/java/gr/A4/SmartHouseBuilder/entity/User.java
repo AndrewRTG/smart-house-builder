@@ -3,6 +3,8 @@ package gr.A4.SmartHouseBuilder.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -45,4 +47,10 @@ public class User {
 
     @Column
     private String mfaSecret;
+
+    @Column
+    private String resetToken;
+
+    @Column
+    private LocalDateTime resetTokenExpiry;
 }

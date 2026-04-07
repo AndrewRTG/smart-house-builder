@@ -18,7 +18,7 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/team2/layouts")
 public class LayoutController {
-/sal
+//sal
     private final LayoutService layoutService;
     private final ObjectMapper objectMapper;
     private final LayoutIntegrationService validationService; // Aici am adaugat serviciul tau!

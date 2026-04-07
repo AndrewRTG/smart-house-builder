@@ -179,3 +179,73 @@ body {
 .theme-toggle-knob.dark {
   transform: translateX(0);
 }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.auth-divider span {
+  padding: 0 12px;
+}
+
+.social-auth-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.social-auth-btn {
+  flex: 1;
+  min-width: 140px;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.social-auth-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.google-btn {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.facebook-btn {
+  background-color: #1877f2;
+  color: #ffffff;
+}
+
+.forgot-password-wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.forgot-password-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+  color: var(--text-secondary);
+}

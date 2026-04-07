@@ -1,6 +1,6 @@
 package gr.A4.SmartHouseBuilder.service;
 
-import gr.A4.SmartHouseBuilder.engine.CompatibilityEngineMock;
+import gr.A4.SmartHouseBuilder.engine.CompatibilityEngine;
 import gr.A4.SmartHouseBuilder.model.SetupBuild;
 import gr.A4.SmartHouseBuilder.model.ValidationResult;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import java.util.List;
 @Service
 public class LayoutIntegrationService {
 
-    private final CompatibilityEngineMock compatibilityEngine;
+    private final CompatibilityEngine compatibilityEngine;
 
     public List<ValidationResult> integrateAndVerify(SetupBuild build) {
 

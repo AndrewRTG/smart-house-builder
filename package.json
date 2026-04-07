@@ -1,7 +1,16 @@
 {
+  "scripts": {
+    "dev": "cd echipa2 && npm run dev",
+    "build": "cd echipa2 && npm run build",
+    "lint": "cd echipa2 && npm run lint",
+    "preview": "cd echipa2 && npm run preview"
+  },
   "devDependencies": {
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2"
+  },
+  "dependencies": {
+    "zustand": "^5.0.12"
   }
 }

@@ -21,7 +21,6 @@ export default function ErrorNotificationManager() {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const removeError = (idToRemove: string) => {
-        // FIX: Simply remove the error. We let the render logic below handle the layout!
         setErrors((prev) => prev.filter((error) => error.id !== idToRemove));
     };
 

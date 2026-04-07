@@ -10,108 +10,102 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StoredLayoutTest {
 
     @Test
-    void constructor_setsAllComponents() {
+    void constructor_setsAllFields() {
         Long id = 1L;
         Instant now = Instant.now();
         SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setId("layout-1");
+        dto.setId("dto-1");
 
         StoredLayout layout = new StoredLayout(id, now, dto);
 
-        assertThat(layout.id()).isEqualTo(1L);
+        assertThat(layout.id()).isEqualTo(id);
         assertThat(layout.createdAt()).isEqualTo(now);
-        assertThat(layout.data()).isSameAs(dto);
+        assertThat(layout.data()).isSameInstanceAs(dto);
     }
 
     @Test
-    void id_accessor_returnsCorrectValue() {
-        StoredLayout layout = new StoredLayout(42L, Instant.now(), null);
-        assertThat(layout.id()).isEqualTo(42L);
-    }
-
-    @Test
-    void createdAt_accessor_returnsCorrectInstant() {
-        Instant timestamp = Instant.parse("2025-01-01T12:00:00Z");
-        StoredLayout layout = new StoredLayout(1L, timestamp, null);
-        assertThat(layout.createdAt()).isEqualTo(timestamp);
-    }
-
-    @Test
-    void data_accessor_returnsSetupBuildDTO() {
-        SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setScale("1:200");
-        StoredLayout layout = new StoredLayout(1L, Instant.now(), dto);
-        assertThat(layout.data().getScale()).isEqualTo("1:200");
-    }
-
-    @Test
-    void data_accessor_allowsNull() {
+    void constructor_acceptsNullData() {
         StoredLayout layout = new StoredLayout(1L, Instant.now(), null);
         assertThat(layout.data()).isNull();
     }
 
     @Test
-    void equals_sameValues_areEqual() {
-        Instant ts = Instant.parse("2025-06-01T00:00:00Z");
-        SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setId("x");
-
-        StoredLayout l1 = new StoredLayout(1L, ts, dto);
-        StoredLayout l2 = new StoredLayout(1L, ts, dto);
-
-        assertThat(l1).isEqualTo(l2);
+    void constructor_acceptsNullCreatedAt() {
+        StoredLayout layout = new StoredLayout(1L, null, new SetupBuildDTO());
+        assertThat(layout.createdAt()).isNull();
     }
 
     @Test
-    void equals_differentId_notEqual() {
-        Instant ts = Instant.now();
+    void equals_twoRecordsWithSameFieldsAreEqual() {
+        Instant now = Instant.parse("2025-01-01T00:00:00Z");
         SetupBuildDTO dto = new SetupBuildDTO();
 
-        StoredLayout l1 = new StoredLayout(1L, ts, dto);
-        StoredLayout l2 = new StoredLayout(2L, ts, dto);
+        StoredLayout layout1 = new StoredLayout(1L, now, dto);
+        StoredLayout layout2 = new StoredLayout(1L, now, dto);
 
-        assertThat(l1).isNotEqualTo(l2);
+        assertThat(layout1).isEqualTo(layout2);
     }
 
     @Test
-    void equals_differentCreatedAt_notEqual() {
+    void equals_recordsWithDifferentIdsAreNotEqual() {
+        Instant now = Instant.now();
         SetupBuildDTO dto = new SetupBuildDTO();
-        StoredLayout l1 = new StoredLayout(1L, Instant.parse("2025-01-01T00:00:00Z"), dto);
-        StoredLayout l2 = new StoredLayout(1L, Instant.parse("2025-06-01T00:00:00Z"), dto);
-        assertThat(l1).isNotEqualTo(l2);
+
+        StoredLayout layout1 = new StoredLayout(1L, now, dto);
+        StoredLayout layout2 = new StoredLayout(2L, now, dto);
+
+        assertThat(layout1).isNotEqualTo(layout2);
     }
 
     @Test
-    void hashCode_sameValues_areEqual() {
-        Instant ts = Instant.parse("2025-01-01T00:00:00Z");
+    void equals_recordsWithDifferentTimestampsAreNotEqual() {
         SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setId("hash-test");
 
-        StoredLayout l1 = new StoredLayout(5L, ts, dto);
-        StoredLayout l2 = new StoredLayout(5L, ts, dto);
+        StoredLayout layout1 = new StoredLayout(1L, Instant.parse("2025-01-01T00:00:00Z"), dto);
+        StoredLayout layout2 = new StoredLayout(1L, Instant.parse("2025-06-01T00:00:00Z"), dto);
 
-        assertThat(l1.hashCode()).isEqualTo(l2.hashCode());
+        assertThat(layout1).isNotEqualTo(layout2);
     }
 
     @Test
-    void toString_containsAllComponents() {
-        Instant ts = Instant.parse("2025-03-15T10:30:00Z");
+    void hashCode_sameForEqualRecords() {
+        Instant now = Instant.parse("2025-01-01T00:00:00Z");
         SetupBuildDTO dto = new SetupBuildDTO();
-        StoredLayout layout = new StoredLayout(99L, ts, dto);
 
+        StoredLayout layout1 = new StoredLayout(1L, now, dto);
+        StoredLayout layout2 = new StoredLayout(1L, now, dto);
+
+        assertThat(layout1.hashCode()).isEqualTo(layout2.hashCode());
+    }
+
+    @Test
+    void toString_containsIdAndCreatedAt() {
+        Instant now = Instant.parse("2025-03-15T12:00:00Z");
+        StoredLayout layout = new StoredLayout(42L, now, null);
         String str = layout.toString();
-        assertThat(str).contains("99");
+
+        assertThat(str).contains("42");
         assertThat(str).contains("2025-03-15");
     }
 
     @Test
-    void record_isImmutable_components_cannotBeChanged() {
-        // Java records expose only accessors, no setters - verifying the record contract
-        SetupBuildDTO dto = new SetupBuildDTO();
-        StoredLayout layout = new StoredLayout(1L, Instant.now(), dto);
+    void idAccessor_returnsStoredId() {
+        StoredLayout layout = new StoredLayout(99L, Instant.now(), null);
+        assertThat(layout.id()).isEqualTo(99L);
+    }
 
-        // The same reference is returned each call (no copy)
-        assertThat(layout.data()).isSameAs(dto);
-        assertThat(layout.data()).isSameAs(layout.data());
+    @Test
+    void createdAtAccessor_returnsStoredInstant() {
+        Instant ts = Instant.parse("2024-12-31T23:59:59Z");
+        StoredLayout layout = new StoredLayout(1L, ts, null);
+        assertThat(layout.createdAt()).isEqualTo(ts);
+    }
+
+    @Test
+    void dataAccessor_returnsSameInstance() {
+        SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setId("ref-check");
+        StoredLayout layout = new StoredLayout(1L, Instant.now(), dto);
+        assertThat(layout.data()).isSameInstanceAs(dto);
     }
 }

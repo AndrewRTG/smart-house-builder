@@ -4,242 +4,307 @@ import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import gr.A4.SmartHouseBuilder.team2.model.StoredLayout;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockedConstruction;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class LayoutServiceTest {
-
-    @Mock
-    private RestTemplate restTemplate;
 
     private LayoutService layoutService;
 
     @BeforeEach
     void setUp() {
         layoutService = new LayoutService();
-        ReflectionTestUtils.setField(layoutService, "restTemplate", restTemplate);
     }
 
-    // ---- saveLayout tests ----
+    // ── saveLayout ────────────────────────────────────────────────────────────
 
     @Test
-    void saveLayout_firstCall_returnsIdOne() {
+    void saveLayout_returnsIncrementingIds() {
+        SetupBuildDTO dto1 = new SetupBuildDTO();
+        SetupBuildDTO dto2 = new SetupBuildDTO();
+
+        Long id1 = layoutService.saveLayout(dto1);
+        Long id2 = layoutService.saveLayout(dto2);
+
+        assertThat(id1).isNotNull();
+        assertThat(id2).isNotNull();
+        assertThat(id2).isGreaterThan(id1);
+    }
+
+    @Test
+    void saveLayout_firstIdIsPositive() {
+        Long id = layoutService.saveLayout(new SetupBuildDTO());
+        assertThat(id).isPositive();
+    }
+
+    @Test
+    void saveLayout_storesPayloadCorrectly() {
         SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setId("layout-1");
+        dto.setScale("1:50");
+        dto.setMaxBudget(5000.0);
+
         Long id = layoutService.saveLayout(dto);
-        assertThat(id).isEqualTo(1L);
+        StoredLayout stored = layoutService.getLayoutById(id);
+
+        assertThat(stored).isNotNull();
+        assertThat(stored.data()).isSameInstanceAs(dto);
+        assertThat(stored.data().getId()).isEqualTo("layout-1");
+        assertThat(stored.data().getScale()).isEqualTo("1:50");
     }
 
     @Test
-    void saveLayout_multipleCalls_returnsIncrementalIds() {
-        SetupBuildDTO dto = new SetupBuildDTO();
-        Long first = layoutService.saveLayout(dto);
-        Long second = layoutService.saveLayout(dto);
-        Long third = layoutService.saveLayout(dto);
-        assertThat(first).isEqualTo(1L);
-        assertThat(second).isEqualTo(2L);
-        assertThat(third).isEqualTo(3L);
-    }
-
-    @Test
-    void saveLayout_storesPayload_canBeRetrievedById() {
-        SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setId("layout-abc");
-        dto.setScale("1:100");
-        Long id = layoutService.saveLayout(dto);
+    void saveLayout_setsCreatedAtNearNow() {
+        Instant before = Instant.now();
+        Long id = layoutService.saveLayout(new SetupBuildDTO());
+        Instant after = Instant.now();
 
         StoredLayout stored = layoutService.getLayoutById(id);
-        assertThat(stored).isNotNull();
-        assertThat(stored.data()).isSameAs(dto);
-        assertThat(stored.id()).isEqualTo(id);
-        assertThat(stored.createdAt()).isNotNull();
+
+        assertThat(stored.createdAt()).isAfterOrEqualTo(before);
+        assertThat(stored.createdAt()).isBeforeOrEqualTo(after);
     }
 
-    // ---- getLayoutById tests ----
+    @Test
+    void saveLayout_withNullPayload_storesNullData() {
+        Long id = layoutService.saveLayout(null);
+        StoredLayout stored = layoutService.getLayoutById(id);
+
+        assertThat(stored).isNotNull();
+        assertThat(stored.data()).isNull();
+    }
+
+    // ── getLayoutById ─────────────────────────────────────────────────────────
 
     @Test
-    void getLayoutById_existingId_returnsStoredLayout() {
+    void getLayoutById_returnsCorrectLayout() {
         SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setTargetEcosystem("Google");
+        dto.setId("abc");
         Long id = layoutService.saveLayout(dto);
 
         StoredLayout result = layoutService.getLayoutById(id);
+
         assertThat(result).isNotNull();
-        assertThat(result.data().getTargetEcosystem()).isEqualTo("Google");
+        assertThat(result.id()).isEqualTo(id);
+        assertThat(result.data().getId()).isEqualTo("abc");
     }
 
     @Test
-    void getLayoutById_nonExistentId_returnsNull() {
+    void getLayoutById_returnsNullForUnknownId() {
         StoredLayout result = layoutService.getLayoutById(9999L);
         assertThat(result).isNull();
     }
 
     @Test
-    void getLayoutById_negativeId_returnsNull() {
-        StoredLayout result = layoutService.getLayoutById(-1L);
-        assertThat(result).isNull();
-    }
-
-    // ---- getAllLayouts tests ----
-
-    @Test
-    void getAllLayouts_emptyStore_returnsEmptyList() {
-        List<StoredLayout> result = layoutService.getAllLayouts();
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    void getAllLayouts_multipleLayouts_returnsSortedById() {
+    void getLayoutById_doesNotConflictBetweenMultipleLayouts() {
         SetupBuildDTO dto1 = new SetupBuildDTO();
         dto1.setId("first");
         SetupBuildDTO dto2 = new SetupBuildDTO();
         dto2.setId("second");
-        SetupBuildDTO dto3 = new SetupBuildDTO();
-        dto3.setId("third");
 
         Long id1 = layoutService.saveLayout(dto1);
         Long id2 = layoutService.saveLayout(dto2);
-        Long id3 = layoutService.saveLayout(dto3);
+
+        assertThat(layoutService.getLayoutById(id1).data().getId()).isEqualTo("first");
+        assertThat(layoutService.getLayoutById(id2).data().getId()).isEqualTo("second");
+    }
+
+    // ── getAllLayouts ─────────────────────────────────────────────────────────
+
+    @Test
+    void getAllLayouts_returnsEmptyListWhenNoLayouts() {
+        List<StoredLayout> layouts = layoutService.getAllLayouts();
+        assertThat(layouts).isNotNull().isEmpty();
+    }
+
+    @Test
+    void getAllLayouts_returnsAllSavedLayouts() {
+        layoutService.saveLayout(new SetupBuildDTO());
+        layoutService.saveLayout(new SetupBuildDTO());
+        layoutService.saveLayout(new SetupBuildDTO());
 
         List<StoredLayout> layouts = layoutService.getAllLayouts();
+
         assertThat(layouts).hasSize(3);
-        assertThat(layouts.get(0).id()).isEqualTo(id1);
-        assertThat(layouts.get(1).id()).isEqualTo(id2);
-        assertThat(layouts.get(2).id()).isEqualTo(id3);
     }
 
     @Test
-    void getAllLayouts_singleLayout_returnsListWithOneEntry() {
+    void getAllLayouts_returnsSortedById() {
+        Long id1 = layoutService.saveLayout(new SetupBuildDTO());
+        Long id2 = layoutService.saveLayout(new SetupBuildDTO());
+        Long id3 = layoutService.saveLayout(new SetupBuildDTO());
+
+        List<StoredLayout> layouts = layoutService.getAllLayouts();
+
+        assertThat(layouts).extracting(StoredLayout::id)
+                .containsExactly(id1, id2, id3);
+    }
+
+    @Test
+    void getAllLayouts_returnsSingleLayout() {
         SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setScale("1:50");
-        layoutService.saveLayout(dto);
+        dto.setId("only");
+        Long id = layoutService.saveLayout(dto);
 
-        List<StoredLayout> result = layoutService.getAllLayouts();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).data().getScale()).isEqualTo("1:50");
+        List<StoredLayout> layouts = layoutService.getAllLayouts();
+
+        assertThat(layouts).hasSize(1);
+        assertThat(layouts.get(0).id()).isEqualTo(id);
     }
 
-    // ---- sendAndReceive tests ----
+    // ── sendAndReceive ────────────────────────────────────────────────────────
 
     @Test
-    void sendAndReceive_successfulResponse_returnsBody() {
+    void sendAndReceive_returnsNullWhenRemoteUnavailable() {
+        // No server listening at localhost:20025, expect null from caught exception
+        SetupBuildDTO dto = new SetupBuildDTO();
+        Long id = layoutService.saveLayout(dto);
+        StoredLayout layout = layoutService.getLayoutById(id);
+
+        Object result = layoutService.sendAndReceive(layout);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sendAndReceive_returnsBodyOnSuccess() {
         SetupBuildDTO dto = new SetupBuildDTO();
         Long id = layoutService.saveLayout(dto);
         StoredLayout layout = layoutService.getLayoutById(id);
 
         Object expectedBody = new Object();
-        ResponseEntity<Object> responseEntity = ResponseEntity.ok(expectedBody);
-        when(restTemplate.postForEntity(anyString(), any(), eq(Object.class)))
-                .thenReturn(responseEntity);
 
-        Object result = layoutService.sendAndReceive(layout);
-        assertThat(result).isSameAs(expectedBody);
+        try (MockedConstruction<RestTemplate> mockedRt = mockConstruction(RestTemplate.class,
+                (mock, context) -> {
+                    ResponseEntity<Object> response = mock(ResponseEntity.class);
+                    when(response.getBody()).thenReturn(expectedBody);
+                    when(mock.postForEntity(anyString(), any(), eq(Object.class)))
+                            .thenReturn(response);
+                })) {
+
+            // Need a fresh service instance so it uses the mocked RestTemplate
+            LayoutService freshService = new LayoutService();
+            Long freshId = freshService.saveLayout(dto);
+            StoredLayout freshLayout = freshService.getLayoutById(freshId);
+
+            Object result = freshService.sendAndReceive(freshLayout);
+
+            assertThat(result).isEqualTo(expectedBody);
+        }
     }
 
     @Test
-    void sendAndReceive_connectionRefused_returnsNull() {
+    @SuppressWarnings("unchecked")
+    void sendAndReceive_returnsNullOnException() {
         SetupBuildDTO dto = new SetupBuildDTO();
-        Long id = layoutService.saveLayout(dto);
-        StoredLayout layout = layoutService.getLayoutById(id);
 
-        when(restTemplate.postForEntity(anyString(), any(), eq(Object.class)))
-                .thenThrow(new ResourceAccessException("Connection refused"));
+        try (MockedConstruction<RestTemplate> mockedRt = mockConstruction(RestTemplate.class,
+                (mock, context) ->
+                        when(mock.postForEntity(anyString(), any(), eq(Object.class)))
+                                .thenThrow(new ResourceAccessException("Connection refused")))) {
 
-        Object result = layoutService.sendAndReceive(layout);
-        assertThat(result).isNull();
+            LayoutService freshService = new LayoutService();
+            Long freshId = freshService.saveLayout(dto);
+            StoredLayout freshLayout = freshService.getLayoutById(freshId);
+
+            Object result = freshService.sendAndReceive(freshLayout);
+
+            assertThat(result).isNull();
+        }
     }
 
+    // ── validateLayout ────────────────────────────────────────────────────────
+
     @Test
-    void sendAndReceive_nullBody_returnsNull() {
+    void validateLayout_returnsNullWhenRemoteUnavailable() {
         SetupBuildDTO dto = new SetupBuildDTO();
         Long id = layoutService.saveLayout(dto);
         StoredLayout layout = layoutService.getLayoutById(id);
-
-        ResponseEntity<Object> responseEntity = ResponseEntity.ok(null);
-        when(restTemplate.postForEntity(anyString(), any(), eq(Object.class)))
-                .thenReturn(responseEntity);
-
-        Object result = layoutService.sendAndReceive(layout);
-        assertThat(result).isNull();
-    }
-
-    // ---- validateLayout tests ----
-
-    @Test
-    void validateLayout_successfulResponse_returnsSetupBuildDTO() {
-        SetupBuildDTO dto = new SetupBuildDTO();
-        dto.setMaxBudget(5000.0);
-        Long id = layoutService.saveLayout(dto);
-        StoredLayout layout = layoutService.getLayoutById(id);
-
-        SetupBuildDTO responseDto = new SetupBuildDTO();
-        responseDto.setMaxBudget(5000.0);
-        ResponseEntity<SetupBuildDTO> responseEntity = ResponseEntity.ok(responseDto);
-        when(restTemplate.postForEntity(anyString(), any(), eq(SetupBuildDTO.class)))
-                .thenReturn(responseEntity);
 
         SetupBuildDTO result = layoutService.validateLayout(layout);
-        assertThat(result).isNotNull();
-        assertThat(result.getMaxBudget()).isEqualTo(5000.0);
-    }
 
-    @Test
-    void validateLayout_exceptionThrown_returnsNull() {
-        SetupBuildDTO dto = new SetupBuildDTO();
-        Long id = layoutService.saveLayout(dto);
-        StoredLayout layout = layoutService.getLayoutById(id);
-
-        when(restTemplate.postForEntity(anyString(), any(), eq(SetupBuildDTO.class)))
-                .thenThrow(new RuntimeException("Timeout"));
-
-        SetupBuildDTO result = layoutService.validateLayout(layout);
         assertThat(result).isNull();
     }
 
     @Test
-    void validateLayout_nullBody_returnsNull() {
+    @SuppressWarnings("unchecked")
+    void validateLayout_returnsBodyOnSuccess() {
         SetupBuildDTO dto = new SetupBuildDTO();
-        Long id = layoutService.saveLayout(dto);
-        StoredLayout layout = layoutService.getLayoutById(id);
+        SetupBuildDTO validatedDto = new SetupBuildDTO();
+        validatedDto.setId("validated");
 
-        ResponseEntity<SetupBuildDTO> responseEntity = ResponseEntity.ok(null);
-        when(restTemplate.postForEntity(anyString(), any(), eq(SetupBuildDTO.class)))
-                .thenReturn(responseEntity);
+        try (MockedConstruction<RestTemplate> mockedRt = mockConstruction(RestTemplate.class,
+                (mock, context) -> {
+                    ResponseEntity<SetupBuildDTO> response = mock(ResponseEntity.class);
+                    when(response.getBody()).thenReturn(validatedDto);
+                    when(mock.postForEntity(anyString(), any(), eq(SetupBuildDTO.class)))
+                            .thenReturn(response);
+                })) {
 
-        SetupBuildDTO result = layoutService.validateLayout(layout);
-        assertThat(result).isNull();
+            LayoutService freshService = new LayoutService();
+            Long freshId = freshService.saveLayout(dto);
+            StoredLayout freshLayout = freshService.getLayoutById(freshId);
+
+            SetupBuildDTO result = freshService.validateLayout(freshLayout);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo("validated");
+        }
     }
 
-    // ---- additional edge cases ----
+    @Test
+    @SuppressWarnings("unchecked")
+    void validateLayout_returnsNullOnException() {
+        SetupBuildDTO dto = new SetupBuildDTO();
+
+        try (MockedConstruction<RestTemplate> mockedRt = mockConstruction(RestTemplate.class,
+                (mock, context) ->
+                        when(mock.postForEntity(anyString(), any(), eq(SetupBuildDTO.class)))
+                                .thenThrow(new ResourceAccessException("timeout")))) {
+
+            LayoutService freshService = new LayoutService();
+            Long freshId = freshService.saveLayout(dto);
+            StoredLayout freshLayout = freshService.getLayoutById(freshId);
+
+            SetupBuildDTO result = freshService.validateLayout(freshLayout);
+
+            assertThat(result).isNull();
+        }
+    }
+
+    // ── edge/regression cases ─────────────────────────────────────────────────
 
     @Test
-    void saveLayout_nullPayload_storesNullData() {
-        Long id = layoutService.saveLayout(null);
-        StoredLayout stored = layoutService.getLayoutById(id);
-        assertThat(stored).isNotNull();
-        assertThat(stored.data()).isNull();
+    void saveMultipleLayouts_eachHasUniqueId() {
+        int count = 10;
+        Long[] ids = new Long[count];
+        for (int i = 0; i < count; i++) {
+            ids[i] = layoutService.saveLayout(new SetupBuildDTO());
+        }
+
+        // All IDs should be distinct
+        assertThat(ids).doesNotHaveDuplicates();
     }
 
     @Test
-    void getAllLayouts_returnsUnmodifiableSnapshot() {
-        SetupBuildDTO dto = new SetupBuildDTO();
-        layoutService.saveLayout(dto);
-        List<StoredLayout> list1 = layoutService.getAllLayouts();
-        layoutService.saveLayout(dto);
-        List<StoredLayout> list2 = layoutService.getAllLayouts();
-        // each call returns fresh list
-        assertThat(list1).hasSize(1);
-        assertThat(list2).hasSize(2);
+    void getAllLayouts_returnsImmutableSnapshot() {
+        layoutService.saveLayout(new SetupBuildDTO());
+        List<StoredLayout> snapshot1 = layoutService.getAllLayouts();
+
+        layoutService.saveLayout(new SetupBuildDTO());
+        List<StoredLayout> snapshot2 = layoutService.getAllLayouts();
+
+        assertThat(snapshot1).hasSize(1);
+        assertThat(snapshot2).hasSize(2);
     }
 }

@@ -2,7 +2,7 @@ services:
   # --- 1. Baza de Date (PostgreSQL) ---
   db:
     image: postgres:15-alpine
-    container_name: smart-house-db
+    container_name: smart-house-database
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASS}
@@ -20,7 +20,7 @@ services:
   backend:
     build: 
       context: ./backend_IP/smart-house-builder/Backend/SmartHouseBuilder
-    container_name: smart-house-backend
+    container_name: smart-house-backend1
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
@@ -38,7 +38,7 @@ services:
   frontend:
     build: 
       context: ./frontend_IP/smart-house-catalog
-    container_name: smart-house-frontend
+    container_name: smart-house-frontend1
     ports:
       - "3000:80"
     depends_on:

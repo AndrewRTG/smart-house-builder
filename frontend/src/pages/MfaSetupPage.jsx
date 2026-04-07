@@ -1,0 +1,137 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
+
+export default function MfaSetupPage() {
+  const [setupData, setSetupData] = useState(null);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    fetch("http://localhost:20025/api/v1/auth/mfa/setup", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setSetupData(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to load MFA setup.");
+        setLoading(false);
+      });
+  }, [navigate]);
+
+  const handleConfirm = async () => {
+    setError("");
+    const token = localStorage.getItem("accessToken");
+    const res = await fetch("http://localhost:20025/api/v1/auth/mfa/confirm", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ mfaToken: "", code }),
+    });
+    if (res.ok) {
+      setSuccess(true);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.message || "Invalid code. Please try again.");
+    }
+  };
+
+  if (loading) return <div className="container mt-5"><p>Loading...</p></div>;
+
+  return (
+    <div className="container mt-5" style={{ maxWidth: 480 }}>
+      <h2 className="mb-4">Set Up Two-Factor Authentication</h2>
+
+      {success ? (
+        <div className="alert alert-success">
+          <i className="bi bi-shield-check me-2"></i>
+          MFA enabled successfully! Your account is now protected.
+          <div className="mt-3">
+            <button className="btn btn-primary" onClick={() => navigate("/")}>
+              Go to Home
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="text-muted">
+            Scan the QR code below with <strong>Google Authenticator</strong> or{" "}
+            <strong>Authy</strong>.
+          </p>
+
+          {setupData?.qrCodeUri && (
+            <div className="mb-3 text-center">
+              <QRCodeSVG value={setupData.qrCodeUri} size={200} />
+            </div>
+          )}
+
+          <div className="mb-3">
+            <label
+              className="form-label text-muted"
+              style={{ fontSize: "0.85rem" }}
+            >
+              Or enter this secret manually in your app:
+            </label>
+            <code
+              className="d-block bg-light p-2 rounded"
+              style={{ wordBreak: "break-all" }}
+            >
+              {setupData?.secret}
+            </code>
+          </div>
+
+          <hr />
+
+          <p>Enter the 6-digit code from your authenticator app to confirm setup:</p>
+          <div className="mb-3">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="123456"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            />
+          </div>
+
+          {error && <div className="alert alert-danger">{error}</div>}
+
+          <button
+            className="btn btn-success w-100"
+            onClick={handleConfirm}
+            disabled={code.length !== 6}
+          >
+            Confirm &amp; Enable MFA
+          </button>
+
+          <div className="mt-3 text-center">
+            <button
+              className="btn btn-link text-muted"
+              onClick={() => navigate("/mfa/settings")}
+            >
+              Back to MFA Settings
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

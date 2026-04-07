@@ -23,12 +23,3 @@
 hs_err_pid*
 replay_pid*
 
-# Node / frontend
-node_modules/
-dist/
-.vite/
-*.local
-
-# IDE
-.idea/
-

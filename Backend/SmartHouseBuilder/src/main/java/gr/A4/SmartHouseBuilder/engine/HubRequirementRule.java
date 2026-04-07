@@ -9,11 +9,11 @@ public class HubRequirementRule implements IValidationRule {
     @Override
     public ValidationResult validate(SetupBuild build) {
         if (build == null) {
-            return new ValidationResult(false, "ERROR", "SetupBuild este null.");
+            return new ValidationResult(false, "ERROR", "SetupBuild is null.");
         }
 
         if (build.getDevices() == null || build.getDevices().isEmpty()) {
-            return new ValidationResult(true, "INFO", "Nu există device-uri de verificat.");
+            return new ValidationResult(true, "INFO", "There are no devices to be checked.");
         }
 
         boolean hasHub = false;
@@ -43,9 +43,9 @@ public class HubRequirementRule implements IValidationRule {
         }
 
         if (requiresHub && !hasHub) {
-            return new ValidationResult(false, "ERROR", "Există device-uri care necesită hub, dar nu a fost găsit niciun hub în setup.");
+            return new ValidationResult(false, "ERROR", "There are devices that need a hub, but no hub has been found in this layout.");
         }
 
-        return new ValidationResult(true, "INFO", "Cerința de hub este îndeplinită.");
+        return new ValidationResult(true, "INFO", "Hub requirements are met.");
     }
 }

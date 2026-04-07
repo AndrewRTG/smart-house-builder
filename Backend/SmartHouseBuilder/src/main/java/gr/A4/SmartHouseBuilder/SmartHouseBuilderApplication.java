@@ -11,7 +11,7 @@ public class SmartHouseBuilderApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SmartHouseBuilderApplication.class, args);
 	}
-
+	//da
 	/**
 	 * definim manual bean-ul ObjectMapper pentru a rezolva eroarea de injectare
 	 * din LayoutController si pentru a asigura suportul JSON

@@ -17,11 +17,9 @@ import java.util.List;
 @RequestMapping("/api/team2/layouts")
 public class LayoutController {
     private final LayoutService layoutService;
-    private final ObjectMapper objectMapper;
 
-    public LayoutController(LayoutService layoutService, ObjectMapper objectMapper) {
+    public LayoutController(LayoutService layoutService) {
         this.layoutService = layoutService;
-        this.objectMapper = objectMapper;
     }
 
     // Salvează layout-ul primit de la frontend
@@ -49,6 +47,7 @@ public class LayoutController {
     // Returnează toate layout-urile ca pagină HTML vizuală
     @GetMapping(value = "/view", produces = MediaType.TEXT_HTML_VALUE)
     public String viewLayoutsAsHtml() throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValueAsString(layoutService.getAllLayouts());
         String escaped = HtmlUtils.htmlEscape(json);

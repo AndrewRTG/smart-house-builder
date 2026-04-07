@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 // definirea formei proprietatilor primite de canvas
 interface GridCanvasProps {
@@ -19,6 +19,8 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, lines,
   // folosim ref pentru a nu reseta animatia la fiecare schimbare minora de mouse
   // pastreaza primul punct apasat cand incepi sa desenezi o linie
   const startPointRef = useRef<{col: number, row: number} | null>(null);
+
+  const [errors, setErrors] = useState<string[]>([]);
 
   // daca user-ul schimba unealta (din wall in window etc) abandonam linia incompleta
   useEffect(() => {
@@ -289,14 +291,58 @@ const GridCanvas: React.FC<GridCanvasProps> = ({ isDarkMode, placedIcons, lines,
     }
   };
 
+  const validateLayout = async () => {
+    // Prepare data in SetupBuildDTO format
+    const data = {
+      id: "layout1",
+      scale: "1:1",
+      maxBudget: 1000.0,
+      targetEcosystem: "smart",
+      rooms: [], // TODO: convert lines to rooms
+      devices: placedIcons.map(icon => ({
+        id: icon.type + icon.col + icon.row,
+        type: icon.type,
+        position: { x: icon.col, y: icon.row }
+      })) // Simplified
+    };
+
+    try {
+      const response = await fetch('http://localhost:20025/api/team2/layouts/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (result.errors) {
+        setErrors(result.errors.map((e: any) => e.message));
+      } else {
+        setErrors([]);
+      }
+    } catch (error) {
+      setErrors(['Eroare la validare']);
+    }
+  };
+
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onClick={handleInternalClick}
-      className="absolute inset-0 w-full h-full cursor-crosshair rounded-3xl"
-    />
+    <>
+      <button onClick={validateLayout} className="absolute top-4 right-4 bg-blue-500 text-white p-2 rounded">
+        Validate
+      </button>
+      {errors.length > 0 && (
+        <div className="absolute bottom-4 left-4 bg-red-500 text-white p-2 rounded">
+          <ul>
+            {errors.map((error, i) => <li key={i}>{error}</li>)}
+          </ul>
+        </div>
+      )}
+      <canvas
+        ref={canvasRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleInternalClick}
+        className="absolute inset-0 w-full h-full cursor-crosshair rounded-3xl"
+      />
+    </>
   );
 };
 

@@ -1,6 +1,7 @@
 package gr.A4.SmartHouseBuilder.team2.dto;
 import lombok.Data;
 import java.util.List;
+import gr.A4.SmartHouseBuilder.model.ValidationResult;
 
 @Data
 public class SetupBuildDTO {
@@ -10,4 +11,5 @@ public class SetupBuildDTO {
     private String targetEcosystem;
     private List<RoomDTO> rooms;
     private List<PlacedDeviceDTO> devices;
+    private List<ValidationResult> errors;
 }

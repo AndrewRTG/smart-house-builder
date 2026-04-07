@@ -2,6 +2,9 @@ package gr.A4.SmartHouseBuilder.team2.service;
 
 import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import gr.A4.SmartHouseBuilder.team2.model.StoredLayout;
+import gr.A4.SmartHouseBuilder.service.LayoutIntegrationService;
+import gr.A4.SmartHouseBuilder.model.SetupBuild;
+import gr.A4.SmartHouseBuilder.model.ValidationResult;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +20,12 @@ public class LayoutService {
     private final ConcurrentHashMap<Long, StoredLayout> store = new ConcurrentHashMap<>();
     private final AtomicLong idSequence = new AtomicLong(1);
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String TEAM_URL = "http://localhost:20025/api/validate-layout";
+    private static final String TEAM_URL = "http://localhost:20025/api/validate-layout-dto";
+    private final LayoutIntegrationService layoutIntegrationService;
+
+    public LayoutService(LayoutIntegrationService layoutIntegrationService) {
+        this.layoutIntegrationService = layoutIntegrationService;
+    }
     public Long saveLayout(SetupBuildDTO payload) {
         long id = idSequence.getAndIncrement();
         StoredLayout entry = new StoredLayout(id, Instant.now(), payload);
@@ -48,12 +56,22 @@ public class LayoutService {
     }
         public SetupBuildDTO validateLayout(StoredLayout layout) {
         try {
-            ResponseEntity<SetupBuildDTO> response = restTemplate.postForEntity(
+            ResponseEntity<List<ValidationResult>> response = restTemplate.postForEntity(
                 TEAM_URL,
-                layout,
-                SetupBuildDTO.class
+                layout.data(),
+                List.class
             );
-            return response.getBody();
+            List<ValidationResult> errors = response.getBody();
+            SetupBuildDTO result = new SetupBuildDTO();
+            // Copy the data
+            result.setId(layout.data().getId());
+            result.setScale(layout.data().getScale());
+            result.setMaxBudget(layout.data().getMaxBudget());
+            result.setTargetEcosystem(layout.data().getTargetEcosystem());
+            result.setRooms(layout.data().getRooms());
+            result.setDevices(layout.data().getDevices());
+            result.setErrors(errors);
+            return result;
         } catch (Exception e) {
             System.err.println("Eroare la validare: " + e.getMessage());
             return null;

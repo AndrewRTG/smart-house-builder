@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import gr.A4.SmartHouseBuilder.team2.model.StoredLayout;
 import gr.A4.SmartHouseBuilder.team2.service.LayoutService;
+import gr.A4.SmartHouseBuilder.service.LayoutIntegrationService; // Importul serviciului tau
+import gr.A4.SmartHouseBuilder.model.ValidationResult; // Importul modelului tau de erori
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,22 +18,24 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/team2/layouts")
 public class LayoutController {
+
     private final LayoutService layoutService;
     private final ObjectMapper objectMapper;
+    private final LayoutIntegrationService validationService; // Aici am adaugat serviciul tau!
 
-    public LayoutController(LayoutService layoutService, ObjectMapper objectMapper) {
+    // Am actualizat constructorul pentru a include serviciul tau
+    public LayoutController(LayoutService layoutService, ObjectMapper objectMapper, LayoutIntegrationService validationService) {
         this.layoutService = layoutService;
         this.objectMapper = objectMapper;
+        this.validationService = validationService;
     }
 
-    // Salvează layout-ul primit de la frontend
     @PostMapping("/save")
     public ResponseEntity<String> saveLayout(@RequestBody SetupBuildDTO data) {
         Long id = layoutService.saveLayout(data);
         return ResponseEntity.ok("OK" + id);
     }
 
-    // Salvează layout-ul, îl trimite la echipa cealaltă și returnează răspunsul lor
     @PostMapping("/send")
     public ResponseEntity<Object> sendLayout(@RequestBody SetupBuildDTO data) {
         Long id = layoutService.saveLayout(data);
@@ -40,13 +44,11 @@ public class LayoutController {
         return ResponseEntity.ok(raspuns);
     }
 
-    // Returnează toate layout-urile salvate ca JSON
     @GetMapping("/all")
     public ResponseEntity<List<StoredLayout>> getAllLayouts() {
         return ResponseEntity.ok(layoutService.getAllLayouts());
     }
 
-    // Returnează toate layout-urile ca pagină HTML vizuală
     @GetMapping(value = "/view", produces = MediaType.TEXT_HTML_VALUE)
     public String viewLayoutsAsHtml() throws JsonProcessingException {
         String json = objectMapper.writerWithDefaultPrettyPrinter()
@@ -57,28 +59,20 @@ public class LayoutController {
                 <html lang="ro">
                 <head>
                 <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
                 <title>Layouturi în memorie</title>
-                <style>
-                  body { font-family: ui-monospace, Consolas, monospace; margin: 1rem; background: #1a1a1e; color: #e8e8e8; }
-                  h1 { font-size: 1.1rem; font-weight: 600; }
-                  p { color: #888; font-size: 12px; }
-                  pre { white-space: pre-wrap; word-break: break-word; background: #111; padding: 1rem; border-radius: 8px; border: 1px solid #333; }
-                </style>
                 </head>
                 <body>
-                <h1>StoredLayout[] — JSON din memorie</h1>
-                <p>Endpoint: <code>GET /api/team2/layouts/view</code></p>
                 <pre>%s</pre>
                 </body>
                 </html>
                 """.formatted(escaped);
     }
+
+    // ASTA ESTE ENDPOINT-UL MODIFICAT CARE FOLOSESTE MOTORUL TAU
     @PostMapping("/validate")
-public ResponseEntity<SetupBuildDTO> validateLayout(@RequestBody SetupBuildDTO data) {
-    Long id = layoutService.saveLayout(data);
-    StoredLayout layout = layoutService.getLayoutById(id);
-    SetupBuildDTO raspuns = layoutService.validateLayout(layout);
-    return ResponseEntity.ok(raspuns);
-}
+    public ResponseEntity<List<ValidationResult>> validateLayout(@RequestBody SetupBuildDTO data) {
+        // Trimitem "data" (care e SetupBuildDTO) la metoda verifyTeam2Layout din serviciul tau
+        List<ValidationResult> raspuns = validationService.verifyTeam2Layout(data);
+        return ResponseEntity.ok(raspuns);
+    }
 }

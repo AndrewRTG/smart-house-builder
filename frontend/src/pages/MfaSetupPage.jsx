@@ -72,7 +72,7 @@ export default function MfaSetupPage() {
         </div>
       ) : (
         <>
-          <p className="text-muted">
+          <p className="mfa-instruction-text">
             Scan the QR code below with <strong>Google Authenticator</strong> or{" "}
             <strong>Authy</strong>.
           </p>
@@ -85,7 +85,7 @@ export default function MfaSetupPage() {
 
           <div className="mb-3">
             <label
-              className="form-label text-muted"
+              className="form-label mfa-instruction-text"
               style={{ fontSize: "0.85rem" }}
             >
               Or enter this secret manually in your app:

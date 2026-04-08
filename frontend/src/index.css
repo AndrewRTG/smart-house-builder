@@ -27,6 +27,7 @@ body {
   --input-bg: #ffffff;
   --input-text: #111827;
   --divider-color: rgba(255, 255, 255, 0.45);
+  --text-instruction: #333333;
 }
 
 /* DARK MODE */
@@ -43,6 +44,8 @@ body {
   --input-bg: #ffffff;
   --input-text: #111827;
   --divider-color: rgba(255, 255, 255, 0.15);
+  --text-instruction: #e0e0e0;
+
 }
 
 .page-container {
@@ -248,4 +251,10 @@ body {
 .forgot-password-link:hover {
   text-decoration: underline;
   color: var(--text-secondary);
+}
+.mfa-instruction-text {
+  color: var(--text-instruction);
+  font-size: 16px;
+  margin-bottom: 15px;
+  transition: color 0.3s ease;
 }

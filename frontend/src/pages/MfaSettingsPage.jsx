@@ -60,7 +60,7 @@ export default function MfaSettingsPage() {
       </div>
 
       <div className="mt-3">
-        <button className="btn btn-link text-muted p-0" onClick={() => navigate("/")}>
+        <button className="btn btn-link mfa-instruction-text p-0" onClick={() => navigate("/")}>
           ← Back to Home
         </button>
       </div>

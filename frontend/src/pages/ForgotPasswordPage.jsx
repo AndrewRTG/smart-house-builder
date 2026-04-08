@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
     <div className="page-container">
       <div className="auth-card">
         <h3 className="mb-2">Forgot Password</h3>
-        <p className="text-muted mb-4" style={{ fontSize: "0.9rem" }}>
+        <p className="mfa-instruction-text mb-4" style={{ fontSize: "0.9rem" }}>
           Enter your email and we'll send you a reset link.
         </p>
 
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
           </form>
         )}
 
-        <Link to="/login" className="btn btn-link text-muted p-0">
+        <Link to="/login" className="btn btn-link mfa-instruction-text p-0">
           ← Back to Login
         </Link>
       </div>

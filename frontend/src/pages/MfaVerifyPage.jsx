@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
 
 export default function MfaVerifyPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const mfaToken = sessionStorage.getItem("mfaToken");
 
-  if (!mfaToken) {
-    navigate("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!mfaToken) {
+      navigate("/login");
+    }
+  }, [mfaToken, navigate]);
 
   const handleVerify = async () => {
     setError("");
@@ -28,7 +31,9 @@ export default function MfaVerifyPage() {
         sessionStorage.removeItem("mfaToken");
         localStorage.setItem("accessToken", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
-        navigate("/");
+        setMessage("Verification successful! Access granted.");
+        navigate("/profile");
+
       } else {
         setError(data.message || "Invalid code. Please try again.");
       }
@@ -38,6 +43,7 @@ export default function MfaVerifyPage() {
       setLoading(false);
     }
   };
+  if (!mfaToken) return null;
 
   return (
     <div className="page-container">
@@ -56,6 +62,7 @@ export default function MfaVerifyPage() {
           autoFocus
         />
         {error && <p className="auth-error">{error}</p>}
+        {message && <p className="auth-success">{message}</p>} {/* Super! */}
         <button
           className="auth-submit-btn mb-3"
           onClick={handleVerify}

@@ -8,6 +8,7 @@ import MfaVerifyPage from "./pages/MfaVerifyPage";
 import MfaSettingsPage from "./pages/MfaSettingsPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ProfilePage from './pages/Profile/ProfilePage';
 
 function HomePage() {
   return <div></div>;
@@ -36,6 +37,7 @@ function App() {
         <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
 
         <Routes>
+
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -47,6 +49,7 @@ function App() {
           <Route path="/mfa/settings" element={<MfaSettingsPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </div>
     </BrowserRouter>

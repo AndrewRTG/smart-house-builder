@@ -53,7 +53,8 @@ function LoginPage() {
       } else {
         localStorage.setItem("accessToken", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
-        navigate("/");
+        setMessage("Success! Welcome back. Redirecting to your profile...");
+        navigate("/profile");
       }
     } catch (err) {
       setError(err.message || "Something went wrong.");

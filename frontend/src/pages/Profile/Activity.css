@@ -1,0 +1,129 @@
+@import "MySetups.css";
+
+/* ── ACTIVITY FEED ── */
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.activity-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Linia de notificare */
+.activity-notification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-surface);
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.activity-text {
+  flex: 1;
+}
+
+.activity-text strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  margin-left: 16px;
+  transition: color 0.3s;
+}
+
+/* Cardul de post */
+.activity-post {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin: 14px 0 20px 0;
+  box-shadow: 0 2px 8px var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.post-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Sora', sans-serif;
+  flex-shrink: 0;
+}
+
+.post-author {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.post-time {
+  font-size: 11px;
+  color: var(--text-faint);
+  transition: color 0.3s;
+}
+
+.post-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.post-description {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  transition: color 0.3s;
+}
+
+.post-image {
+  width: 100%;
+  height: 180px;
+  background: var(--card-image-bg);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+
+.post-image-icon {
+  font-size: 28px;
+  opacity: 0.35;
+}
+
+.post-actions {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: color 0.3s;
+}

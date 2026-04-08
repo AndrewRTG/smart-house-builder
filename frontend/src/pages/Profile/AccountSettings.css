@@ -1,0 +1,173 @@
+@import "MySetups.css";
+
+/* ── SETTINGS ── */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.profile-photo-big {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Sora', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.profile-photo-big:hover {
+  opacity: 0.85;
+}
+
+/* Câmpuri */
+.settings-fields {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-surface);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card-bg);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-surface);
+  transition: border-color 0.3s;
+}
+
+.settings-field:last-child {
+  border-bottom: none;
+}
+
+.field-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  transition: color 0.3s;
+}
+
+.field-value {
+  font-size: 13.5px;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.field-input {
+  font-size: 13.5px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--accent);
+  outline: none;
+  padding: 2px 0;
+  width: 100%;
+  max-width: 320px;
+  transition: color 0.3s;
+}
+
+.edit-btn {
+  background: var(--bg-page);
+  border: 1px solid var(--border-surface);
+  border-radius: 7px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.3s;
+  white-space: nowrap;
+  margin-left: 12px;
+}
+
+.edit-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* 2FA Toggle */
+.settings-2fa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-surface);
+  border-radius: 12px;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.twofa-label {
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+/* Switch buton */
+.toggle-switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.25s ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch.on {
+  background: var(--accent);
+}
+
+.toggle-switch.off {
+  background: var(--text-faint);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.on .toggle-thumb {
+  left: 21px;
+}
+
+.toggle-switch.off .toggle-thumb {
+  left: 3px;
+}

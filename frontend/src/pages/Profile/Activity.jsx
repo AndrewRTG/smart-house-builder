@@ -13,24 +13,6 @@ const activities = [
 export default function Activity({ isDark, setIsDark, onNavigate, profile, setProfile, setups, setSetups, showModal, setShowModal, language, setLanguage }) {
   return (
     <div className={`app ${isDark ? "theme-dark" : "theme-light"}`}>
-      <header className="navbar">
-        <div className="navbar-left">
-          <span className="logo">logo</span>
-          <nav className="nav-links">
-            <a href="#">Builder</a><span className="divider">|</span>
-            <a href="#">Products</a><span className="divider">|</span>
-            <a href="#">Community</a>
-          </nav>
-        </div>
-        <div className="navbar-right">
-          <span className="icon-btn" onClick={() => onNavigate("mysetups")} title="Profilul meu" style={{cursor:"pointer"}}>👤</span>
-          <LanguageDropdown language={language} setLanguage={setLanguage} />
-          <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
-            {isDark ? "☀️" : "🌙"}
-          </button>
-        </div>
-      </header>
-
       <div className="layout">
         <Sidebar
           profile={profile}
@@ -42,7 +24,6 @@ export default function Activity({ isDark, setIsDark, onNavigate, profile, setPr
         />
 
         <main className="main-content">
-          <h1 className="page-title">Activity</h1>
           <div className="activity-feed">
             {activities.map((item) => (
               <div key={item.id} className="activity-item">

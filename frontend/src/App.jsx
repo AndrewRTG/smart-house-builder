@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -27,13 +27,24 @@ function CommunityPage() {
 }
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
-
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme === "dark";
+  });
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add("dark-mode");
+      document.body.classList.remove("light-mode");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.body.classList.add("light-mode");
+      document.body.classList.remove("dark-mode");
+      localStorage.setItem("theme", "light");
+    }
+  }, [darkMode]);
   return (
     <BrowserRouter>
-      <div
-        className={darkMode ? "dark-mode app-wrapper" : "light-mode app-wrapper"}
-      >
+      <div className={`app-wrapper ${darkMode ? "dark-mode" : "light-mode"}`}>
         <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
 
         <Routes>
@@ -49,7 +60,7 @@ function App() {
           <Route path="/mfa/settings" element={<MfaSettingsPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProfilePage darkMode={darkMode} />} />
         </Routes>
       </div>
     </BrowserRouter>

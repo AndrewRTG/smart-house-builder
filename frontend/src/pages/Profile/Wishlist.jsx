@@ -13,27 +13,16 @@ const wishlistDevices = [
 export default function Wishlist({ isDark, setIsDark, onNavigate, profile, setProfile, setups, setSetups, showModal, setShowModal, language, setLanguage }) {
   const [setupsOpen, setSetupsOpen]   = useState(true);
   const [devicesOpen, setDevicesOpen] = useState(true);
+  const [search, setSearch] = useState("");
+  const filteredSetups = wishlistSetups.filter((item) =>
+      item.title.toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredDevices = wishlistDevices.filter((item) =>
+      item.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className={`app ${isDark ? "theme-dark" : "theme-light"}`}>
-      <header className="navbar">
-        <div className="navbar-left">
-          <span className="logo">logo</span>
-          <nav className="nav-links">
-            <a href="#">Builder</a><span className="divider">|</span>
-            <a href="#">Products</a><span className="divider">|</span>
-            <a href="#">Community</a>
-          </nav>
-        </div>
-        <div className="navbar-right">
-          <span className="icon-btn" onClick={() => onNavigate("mysetups")} title="Profilul meu" style={{cursor:"pointer"}}>👤</span>
-          <LanguageDropdown language={language} setLanguage={setLanguage} />
-          <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
-            {isDark ? "☀️" : "🌙"}
-          </button>
-        </div>
-      </header>
-
       <div className="layout">
         <Sidebar
           profile={profile}
@@ -45,10 +34,14 @@ export default function Wishlist({ isDark, setIsDark, onNavigate, profile, setPr
         />
 
         <main className="main-content">
-          <h1 className="page-title">Wishlist</h1>
           <div className="search-bar">
             <span className="search-icon">🔍</span>
-            <input type="text" placeholder="Search a wishlist" />
+            <input
+                type="text"
+                placeholder="Search a wishlist"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
 
           <section className="wishlist-section">
@@ -59,26 +52,27 @@ export default function Wishlist({ isDark, setIsDark, onNavigate, profile, setPr
               </span>
             </div>
             {setupsOpen && (
-              <div className="wishlist-cards">
-                {wishlistSetups.map((item) => (
-                  <div className="wishlist-card" key={item.id}>
-                    <div className="card-image" />
-                    <div className="card-body">
-                      <h3 className="card-title">{item.title}</h3>
-                      <div className="card-meta">
-                        <span>🏠 {item.devices} dispozitive</span>
-                        <span className="price">{item.price}</span>
+                <div className="wishlist-cards">
+                  {/* 4. Folosim lista filtrată aici */}
+                  {filteredSetups.map((item) => (
+                      <div className="wishlist-card" key={item.id}>
+                        <div className="card-image" />
+                        <div className="card-body">
+                          <h3 className="card-title">{item.title}</h3>
+                          <div className="card-meta">
+                            <span>🏠 {item.devices} dispozitive</span>
+                            <span className="price">{item.price}</span>
+                          </div>
+                          <div className="card-tags">
+                            {item.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
+                          </div>
+                          <div className="card-actions">
+                            <span>❤ {item.likes}</span><span>💬 {item.comments}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="card-tags">
-                        {item.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
-                      </div>
-                      <div className="card-actions">
-                        <span>❤ {item.likes}</span><span>💬 {item.comments}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
             )}
           </section>
 
@@ -90,29 +84,29 @@ export default function Wishlist({ isDark, setIsDark, onNavigate, profile, setPr
               </span>
             </div>
             {devicesOpen && (
-              <div className="wishlist-cards">
-                {wishlistDevices.map((item) => (
-                  <div className="wishlist-card" key={item.id}>
-                    <div className="card-image" />
-                    <div className="card-body">
-                      <h3 className="card-title">{item.title}</h3>
-                      <div className="card-meta">
-                        <span className="price">{item.price}</span>
-                        <span className="source-badge">{item.source}</span>
+                <div className="wishlist-cards">
+                  {/* 5. Folosim lista filtrată și aici */}
+                  {filteredDevices.map((item) => (
+                      <div className="wishlist-card" key={item.id}>
+                        <div className="card-image" />
+                        <div className="card-body">
+                          <h3 className="card-title">{item.title}</h3>
+                          <div className="card-meta">
+                            <span className="price">{item.price}</span>
+                            <span className="source-badge">{item.source}</span>
+                          </div>
+                          <div className="card-tags">
+                            {item.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
+                          </div>
+                          <div className="card-actions"><span>💬 {item.comments}</span></div>
+                        </div>
                       </div>
-                      <div className="card-tags">
-                        {item.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
-                      </div>
-                      <div className="card-actions"><span>💬 {item.comments}</span></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
             )}
           </section>
         </main>
       </div>
-
       <footer className="footer">
         <div className="footer-links">
           <a href="#">About</a><span>|</span>

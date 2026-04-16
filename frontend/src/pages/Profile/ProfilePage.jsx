@@ -10,10 +10,9 @@ const initialSetups = [
     { id: 3, title: "Dormitor Automatizat",  status: "Ciornă",   statusColor: "draft",     devices: 5,  price: "650 EUR",   tags: ["Confort", "Energie"],        likes: 7,  comments: 2  },
 ];
 
-export default function ProfilePage() {
-    const [isDark, setIsDark]       = useState(false);
+export default function ProfilePage({ darkMode }) {
     const [page, setPage]           = useState("mysetups");
-    const [profile, setProfile]     = useState({ name: "Petru Sichim", email: "petru@email.ro" });
+    const [profile, setProfile]     = useState({ name: "Ciobanu Andrei", email: "exemplu@mail.ro" });
     const [setups, setSetups]       = useState(initialSetups);
     const [showModal, setShowModal] = useState(false);
     const [language, setLanguage]   = useState("en");
@@ -21,7 +20,7 @@ export default function ProfilePage() {
     const handleNavigate = (destination) => setPage(destination);
 
     const sharedProps = {
-        isDark, setIsDark,
+        isDark: darkMode,
         onNavigate: handleNavigate,
         profile, setProfile,
         setups, setSetups,

@@ -24,24 +24,6 @@ export default function AccountSettings({ isDark, setIsDark, onNavigate, profile
 
   return (
     <div className={`app ${isDark ? "theme-dark" : "theme-light"}`}>
-      <header className="navbar">
-        <div className="navbar-left">
-          <span className="logo">logo</span>
-          <nav className="nav-links">
-            <a href="#">Builder</a><span className="divider">|</span>
-            <a href="#">Products</a><span className="divider">|</span>
-            <a href="#">Community</a>
-          </nav>
-        </div>
-        <div className="navbar-right">
-          <span className="icon-btn" onClick={() => onNavigate("mysetups")} title="Profilul meu" style={{cursor:"pointer"}}>👤</span>
-          <LanguageDropdown language={language} setLanguage={setLanguage} />
-          <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
-            {isDark ? "☀️" : "🌙"}
-          </button>
-        </div>
-      </header>
-
       <div className="layout">
         <Sidebar
           profile={profile}
@@ -53,8 +35,6 @@ export default function AccountSettings({ isDark, setIsDark, onNavigate, profile
         />
 
         <main className="main-content">
-          <h1 className="page-title">Account Settings</h1>
-
           <section className="settings-section">
             <h2 className="settings-label">Profile photo</h2>
             <div className="profile-photo-big">{initials}</div>
@@ -102,13 +82,6 @@ export default function AccountSettings({ isDark, setIsDark, onNavigate, profile
                 {editingEmail ? "Save" : "Edit"}
               </button>
             </div>
-          </div>
-
-          <div className="settings-2fa">
-            <span className="twofa-label">Enable 2FA (recommended for security reasons)</span>
-            <button className={`toggle-switch ${twoFA ? "on" : "off"}`} onClick={() => setTwoFA(!twoFA)}>
-              <span className="toggle-thumb" />
-            </button>
           </div>
         </main>
       </div>

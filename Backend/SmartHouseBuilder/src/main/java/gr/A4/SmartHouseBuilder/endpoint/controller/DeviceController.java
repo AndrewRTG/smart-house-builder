@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -50,5 +51,11 @@ public class DeviceController {
     public ResponseEntity<DeviceResponse> createDevice (@Valid @RequestBody DeviceRequest request) {
         DeviceResponse response = deviceService.createDevice(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    @Operation(summary = "Get a 'Did you mean?' suggestion")
+    @GetMapping("/suggest")
+    public ResponseEntity<Map<String, String>> getSearchSuggestion(@RequestParam("q") String keyword) {
+        String suggestion = deviceService.getSearchSuggestion(keyword);
+        return ResponseEntity.ok(Map.of("suggestion", suggestion != null ? suggestion : ""));
     }
 }

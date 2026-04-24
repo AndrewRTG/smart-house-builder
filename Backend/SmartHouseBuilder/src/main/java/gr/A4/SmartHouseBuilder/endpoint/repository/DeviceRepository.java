@@ -11,12 +11,16 @@ public interface DeviceRepository extends JpaRepository<Device,Integer> {
             "(:categoryId IS NULL OR category_id = :categoryId) AND " +
             "(:brand IS NULL OR (brand ILIKE CONCAT('%', CAST(:brand AS TEXT), '%') " +
             "OR similarity(LOWER(brand), LOWER(CAST(:brand AS TEXT))) > 0.3)) AND " +
-            "(:maxPrice IS NULL OR best_price <= :maxPrice)",
+            "(:maxPrice IS NULL OR best_price <= :maxPrice) AND " +
+            "(:minPrice IS NULL OR best_price>= :minPrice) AND " +
+            "(:protocol IS NULL OR communication_protocol = :protocol)",
             nativeQuery = true)
     List<Device> findWithFilters(
             @Param("categoryId") Integer categoryId,
             @Param("brand") String brand,
-            @Param("maxPrice") Double maxPrice
+            @Param("maxPrice") Double maxPrice,
+            @Param("minPrice") Double minPrice,
+            @Param("protocol") String protocol
     );
     @Query(value = """
             SELECT name FROM devices 

@@ -19,7 +19,7 @@ services:
 
   backend:
     build: 
-      context: ./backend_IP/smart-house-builder/Backend/SmartHouseBuilder
+      context: ./Backend/SmartHouseBuilder
     container_name: smart-house-backend1
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"

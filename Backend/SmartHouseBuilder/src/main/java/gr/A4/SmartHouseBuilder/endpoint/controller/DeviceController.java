@@ -32,9 +32,11 @@ public class DeviceController {
     public ResponseEntity<List<DeviceResponse>> getAllDevices (
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) String brand,
-            @RequestParam(required = false) Double maxPrice)
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) String protocol)
     {
-        List<DeviceResponse> devices = deviceService.getFilteredDevices(categoryId, brand, maxPrice);
+        List<DeviceResponse> devices = deviceService.getFilteredDevices(categoryId, brand, maxPrice,minPrice,protocol);
         return ResponseEntity.ok(devices);
     }
     @Operation(

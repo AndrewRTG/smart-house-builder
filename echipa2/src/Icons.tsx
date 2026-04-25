@@ -291,7 +291,117 @@ export const LogoIcon: React.FC<IconProps> = ({ color = "currentColor" }) => (
   </svg>
 );
 
+//wall
+export const WallIcon: React.FC<IconProps> = ({ color }) => (
+  <svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    >
+        
+       
+        <path d="M19.3669 12H2.03353C1.29715 12 0.700195 12.7163 0.700195 13.6V18.4C0.700195 19.2837 1.29715 20 2.03353 20H19.3669C20.1032 20 20.7002 19.2837 20.7002 18.4V13.6C20.7002 12.7163 20.1032 12 19.3669 12Z" stroke={color} stroke-width="1.4"/>
+        <path d="M19.3669 0H2.03353C1.29715 0 0.700195 0.716344 0.700195 1.6V6.4C0.700195 7.28366 1.29715 8 2.03353 8H19.3669C20.1032 8 20.7002 7.28366 20.7002 6.4V1.6C20.7002 0.716344 20.1032 0 19.3669 0Z" fill={color}/>
+      
 
 
 
 
+
+  </svg>
+);
+
+
+//window
+export const WindowIcon: React.FC<IconProps> = ({ color }) => (
+  <svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    >
+        
+        
+    <path d="M0.700195 10.7H20.7002" stroke={color} stroke-width="1.4"/>
+    <path d="M10.7002 0.699951V20.7" stroke={color} stroke-width="1.4"/>
+    <path d="M18.7002 0.699951H2.7002C1.59563 0.699951 0.700195 1.77447 0.700195 3.09995V18.3C0.700195 19.6254 1.59563 20.7 2.7002 20.7H18.7002C19.8048 20.7 20.7002 19.6254 20.7002 18.3V3.09995C20.7002 1.77447 19.8048 0.699951 18.7002 0.699951Z" stroke={color} stroke-width="1.4"/>
+
+
+
+
+
+
+  </svg>
+);
+
+
+//door
+export const DoorIcon: React.FC<IconProps> = ({ color }) => (
+  <svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    >
+        
+      
+    <path d="M0.629883 20.6299H20.6299" stroke={color} stroke-width="1.26" stroke-dasharray="1.26 1.26"/>
+    <path d="M0.629883 20.6299V0.629883C12.6299 0.629883 20.6299 8.62988 20.6299 20.6299" stroke={color} stroke-width="1.26" stroke-linecap="round"/>
+
+
+
+
+
+
+
+  </svg>
+);
+
+//line
+export const LineIcon: React.FC<IconProps> = ({ color }) => (
+  <svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    >
+        
+    
+    
+    <path d="M19.6955 13C20.4159 13 20.9998 12.3284 20.9998 11.5C20.9998 10.6716 20.4159 10 19.6955 10C18.9751 10 18.3911 10.6716 18.3911 11.5C18.3911 12.3284 18.9751 13 19.6955 13Z" fill={color}/>
+    <path d="M2.30437 13C3.02475 13 3.60873 12.3284 3.60873 11.5C3.60873 10.6716 3.02475 10 2.30437 10C1.58398 10 1 10.6716 1 11.5C1 12.3284 1.58398 13 2.30437 13Z" fill={color}/>
+    <path d="M2.3042 11.5H19.6958" stroke={color} stroke-width="0.9072" stroke-linecap="round"/>
+
+
+
+
+
+
+
+  </svg>
+);
+
+//furniture
+export const FurnitureIcon: React.FC<IconProps> = ({ color }) => (
+  <svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    >
+        
+  
+<path d="M18.0262 0.693115H3.35954C1.88678 0.693115 0.692871 2.25039 0.692871 4.17138V14.6062C0.692871 16.5271 1.88678 18.0844 3.35954 18.0844H18.0262C19.499 18.0844 20.6929 16.5271 20.6929 14.6062V4.17138C20.6929 2.25039 19.499 0.693115 18.0262 0.693115Z" stroke={color} stroke-width="1.386"/>
+<path d="M4.02637 18.0847V20.6934M17.3597 18.0847V20.6934" stroke={color} stroke-width="1.386"/>
+<path d="M16.693 5.04102H4.69303C4.32484 5.04102 4.02637 5.43033 4.02637 5.91058V12.8671C4.02637 13.3474 4.32484 13.7367 4.69303 13.7367H16.693C17.0612 13.7367 17.3597 13.3474 17.3597 12.8671V5.91058C17.3597 5.43033 17.0612 5.04102 16.693 5.04102Z" stroke={color} stroke-width="1.0395"/>
+
+
+
+  </svg>
+);

@@ -1,0 +1,291 @@
+.wishlist-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.wishlist-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 24px 0;
+}
+
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.wishlist-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.dark-mode .wishlist-card {
+  background-color: #2d2d38;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.wishlist-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 4px 0;
+}
+
+.card-author {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+.dark-mode .card-author {
+  color: #aaa;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #ff4757;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  color: #ff3838;
+  transform: scale(1.15);
+}
+
+.card-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #666;
+  padding: 12px 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.dark-mode .card-details {
+  color: #aaa;
+  border-color: #444;
+}
+
+.price {
+  font-weight: 600;
+  color: #5092ce;
+}
+
+.copy-btn {
+  padding: 10px 16px;
+  background-color: #5092ce;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.copy-btn:hover {
+  background-color: #4a8bc9;
+  transform: translateY(-1px);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 16px;
+}
+
+@media (max-width: 1024px) {
+  .wishlist-container {
+    max-width: 100%;
+  }
+
+  .wishlist-title {
+    font-size: 22px;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+  }
+
+  .wishlist-card {
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .card-title {
+    font-size: 15px;
+  }
+
+  .card-author {
+    font-size: 11px;
+  }
+
+  .card-details {
+    font-size: 12px;
+    padding: 10px 0;
+  }
+
+  .copy-btn {
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .wishlist-container {
+    max-width: 100%;
+  }
+
+  .wishlist-title {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .wishlist-card {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .card-header {
+    gap: 10px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+
+  .card-author {
+    font-size: 11px;
+  }
+
+  .remove-btn {
+    padding: 3px;
+  }
+
+  .card-details {
+    font-size: 12px;
+    padding: 10px 0;
+    gap: 0;
+  }
+
+  .price {
+    font-weight: 500;
+  }
+
+  .copy-btn {
+    padding: 9px 14px;
+    font-size: 12px;
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .empty-state {
+    padding: 50px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .wishlist-title {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .wishlist-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .card-header {
+    gap: 8px;
+  }
+
+  .card-info {
+    flex: 1;
+  }
+
+  .card-title {
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .card-author {
+    font-size: 10px;
+  }
+
+  .remove-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    flex-shrink: 0;
+    min-height: 40px;
+  }
+
+  .card-details {
+    font-size: 11px;
+    padding: 8px 0;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .price {
+    font-size: 12px;
+  }
+
+  .copy-btn {
+    padding: 8px 12px;
+    font-size: 11px;
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .empty-state {
+    padding: 40px 12px;
+    font-size: 12px;
+  }
+}

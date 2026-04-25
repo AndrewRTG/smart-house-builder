@@ -1,0 +1,113 @@
+.error-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 4px solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideDown 0.3s ease;
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+/* Hidden state */
+.error-banner:not(.error-banner-error):not(.error-banner-success) {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Error variant */
+.error-banner-error {
+  background-color: #ffe0e0;
+  color: #d32f2f;
+  border-bottom-color: #d32f2f;
+}
+
+.error-banner-error .error-banner-close {
+  color: #d32f2f;
+}
+
+/* Success variant */
+.error-banner-success {
+  background-color: #e0ffe0;
+  color: #2e7d32;
+  border-bottom-color: #2e7d32;
+}
+
+.error-banner-success .error-banner-close {
+  color: #2e7d32;
+}
+
+.error-banner-content {
+  flex: 1;
+  text-align: center;
+  word-break: break-word;
+}
+
+.error-banner-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.error-banner-close:hover {
+  opacity: 0.7;
+}
+
+.error-banner-close:active {
+  opacity: 0.9;
+}
+
+/* Dark mode adjustments */
+.dark-mode .error-banner-error {
+  background-color: #ffcccc;
+  color: #d32f2f;
+  border-bottom-color: #d32f2f;
+}
+
+.dark-mode .error-banner-success {
+  background-color: #a5d6a7;
+  color: #2e7d32;
+  border-bottom-color: #2e7d32;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .error-banner {
+    padding: 10px 12px;
+    font-size: 14px;
+    gap: 12px;
+  }
+
+  .error-banner-content {
+    text-align: center;
+  }
+}

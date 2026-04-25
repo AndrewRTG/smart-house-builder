@@ -1,0 +1,715 @@
+.comments-section {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+.dark-mode .comments-section {
+  border-top-color: #444;
+}
+
+.comments-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main, #333);
+  margin: 0 0 16px 0;
+}
+
+.dark-mode .comments-title {
+  color: #fff;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #f9f9f9;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.dark-mode .comment-form {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.comment-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  resize: vertical;
+  background-color: white;
+  color: #333;
+  transition: border-color 0.2s ease;
+}
+
+.dark-mode .comment-input {
+  background-color: #1a1a1f;
+  color: white;
+  border-color: #444;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: #5092ce;
+  box-shadow: 0 0 0 3px rgba(80, 146, 206, 0.1);
+}
+
+.comment-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background-color: #5092ce;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.comment-submit:hover:not(:disabled) {
+  background-color: #4a8bc9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(80, 146, 206, 0.2);
+}
+
+.comment-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-prompt {
+  text-align: center;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  color: #999;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.dark-mode .login-prompt {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #aaa;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.no-comments {
+  color: #999;
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  margin: 0;
+}
+
+.dark-mode .no-comments {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #aaa;
+}
+
+/* Recursive comment node styles */
+.comment-node {
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.comment-indent-line {
+  position: absolute;
+  left: 12px;
+  top: 40px;
+  bottom: 0;
+  width: 2px;
+  background-color: #ddd;
+}
+
+.dark-mode .comment-indent-line {
+  background-color: #444;
+}
+
+.comment-body {
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dark-mode .comment-body {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.comment-user {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  align-items: flex-start;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5092ce, #4a8bc9);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.comment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.comment-username {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-main, #333);
+}
+
+.dark-mode .comment-username {
+  color: #fff;
+}
+
+.comment-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.dark-mode .comment-date {
+  color: #aaa;
+}
+
+/* Red trash icon — hidden by default, revealed only when the user hovers
+   the comment (or focuses the button via keyboard). Keeps the header clean
+   in the idle state and matches the "hover to show" UX spec. */
+.delete-btn {
+  background: none;
+  border: none;
+  color: #ff4757;
+  cursor: pointer;
+  padding: 4px 8px;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+  border-radius: 4px;
+}
+
+.comment-body:hover .delete-btn,
+.delete-btn:focus-visible {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  background-color: rgba(255, 71, 87, 0.1);
+  color: #ff3838;
+}
+
+.comment-content {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.dark-mode .comment-content {
+  color: #ccc;
+}
+
+/* ---- Deleted-comment ("[deleted]") stub styling ----
+   Replaces the colorful gradient avatar with a neutral grey circle
+   containing "U", and italicizes + greys-out the "[deleted]" placeholder
+   content so it reads as a tombstone, not a real comment. */
+.comment-avatar.deleted {
+  background: #9e9e9e;
+  background-image: none;
+}
+
+.comment-content.deleted {
+  color: #9e9e9e;
+  font-style: italic;
+}
+
+.dark-mode .comment-content.deleted {
+  color: #777;
+}
+
+/* ---- Scroll-highlight animation for deep-links from Activity ----
+   The detail page adds .comment-highlight to a comment-body when the URL
+   carries ?comment=<id>. The pulse fades after ~3s so it draws the eye
+   without being permanently obnoxious. */
+.comment-body.comment-highlight {
+  animation: commentHighlightPulse 3s ease-out;
+}
+
+@keyframes commentHighlightPulse {
+  0%   { background-color: rgba(80, 146, 206, 0.25); border-radius: 8px; }
+  60%  { background-color: rgba(80, 146, 206, 0.15); border-radius: 8px; }
+  100% { background-color: transparent; }
+}
+
+.reply-btn {
+  background: none;
+  border: none;
+  color: #5092ce;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.reply-btn:hover {
+  background-color: rgba(80, 146, 206, 0.1);
+  color: #4a8bc9;
+}
+
+.dark-mode .reply-btn {
+  color: #7db3e0;
+}
+
+.dark-mode .reply-btn:hover {
+  background-color: rgba(125, 179, 224, 0.15);
+}
+
+.reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  margin-top: 8px;
+}
+
+.dark-mode .reply-form {
+  background-color: #1a1a1f;
+  border-color: #444;
+}
+
+.reply-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  resize: vertical;
+  background-color: white;
+  color: #333;
+  transition: border-color 0.2s ease;
+}
+
+.dark-mode .reply-input {
+  background-color: #2d2d38;
+  color: white;
+  border-color: #444;
+}
+
+.reply-input:focus {
+  outline: none;
+  border-color: #5092ce;
+  box-shadow: 0 0 0 2px rgba(80, 146, 206, 0.1);
+}
+
+.reply-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.reply-submit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background-color: #5092ce;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.reply-submit:hover:not(:disabled) {
+  background-color: #4a8bc9;
+}
+
+.reply-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reply-cancel {
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .reply-cancel {
+  border-color: #444;
+  color: #aaa;
+}
+
+.reply-cancel:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .reply-cancel:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.comment-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .comments-section {
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+
+  .comments-title {
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+
+  .comment-form {
+    padding: 10px;
+    margin-bottom: 16px;
+  }
+
+  .comment-input {
+    padding: 9px;
+    font-size: 13px;
+  }
+
+  .comment-submit {
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+
+  .comment-node {
+    padding-bottom: 6px;
+  }
+
+  .comment-indent-line {
+    left: 10px;
+  }
+
+  .comment-body {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .comment-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .comment-username {
+    font-size: 12px;
+  }
+
+  .comment-content {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .comments-section {
+    padding-top: 14px;
+    margin-top: 14px;
+  }
+
+  .comments-title {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .comment-form {
+    padding: 10px;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+
+  .comment-input {
+    padding: 8px;
+    font-size: 13px;
+    border-radius: 4px;
+  }
+
+  .comment-submit {
+    padding: 8px 12px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+
+  .login-prompt {
+    padding: 16px;
+    font-size: 13px;
+  }
+
+  .no-comments {
+    padding: 16px;
+    font-size: 13px;
+  }
+
+  .comment-node {
+    padding-bottom: 6px;
+  }
+
+  .comment-indent-line {
+    left: 10px;
+    top: 36px;
+  }
+
+  .comment-body {
+    padding: 10px;
+    gap: 6px;
+    border-radius: 4px;
+  }
+
+  .comment-header {
+    gap: 6px;
+  }
+
+  .comment-user {
+    gap: 6px;
+  }
+
+  .comment-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .comment-info {
+    gap: 1px;
+  }
+
+  .comment-username {
+    font-size: 12px;
+  }
+
+  .comment-date {
+    font-size: 10px;
+  }
+
+  .delete-btn {
+    padding: 3px 6px;
+    font-size: 12px;
+  }
+
+  .comment-content {
+    font-size: 12px;
+  }
+
+  .reply-btn {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+
+  .reply-form {
+    padding: 8px;
+    gap: 6px;
+    border-radius: 3px;
+    margin-top: 6px;
+  }
+
+  .reply-input {
+    padding: 6px;
+    font-size: 12px;
+    border-radius: 3px;
+  }
+
+  .reply-submit {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+
+  .reply-cancel {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .reply-actions {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .comments-section {
+    padding-top: 12px;
+    margin-top: 12px;
+  }
+
+  .comments-title {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .comment-form {
+    padding: 8px;
+    margin-bottom: 12px;
+    gap: 6px;
+  }
+
+  .comment-input {
+    padding: 7px;
+    font-size: 12px;
+    border-radius: 3px;
+  }
+
+  .comment-submit {
+    padding: 7px 10px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+
+  .login-prompt {
+    padding: 12px;
+    font-size: 12px;
+  }
+
+  .no-comments {
+    padding: 12px;
+    font-size: 12px;
+  }
+
+  .comment-node {
+    padding-bottom: 4px;
+  }
+
+  .comment-indent-line {
+    left: 8px;
+    top: 32px;
+  }
+
+  .comment-body {
+    padding: 8px;
+    gap: 4px;
+    border-radius: 3px;
+  }
+
+  .comment-header {
+    gap: 4px;
+  }
+
+  .comment-user {
+    gap: 4px;
+  }
+
+  .comment-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .comment-info {
+    gap: 1px;
+    flex: 1;
+  }
+
+  .comment-username {
+    font-size: 11px;
+  }
+
+  .comment-date {
+    font-size: 9px;
+  }
+
+  .delete-btn {
+    padding: 2px 4px;
+    font-size: 10px;
+  }
+
+  .comment-content {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .reply-btn {
+    padding: 2px 4px;
+    font-size: 10px;
+  }
+
+  .reply-form {
+    padding: 6px;
+    gap: 4px;
+    border-radius: 2px;
+    margin-top: 4px;
+    border-width: 1px;
+  }
+
+  .reply-input {
+    padding: 6px;
+    font-size: 11px;
+    border-radius: 3px;
+  }
+
+  .reply-submit {
+    padding: 5px 8px;
+    font-size: 10px;
+    min-height: 32px;
+  }
+
+  .reply-cancel {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .reply-actions {
+    gap: 4px;
+  }
+}

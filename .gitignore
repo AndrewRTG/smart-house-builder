@@ -23,3 +23,19 @@
 hs_err_pid*
 replay_pid*
 
+<<<<<<< Updated upstream
+=======
+# Node / frontend
+node_modules/
+dist/
+.vite/
+*.local
+
+# IDE
+.idea/
+
+# Sensitive configuration — never commit!
+application-dev.properties
+application-prod.properties
+
+>>>>>>> Stashed changes

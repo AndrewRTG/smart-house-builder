@@ -2,6 +2,7 @@ package gr.A4.SmartHouseBuilder.team2.service;
 
 import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import gr.A4.SmartHouseBuilder.team2.model.StoredLayout;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
+@RequiredArgsConstructor
 public class LayoutService {
     private final ConcurrentHashMap<Long, StoredLayout> store = new ConcurrentHashMap<>();
     private final AtomicLong idSequence = new AtomicLong(1);
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private static final String TEAM_URL = "http://localhost:20025/api/validate-layout";
     public Long saveLayout(SetupBuildDTO payload) {
         long id = idSequence.getAndIncrement();
@@ -43,19 +45,6 @@ public class LayoutService {
             return response.getBody();
         } catch (Exception e) {
             System.err.println("Eroare la comunicarea cu echipa cealalta: " + e.getMessage());
-            return null;
-        }
-    }
-        public SetupBuildDTO validateLayout(StoredLayout layout) {
-        try {
-            ResponseEntity<SetupBuildDTO> response = restTemplate.postForEntity(
-                TEAM_URL,
-                layout,
-                SetupBuildDTO.class
-            );
-            return response.getBody();
-        } catch (Exception e) {
-            System.err.println("Eroare la validare: " + e.getMessage());
             return null;
         }
     }

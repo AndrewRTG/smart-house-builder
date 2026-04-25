@@ -6,6 +6,10 @@ import { LogoIcon, ControllerIcon, SenzorIcon, LockIcon, RouterIcon, TvIcon, Int
 import WizardSidebar from './features/wizard/components/WizardSidebar.jsx';
 import useFilterStore from './store/useFilterStore.js';
 
+// importam serviciile pentru backend
+import { layoutService } from './services/layoutService';
+import type { Layout } from './types/index';
+
 // mapare icon cu denumire element
 const ICON_MAP: Record<string, React.FC<{ color: string }>> = {
   bec: BecIcon,
@@ -25,11 +29,11 @@ const ICON_MAP: Record<string, React.FC<{ color: string }>> = {
 const App: React.FC = () => {
   // preluam dark mode-ul direct din store-ul colegului pt sincronizare perfecta
   const { darkMode: isDarkMode, toggleDarkMode } = useFilterStore();
-  
+
   // starea pentru dispozitivul selectat din catalog
   const [selectedDevice, setSelectedDevice] = useState<{ id: string, name: string, brand: string, type: string, status: string } | null>(null);
   const [hoveredIconIndex, setHoveredIconIndex] = useState<number | null>(null);
-  
+
   // iconurile plasate pe ecran
   const [placedIcons, setPlacedIcons] = useState<{ col: number, row: number, type: string, id: string, name: string, brand: string, status: string }[]>([]);
 
@@ -42,6 +46,11 @@ const App: React.FC = () => {
   // dimensiunile calculate ale gridului
   const [layout, setLayout] = useState({ offsetX: 0, offsetY: 0, dotSpacing: 0 });
 
+  // state pentru layouts din backend
+  const [savedLayouts, setSavedLayouts] = useState<Layout[]>([]);
+  const [currentLayoutId, setCurrentLayoutId] = useState<number | null>(null);
+  const [layoutName, setLayoutName] = useState<string>('My Layout');
+
   // efect care aplica clasa 'dark' pe html pe baza store-ului
   useEffect(() => {
     if (isDarkMode) {
@@ -50,6 +59,125 @@ const App: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // incarca toate layouts-urile la montarea componentei
+  useEffect(() => {
+    loadAllLayouts();
+  }, []);
+
+  // functie pentru incarcarea tuturor layouts-urilor
+  const loadAllLayouts = async () => {
+    try {
+      const response = await layoutService.getAllLayouts();
+      setSavedLayouts(response.data);
+    } catch (error) {
+      console.error('Error loading layouts:', error);
+    }
+  };
+
+  // functie pentru salvarea unui layout nou sau actualizarea unuia existent
+  const handleSaveLayout = async () => {
+    try {
+      const layoutData = {
+        name: layoutName,
+        gridData: JSON.stringify(layout),
+        devices: placedIcons.map(icon => ({
+          id: icon.id,
+          name: icon.name,
+          brand: icon.brand,
+          type: icon.type,
+          status: icon.status,
+          col: icon.col,
+          row: icon.row
+        })),
+        walls: lines
+      };
+
+      if (currentLayoutId) {
+        // Update existent
+        const response = await layoutService.updateLayout(currentLayoutId, layoutData);
+        console.log('Layout updated:', response.data);
+        alert('Layout updated successfully!');
+      } else {
+        // Salvare noua
+        const response = await layoutService.saveLayout(layoutData);
+        console.log('Layout saved:', response.data);
+        setCurrentLayoutId(response.data.id);
+        alert('Layout saved successfully!');
+      }
+
+      await loadAllLayouts();
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      alert('Failed to save layout. Make sure the backend is running on http://localhost:20025');
+    }
+  };
+
+  // functie pentru incarcarea unui layout salvat
+  const handleLoadLayout = async (layoutId: number) => {
+    try {
+      const response = await layoutService.getLayoutById(layoutId);
+      const loadedLayout = response.data;
+
+      setLayoutName(loadedLayout.name);
+      setCurrentLayoutId(loadedLayout.id);
+
+      // Incarca devices
+      if (loadedLayout.devices) {
+        setPlacedIcons(loadedLayout.devices.map(device => ({
+          col: device.col || 0,
+          row: device.row || 0,
+          type: device.type,
+          id: device.id,
+          name: device.name,
+          brand: device.brand,
+          status: device.status
+        })));
+      }
+
+      // Incarca walls/lines
+      if (loadedLayout.walls) {
+        setLines(loadedLayout.walls);
+      }
+
+      // Incarca grid data
+      if (loadedLayout.gridData) {
+        try {
+          const gridData = JSON.parse(loadedLayout.gridData);
+          setLayout(gridData);
+        } catch (e) {
+          console.error('Error parsing grid data:', e);
+        }
+      }
+
+      alert('Layout loaded successfully!');
+    } catch (error) {
+      console.error('Error loading layout:', error);
+      alert('Failed to load layout');
+    }
+  };
+
+  // functie pentru stergerea unui layout
+  const handleDeleteLayout = async (layoutId: number) => {
+    if (!confirm('Are you sure you want to delete this layout?')) {
+      return;
+    }
+
+    try {
+      await layoutService.deleteLayout(layoutId);
+      alert('Layout deleted successfully!');
+      await loadAllLayouts();
+
+      if (currentLayoutId === layoutId) {
+        setCurrentLayoutId(null);
+        setPlacedIcons([]);
+        setLines([]);
+      }
+    } catch (error) {
+      console.error('Error deleting layout:', error);
+      alert('Failed to delete layout');
+    }
+  };
 
   // floating menu pentru uneltele de desenat
   useEffect(() => {
@@ -190,8 +318,11 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex gap-4">
-            <button className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain}`}>
-              <span className="opacity-60">💾</span> Save
+            <button
+              onClick={handleSaveLayout}
+              className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain} hover:scale-105`}
+            >
+              <span className="opacity-60">💾</span> {currentLayoutId ? 'Update' : 'Save'}
             </button>
             <button className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain}`}>
               <span className="opacity-60">🚀</span> Post

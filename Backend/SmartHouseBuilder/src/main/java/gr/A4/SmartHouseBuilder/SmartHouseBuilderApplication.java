@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
 public class SmartHouseBuilderApplication {
@@ -11,7 +12,7 @@ public class SmartHouseBuilderApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SmartHouseBuilderApplication.class, args);
 	}
-	//da
+
 	/**
 	 * definim manual bean-ul ObjectMapper pentru a rezolva eroarea de injectare
 	 * din LayoutController si pentru a asigura suportul JSON
@@ -19,5 +20,13 @@ public class SmartHouseBuilderApplication {
 	@Bean
 	public ObjectMapper objectMapper() {
 		return new ObjectMapper();
+	}
+
+	/**
+	 * definim bean-ul RestTemplate pentru comunicare HTTP cu alte servicii
+	 */
+	@Bean
+	public RestTemplate restTemplate() {
+		return new RestTemplate();
 	}
 }

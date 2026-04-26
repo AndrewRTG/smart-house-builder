@@ -7,15 +7,36 @@ export default function CatalogPage() {
 
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState(""); // Starea pentru search
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filters, setFilters] = useState({
+        minPrice: 0,
+        maxPrice: 1000,
+        protocols: [],
+        categories: [],
+        brand: ""
+    });
 
     useEffect(() => {
         const fetchDevices = () => {
             setLoading(true);
 
             let url = new URL('http://localhost:20025/api/devices');
-            if (searchTerm) {
-                url.searchParams.append('brand', searchTerm);
+
+            url.searchParams.append('minPrice', filters.minPrice);
+            url.searchParams.append('maxPrice', filters.maxPrice);
+            if (searchTerm) url.searchParams.append('brand', searchTerm);
+            if (filters.categories.length > 0) {
+                const categoryMapping = { "Lighting": 1, "Sensors": 2, "Smart Plugs & Switches": 3, "Hubs & Controllers": 4, "Security": 5};
+                filters.categories.forEach(catName => {
+                    const id = categoryMapping[catName];
+                    if (id) url.searchParams.append('categoryId', id);
+                });
+            }
+
+            if (filters.protocols.length > 0) {
+                filters.protocols.forEach(prot => {
+                    url.searchParams.append('protocol', prot);
+                });
             }
 
             fetch(url)
@@ -31,7 +52,7 @@ export default function CatalogPage() {
         };
 
         fetchDevices();
-    }, [searchTerm]);
+    }, [filters, searchTerm]);
 
     return (
         <div className="min-vh-100" style={{ backgroundColor: '#efefef' }}>
@@ -39,7 +60,7 @@ export default function CatalogPage() {
 
             <div className="container-fluid mt-4 px-4 d-flex flex-column d-md-block clearfix">
                 <div className="col-12 col-md-3 float-md-start pe-md-4 mb-4 order-2">
-                    <Sidebar />
+                    <Sidebar filters={filters} setFilters={setFilters} />
                 </div>
 
                 <div className="col-12 col-md-9 float-md-end mb-4 order-1">

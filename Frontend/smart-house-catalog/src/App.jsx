@@ -13,12 +13,11 @@ export default App;
  */
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
 
-
-// Importurile paginilor (asigură-te că folderul/calea este corectă)
 import CatalogPage from './pages/CatalogPage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage'; // Doar dacă l-ai copiat și pe acesta
+import RegisterPage from './pages/RegisterPage';
 
 function App() {
     return (

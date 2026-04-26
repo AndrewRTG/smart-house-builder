@@ -36,8 +36,8 @@ services:
     restart: on-failure
 
   frontend:
-    build: 
-      context: ./frontend_IP/smart-house-catalog
+    build:
+      context: Frontend/smart-house-catalog
     container_name: smart-house-frontend1
     ports:
       - "3000:80"

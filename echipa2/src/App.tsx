@@ -1,4 +1,4 @@
-  import React, { useState, useEffect , useRef} from 'react';
+import React, { useState, useEffect , useRef} from 'react';
   import GridCanvas from './GridCanvas';
   import {WallIcon,DoorIcon,LineIcon,WindowIcon,FurnitureIcon, LogoIcon, ControllerIcon, SenzorIcon, LockIcon, RouterIcon, TvIcon, InterfonIcon, PrelungitorIcon, SoundSystemIcon, BecIcon, PrizaIcon, AspiratorIcon, HubIcon } from './Icons';
 
@@ -111,10 +111,67 @@
     const [hoveredIconIndex, setHoveredIconIndex] = useState<number | null>(null);
     
     // iconurile plasate pe ecran
-    const [placedIcons, setPlacedIcons] = useState<{ col: number, row: number, type: string, id: string, name: string, brand: string, status: string , priceEUR: number}[]>([]);
+    const [placedIcons, setPlacedIcons] = useState<{ col: number, row: number, type: string, id: string, name: string, brand: string, status: string , priceEUR: number, scale?: number, rotation?: number}[]>([]);
 
     // stocheaza ce unealta este activa din bara de jos (wall, window etc)
     const [activeTool, setActiveTool] = useState<string | null>(null);
+
+    // rotire scalare si drag:
+  const [previewTransform, setPreviewTransform] = useState({ scale: 1, rotation: 0 });
+  const [draggingItem, setDraggingItem] = useState<{type: 'icon' | 'furniture' | 'wall', id: string} | null>(null);
+  
+  const [canvasZoom, setCanvasZoom] = useState(1);
+
+  // Efect pentru Zoom automat cu rotița de la mouse (ținând apăsat CTRL)
+  useEffect(() => {
+    const handleWheelCanvas = (e: WheelEvent) => {
+      if (e.defaultPrevented) return; // Ignorăm dacă am făcut deja scroll pe o piesă de mobilă
+      if (e.ctrlKey) {
+        e.preventDefault(); // Oprim zoom-ul întregii pagini
+        const zoomDelta = e.deltaY < 0 ? 0.05 : -0.05;
+        setCanvasZoom(prev => Math.min(Math.max(0.4, prev + zoomDelta), 4)); // Limite de zoom: 40% - 400%
+      }
+    };
+    
+    // Atașăm listener-ul direct pe container-ul viewport-ului pe care îl vom crea
+    const viewport = document.getElementById('canvas-viewport');
+    if (viewport) {
+       viewport.addEventListener('wheel', handleWheelCanvas, { passive: false });
+       return () => viewport.removeEventListener('wheel', handleWheelCanvas);
+    }
+  }, []);
+
+  // asculta tasta r
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'r') {
+        if (selectedDevice) {
+          setPreviewTransform(p => ({ ...p, rotation: (p.rotation + 90) % 360 }));
+        } else if (draggingItem?.type === 'icon') {
+          setPlacedIcons(prev => prev.map(i => i.id === draggingItem.id ? { ...i, rotation: ((i.rotation || 0) + 90) % 360 } : i));
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedDevice, draggingItem]);
+
+ //asculta pentru scalare
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (selectedDevice || draggingItem?.type === 'icon') {
+        e.preventDefault(); // Oprește scroll-ul paginii
+        const zoomDelta = e.deltaY < 0 ? 0.2 : -0.2;
+        if (selectedDevice) {
+          setPreviewTransform(p => ({ ...p, scale: Math.max(0.5, p.scale + zoomDelta) }));
+        } else if (draggingItem?.type === 'icon') {
+          setPlacedIcons(prev => prev.map(i => i.id === draggingItem.id ? { ...i, scale: Math.max(0.5, (i.scale || 1) + zoomDelta) } : i));
+        }
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [selectedDevice, draggingItem]);
 
     // stocheaza toate liniile/zidurile desenate
     const [lines, setLines] = useState<{ id: string, type: string, start: {col: number, row: number}, end: {col: number, row: number} }[]>([]);
@@ -126,12 +183,22 @@
 
     // dimensiunile calculate ale gridului
     const [layout, setLayout] = useState({ offsetX: 0, offsetY: 0, dotSpacing: 0 });
+    const [redoHistory, setRedoHistory] = useState<{ lines: any[], icons: any[], furniture: any[] }[]>([]);
 
+    const handleRestoreHistory = (oldLines: any[], oldIcons: any[], oldFurniture: any[]) => {
+  //salvam starea in redo inainte sa facem undo
+  setRedoHistory(prev => [{ lines, icons: placedIcons, furniture: placedFurniture }, ...prev].slice(0, 30));
+  
+  setLines(oldLines);
+  setPlacedIcons(oldIcons);
+  setPlacedFurniture(oldFurniture);
+};
 
-    const handleRestoreHistory = (oldLines: any[], oldIcons: any[]) => {
-    setLines(oldLines);
-    setPlacedIcons(oldIcons);
-    };
+const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) => {
+  setLines(nextLines);
+  setPlacedIcons(nextIcons);
+  setPlacedFurniture(nextFurniture);
+};
 
         // state pentru JSON-urile generate pentru export
     const [exportData, setExportData] = useState<{
@@ -246,34 +313,29 @@
       ];
 
       const handleCanvasClick = (col: number, row: number) => {
-        if (!selectedDevice || activeTool) return;
-
-        // Verificăm dacă locul e ocupat de ORICE
-        const isOccupied = checkUniversalCollision(col, row);
-
-        if (!isOccupied) {
-          setPlacedIcons([...placedIcons, {
-            col,
-            row,
-            id: Date.now().toString(),
-            type: selectedDevice.type,
-            name: selectedDevice.name,
-            brand: selectedDevice.brand,
-            status: selectedDevice.status,
-            priceEUR: parseInt(selectedDevice.price.replace('€', ''))
-          }]);
-        } 
-      };
-      const checkUniversalCollision = (col: number, row: number) => {
+    if (!selectedDevice || activeTool) return;
+    const isOccupied = checkUniversalCollision(col, row);
+    if (!isOccupied) {
+      setPlacedIcons([...placedIcons, {
+        col, row, id: Date.now().toString(), type: selectedDevice.type,
+        name: selectedDevice.name, brand: selectedDevice.brand,
+        status: selectedDevice.status, priceEUR: parseInt(selectedDevice.price.replace('€', '')),
+        scale: previewTransform.scale,       // <-- Salvăm scala
+        rotation: previewTransform.rotation  // <-- Salvăm rotația
+      }]);
+      setPreviewTransform({ scale: 1, rotation: 0 }); // Resetăm pentru următorul device
+    } 
+  };
+        const checkUniversalCollision = (col: number, row: number, ignoreId?: string) => {
       // 1. Verifică Iconițe (Punct fix)
-      const hitIcon = placedIcons.some(icon => icon.col === col && icon.row === row);
+      const hitIcon = placedIcons.some(icon => icon.id !== ignoreId && icon.col === col && icon.row === row);
       if (hitIcon) return true;
 
       // 2. Verifică Mobilă (Zonă dreptunghiulară)
       const hitFurniture = placedFurniture.some(f => {
+        if (f.id === ignoreId) return false;
         const halfW = f.widthCols / 2;
         const halfH = f.heightCols / 2;
-        // Verificăm dacă punctul (col, row) este înăuntrul cutiei mobilei
         return (
           col >= f.centerCol - halfW &&
           col <= f.centerCol + halfW &&
@@ -283,30 +345,28 @@
       });
       if (hitFurniture) return true;
 
-        // 3. Verifică Ziduri / Geamuri / Uși (Linii)
-        // Deoarece zidurile sunt linii între două puncte, verificăm dacă punctul (col, row) 
-        // se află pe segmentul de dreaptă al zidului.
-        const hitWall = lines.some(line => {
-          // Verificăm dacă punctul este pe o linie orizontală sau verticală
-          const isVertical = line.start.col === line.end.col;
-          const isHorizontal = line.start.row === line.end.row;
+      // 3. Verifică Ziduri / Geamuri / Uși (Linii)
+      const hitWall = lines.some(line => {
+        if (line.id === ignoreId) return false;
+        const isVertical = line.start.col === line.end.col;
+        const isHorizontal = line.start.row === line.end.row;
 
-          if (isVertical && col === line.start.col) {
-            const minRow = Math.min(line.start.row, line.end.row);
-            const maxRow = Math.max(line.start.row, line.end.row);
-            return row >= minRow && row <= maxRow;
-          }
-          if (isHorizontal && row === line.start.row) {
-            const minCol = Math.min(line.start.col, line.end.col);
-            const maxCol = Math.max(line.start.col, line.end.col);
-            return col >= minCol && col <= maxCol;
-          }
-          return false;
-        });
-        if (hitWall) return true;
-
+        if (isVertical && col === line.start.col) {
+          const minRow = Math.min(line.start.row, line.end.row);
+          const maxRow = Math.max(line.start.row, line.end.row);
+          return row >= minRow && row <= maxRow;
+        }
+        if (isHorizontal && row === line.start.row) {
+          const minCol = Math.min(line.start.col, line.end.col);
+          const maxCol = Math.max(line.start.col, line.end.col);
+          return col >= minCol && col <= maxCol;
+        }
         return false;
-      };
+      });
+      if (hitWall) return true;
+
+      return false;
+    };
 
       // functia apelata cand o linie este terminata in canvas
       const handleLineComplete = (type: string, start: {col: number, row: number}, end: {col: number, row: number}) => {
@@ -546,142 +606,193 @@
             <div className={`flex-1 relative min-h-[600px] rounded-3xl ${theme.canvasBorder}`}>
               <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-inner border border-transparent">
 
-                <GridCanvas
-                  isDarkMode={isDarkMode}
-                  placedIcons={placedIcons}   // Trimitem iconițele ca să le poată salva în istoric
-                  placedFurniture={placedFurniture} // Trimitem lista de mobilă
-                  setPlacedFurniture={setPlacedFurniture}
-                  lines={lines}               // Trimitem liniile ca să le poată salva în istoric
-                  activeTool={activeTool}
-                  onCanvasClick={handleCanvasClick}
-                  onLineComplete={handleLineComplete}
-                  onUpdate={setLayout}
-                  onRestoreHistory={handleRestoreHistory} // Funcția de "înapoi în timp"
-                  onMouseMove={(col, row) => setMouseGridPos({ col, row })}
-                  onMouseLeave={() => setMouseGridPos(null)}
-                />
-
-                {layout.dotSpacing > 0 && placedIcons.map((icon, index) => {
-                  const IconComponent = ICON_MAP[icon.type] || ControllerIcon; 
-                  return (
-                    <div
-                      key={index}
-                      onMouseEnter={() => setHoveredIconIndex(index)}
-                      onMouseLeave={() => setHoveredIconIndex(null)}
-                      style={{
-                        position: 'absolute',
-                        left: layout.offsetX + icon.col * layout.dotSpacing,
-                        top: layout.offsetY + icon.row * layout.dotSpacing,
-                        width: layout.dotSpacing,
-                        height: layout.dotSpacing,
-                        transform: 'translate(-50%, -50%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 20,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <div className="relative group flex items-center justify-center w-full h-full">
-                        <IconComponent color={isDarkMode ? "white" : "#2C3E50"} />
-                        {hoveredIconIndex === index && (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPlacedIcons(placedIcons.filter((_, i) => i !== index));
-                            }}
-                            className={`absolute -top-3 -right-4 w-6 h-6 flex items-center justify-center rounded-full shadow-xl z-30 text-[10px] font-bold transition-all duration-200 border-2 ${isDarkMode ? 'bg-[#3A3A4E] text-[#FF4D4D] border-[#1A1A1E] hover:bg-[#4A4A60]' : 'bg-white text-[#EF4444] border-[#EDEFF0] hover:bg-gray-50'}`}
-                          >
-                            ✕
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-
-              {/* Preview Icon (Ghost) */}
-              {selectedDevice && mouseGridPos && !activeTool && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: layout.offsetX + mouseGridPos.col * layout.dotSpacing,
-                    top: layout.offsetY + mouseGridPos.row * layout.dotSpacing,
-                    width: layout.dotSpacing,
-                    height: layout.dotSpacing,
-                    transform: 'translate(-50%, -50%)',
-                    pointerEvents: 'none', // Important: să nu blocheze click-ul pe canvas
-                    zIndex: 100,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.1s ease-out'
-                  }}
-                >
-                  <div className={`
-                    relative p-2 rounded-lg transition-colors duration-200
-                    ${checkUniversalCollision(mouseGridPos.col, mouseGridPos.row) 
-                      ? 'bg-red-500/40 ring-2 ring-red-600' 
-                      : 'bg-green-500/40 ring-2 ring-green-600'}
-                  `}>
-                    {/* Randăm iconița selectată */}
-                    {React.createElement(ICON_MAP[selectedDevice.type] || ControllerIcon, { 
-                      color: 'white' 
-                    })}
-                  </div>
+                {/* === CONTROALE ZOOM (Slider-ul rămâne fixat în colțul din dreapta-sus) === */}
+                <div className={`absolute top-4 right-8 z-40 flex items-center gap-3 px-4 py-2 rounded-2xl shadow-xl border transition-colors duration-300 ${isDarkMode ? 'bg-[#2F2F41]/95 border-[#3A3A4E]' : 'bg-white/95 border-[#C2C9CC]'}`}>
+                  <span className={`text-[9px] font-bold tracking-wider ${theme.textMuted}`}>ZOOM</span>
+                  <button onClick={() => setCanvasZoom(z => Math.max(0.4, z - 0.1))} className={`font-bold text-lg leading-none transition-colors ${theme.textMain} hover:text-[#00B4D8]`}>-</button>
+                  <input 
+                    type="range" min="0.4" max="4" step="0.05" 
+                    value={canvasZoom} 
+                    onChange={(e) => setCanvasZoom(Number(e.target.value))} 
+                    className="w-24 accent-[#00B4D8] cursor-pointer"
+                  />
+                  <button onClick={() => setCanvasZoom(z => Math.min(4, z + 0.1))} className={`font-bold text-lg leading-none transition-colors ${theme.textMain} hover:text-[#00B4D8]`}>+</button>
+                  <span className={`text-[10px] font-bold w-9 text-right ${theme.textMain}`}>{Math.round(canvasZoom * 100)}%</span>
                 </div>
-              )}
 
-              {/* bara instrumente (drawing tools) de jos */}
-              <div id="floating-menu" className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex gap-8 px-10 py-4 rounded-full shadow-2xl border transition-all duration-300 ${isDarkMode ? 'bg-[#2F2F41]/90 backdrop-blur-md border-[#3A3A4E]' : 'bg-white/90 backdrop-blur-md border-[#C2C9CC]'}`}>
-                  {['Wall', 'Window', 'Door', 'Line', 'Furniture'].map((tool) => {
-                    const isFurniture = tool === 'Furniture';
-                    const isSelected = isFurniture 
-                      ? activeTool?.startsWith('furniture_') 
-                      : activeTool === tool.toLowerCase();
-                    
-                    const ToolIcon = TOOL_ICON_MAP[tool.toLowerCase()];
+                {/* === VIEWPORT CU SCROLL NATIV === */}
+                <div 
+                  id="canvas-viewport" 
+                  className={`absolute inset-0 rounded-3xl overflow-auto custom-scrollbar flex transition-colors duration-300 ${isDarkMode ? 'bg-[#5293DE]' : 'bg-[#C2C9CC]'}`}
+                >
+                  
+                  {/* CONTAINER CARE SE SCALEAZĂ FIZIC (Acum cuprinde GridCanvas-ul cum trebuie) */}
+                  <div 
+                    style={{ 
+                      width: `${canvasZoom * 100}%`, 
+                      height: `${canvasZoom * 100}%`, 
+                      minWidth: '100%', 
+                      minHeight: '100%',
+                      margin: 'auto',
+                      position: 'relative',
+                      flexShrink: 0
+                    }}
+                  >
+                    <GridCanvas
+                      isDarkMode={isDarkMode}
+                      placedIcons={placedIcons}
+                      placedFurniture={placedFurniture}
+                      setPlacedFurniture={setPlacedFurniture}
+                      lines={lines}
+                      setLines={setLines}
+                      activeTool={activeTool}
+                      onCanvasClick={handleCanvasClick}
+                      onLineComplete={handleLineComplete}
+                      onUpdate={setLayout}
+                      onRestoreHistory={handleRestoreHistory}
+                      redoHistory={redoHistory}
+                      setRedoHistory={setRedoHistory}
+                      onRedo={handleRedo}
+                      draggingItem={draggingItem}
+                      setDraggingItem={setDraggingItem}
+                      onMouseMove={(col, row) => setMouseGridPos({ col, row })}
+                      onMouseLeave={() => setMouseGridPos(null)}
+                      layout={layout}
+                      setPlacedIcons={setPlacedIcons}
+                      checkCollision={checkUniversalCollision}
+                    />
 
-                    return (
-                      <div key={tool} className="relative group">
-                        <button 
-                          onClick={() => toggleTool(tool)}
-                          className={`flex flex-col items-center gap-1 transition-all ${isSelected ? 'scale-110' : 'hover:scale-105'}`}
-                        >
-                          <div className="w-10 h-8 flex items-center justify-center">
-                            <ToolIcon color={isSelected ? '#00B4D8' : (isDarkMode ? 'white' : '#2C3E50')} />
-                          </div>
-                          <span className={`text-[9px] uppercase font-bold tracking-wider ${isSelected ? 'text-[#00B4D8]' : (isDarkMode ? 'text-white' : 'text-[#2C3E50]')}`}>
-                            {tool}
-                          </span>
-                        </button>
+                    {layout.dotSpacing > 0 && placedIcons.map((icon, index) => {
+                      const IconComponent = ICON_MAP[icon.type] || ControllerIcon;
+                      const isDraggingThis = draggingItem?.type === 'icon' && draggingItem.id === icon.id;
+                      
+                      return (
+                          <div
+                            key={icon.id}
+                            onMouseEnter={() => setHoveredIconIndex(index)}
+                            onMouseLeave={() => setHoveredIconIndex(null)}
+                            onMouseDown={(e) => {
+                              if (activeTool) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDraggingItem({ type: 'icon', id: icon.id });
+                            }}
+                            style={{
+                              position: 'absolute',
+                              left: layout.offsetX + icon.col * layout.dotSpacing,
+                              top: layout.offsetY + icon.row * layout.dotSpacing,
+                              width: layout.dotSpacing * (icon.scale || 1),
+                              height: layout.dotSpacing * (icon.scale || 1),
+                              transform: `translate(-50%, -50%) rotate(${icon.rotation || 0}deg)`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              zIndex: isDraggingThis ? 50 : 20,
+                              cursor: isDraggingThis ? 'grabbing' : 'grab',
+                              opacity: isDraggingThis ? 0.6 : 1,
+                              pointerEvents: activeTool || draggingItem ? 'none' : 'auto',
+                              userSelect: 'none'
+                            }}
+                          >
+                          <div className="relative group flex items-center justify-center w-full h-full">
+                            <IconComponent color={isDarkMode ? "white" : "#2C3E50"} />
+                            
+                            {isDraggingThis && (
+                              <div className={`absolute top-full mt-2 text-[9px] font-bold text-center whitespace-nowrap drop-shadow-md ${isDarkMode ? 'text-white' : 'text-[#2C3E50]'}`}>
+                                PRESS 'R' TO ROTATE<br/>SCROLL TO SCALE
+                              </div>
+                            )}
 
-                        {/* DROP-DOWN PENTRU MOBILĂ */}
-                        {isFurniture && showFurnitureMenu && (
-                          <div className={`absolute bottom-full mb-4 left-1/2 -translate-x-1/2 flex gap-4 p-3 rounded-2xl border shadow-2xl animate-in fade-in slide-in-from-bottom-2 ${isDarkMode ? 'bg-[#3A3A4E] border-[#4A4A60]' : 'bg-white border-[#C2C9CC]'}`}>
-                            {['Bed', 'Couch', 'Table'].map((item) => (
-                              <button
-                                key={item}
-                                onClick={() => {
-                                  setActiveTool(`furniture_${item.toLowerCase()}`);
-                                  setShowFurnitureMenu(false);
+                            {hoveredIconIndex === index && !isDraggingThis && (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPlacedIcons(placedIcons.filter((_, i) => i !== index));
                                 }}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-colors ${
-                                  activeTool === `furniture_${item.toLowerCase()}`
-                                    ? 'bg-[#00B4D8] text-white'
-                                    : (isDarkMode ? 'hover:bg-[#4A4A60] text-white' : 'hover:bg-gray-100 text-[#2C3E50]')
-                                }`}
+                                className={`absolute -top-3 -right-4 w-6 h-6 flex items-center justify-center rounded-full shadow-xl z-30 text-[10px] font-bold transition-all duration-200 border-2 cursor-pointer ${isDarkMode ? 'bg-[#3A3A4E] text-[#FF4D4D] border-[#1A1A1E] hover:bg-[#4A4A60]' : 'bg-white text-[#EF4444] border-[#EDEFF0] hover:bg-gray-50'}`}
                               >
-                                {item}
-                              </button>
-                            ))}
+                                ✕
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
+                      );
+                    })}
+
+                    {selectedDevice && mouseGridPos && !activeTool && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: layout.offsetX + mouseGridPos.col * layout.dotSpacing,
+                          top: layout.offsetY + mouseGridPos.row * layout.dotSpacing,
+                          width: layout.dotSpacing * previewTransform.scale,
+                          height: layout.dotSpacing * previewTransform.scale,
+                          transform: `translate(-50%, -50%) rotate(${previewTransform.rotation}deg)`,
+                          pointerEvents: 'none',
+                          zIndex: 100,
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          transition: 'left 0.1s ease-out, top 0.1s ease-out' 
+                        }}
+                      >
+                        <div className={`relative p-2 rounded-lg transition-colors duration-200 ${checkUniversalCollision(mouseGridPos.col, mouseGridPos.row) ? 'bg-red-500/40 ring-2 ring-red-600' : 'bg-green-500/40 ring-2 ring-green-600'}`}>
+                          {React.createElement(ICON_MAP[selectedDevice.type] || ControllerIcon, { color: 'white' })}
+                        </div>
+                        <div className={`mt-2 text-[9px] font-bold text-center whitespace-nowrap drop-shadow-md ${isDarkMode ? 'text-white' : 'text-[#2C3E50]'}`}>
+                          PRESS 'R' TO ROTATE<br/>SCROLL TO SCALE
+                        </div>
                       </div>
-                    );
-                  })}
+                    )}
+
+                  </div> {/* <--- Aici se închide containerul de scalare zoom */}
+                </div> {/* <--- Aici se închide viewport-ul */}
+
+                <div id="floating-menu" className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex gap-8 px-10 py-4 rounded-full shadow-2xl border transition-all duration-300 ${isDarkMode ? 'bg-[#2F2F41]/90 backdrop-blur-md border-[#3A3A4E]' : 'bg-white/90 backdrop-blur-md border-[#C2C9CC]'}`}>
+                    {['Wall', 'Window', 'Door', 'Line', 'Furniture'].map((tool) => {
+                      const isFurniture = tool === 'Furniture';
+                      const isSelected = isFurniture 
+                        ? activeTool?.startsWith('furniture_') 
+                        : activeTool === tool.toLowerCase();
+                      
+                      const ToolIcon = TOOL_ICON_MAP[tool.toLowerCase()];
+
+                      return (
+                        <div key={tool} className="relative group">
+                          <button 
+                            onClick={() => toggleTool(tool)}
+                            className={`flex flex-col items-center gap-1 transition-all ${isSelected ? 'scale-110' : 'hover:scale-105'}`}
+                          >
+                            <div className="w-10 h-8 flex items-center justify-center">
+                              <ToolIcon color={isSelected ? '#00B4D8' : (isDarkMode ? 'white' : '#2C3E50')} />
+                            </div>
+                            <span className={`text-[9px] uppercase font-bold tracking-wider ${isSelected ? 'text-[#00B4D8]' : (isDarkMode ? 'text-white' : 'text-[#2C3E50]')}`}>
+                              {tool}
+                            </span>
+                          </button>
+
+                          {/* dropdown mobila */}
+                          {isFurniture && showFurnitureMenu && (
+                            <div className={`absolute bottom-full mb-4 left-1/2 -translate-x-1/2 flex gap-4 p-3 rounded-2xl border shadow-2xl animate-in fade-in slide-in-from-bottom-2 ${isDarkMode ? 'bg-[#3A3A4E] border-[#4A4A60]' : 'bg-white border-[#C2C9CC]'}`}>
+                              {['Bed', 'Couch', 'Table'].map((item) => (
+                                <button
+                                  key={item}
+                                  onClick={() => {
+                                    setActiveTool(`furniture_${item.toLowerCase()}`);
+                                    setShowFurnitureMenu(false);
+                                  }}
+                                  className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-colors ${
+                                    activeTool === `furniture_${item.toLowerCase()}`
+                                      ? 'bg-[#00B4D8] text-white'
+                                      : (isDarkMode ? 'hover:bg-[#4A4A60] text-white' : 'hover:bg-gray-100 text-[#2C3E50]')
+                                  }`}
+                                >
+                                  {item}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+
               </div>
             </div>
 

@@ -26,29 +26,27 @@ export interface PlacedFurniture {
 // definirea formei proprietatilor primite de canvas
 interface GridCanvasProps {
   isDarkMode: boolean;
-  placedIcons: { col: number; row: number; type: string }[];
-  lines: {
-    type: string;
-    start: { col: number; row: number };
-    end: { col: number; row: number };
-  }[];
+  placedIcons: any[];
+  lines: any[];
+  setLines: React.Dispatch<React.SetStateAction<any[]>>;
   activeTool: string | null;
   onCanvasClick: (col: number, row: number) => void;
-  onLineComplete: (
-    type: string,
-    start: { col: number; row: number },
-    end: { col: number; row: number },
-  ) => void;
-  onUpdate: (data: {
-    offsetX: number;
-    offsetY: number;
-    dotSpacing: number;
-  }) => void;
-  onRestoreHistory: (lines: any[], icons: any[]) => void;
+  onLineComplete: (type: string, start: { col: number; row: number }, end: { col: number; row: number }) => void;
+  onUpdate: (data: { offsetX: number; offsetY: number; dotSpacing: number; }) => void;
+  onRestoreHistory: (lines: any[], icons: any[], furniture: any[]) => void;
   placedFurniture: any[];
+  setPlacedIcons: React.Dispatch<React.SetStateAction<any[]>>;
+  draggingItem: { type: 'icon' | 'furniture' | 'wall', id: string } | null;
+  setDraggingItem: React.Dispatch<React.SetStateAction<{ type: 'icon' | 'furniture' | 'wall', id: string } | null>>;
   setPlacedFurniture: React.Dispatch<React.SetStateAction<any[]>>;
+  redoHistory: any[];
+  setRedoHistory: React.Dispatch<React.SetStateAction<any[]>>;
+  onRedo: (lines: any[], icons: any[], furniture: any[]) => void;
   onMouseMove?: (col: number, row: number) => void;
   onMouseLeave?: () => void;
+  // New props for delete overlays
+  layout: { offsetX: number; offsetY: number; dotSpacing: number };
+  checkCollision: (col: number, row: number, ignoreId?: string) => boolean;
 }
 
 const GridCanvas: React.FC<GridCanvasProps> = ({
@@ -56,12 +54,23 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
   placedIcons,
   lines,
   activeTool,
+  setRedoHistory,
+  onRedo,
+  redoHistory,
+  setLines,
+  setPlacedIcons,
+  draggingItem,
+  setDraggingItem,
   onCanvasClick,
   onLineComplete,
   onUpdate,
   onRestoreHistory,
   onMouseMove,
   onMouseLeave,
+  layout,
+  checkCollision,
+  placedFurniture,
+  setPlacedFurniture,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mousePosRef = useRef<{ x: number; y: number }>({ x: -100, y: -100 });
@@ -72,11 +81,40 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
   const startPointRef = useRef<{ col: number; row: number } | null>(null);
 
   const [errors, setErrors] = useState<string[]>([]);
-  const [placedFurniture, setPlacedFurniture] = useState<PlacedFurniture[]>([]);
+  //const [placedFurniture, setPlacedFurniture] = useState<PlacedFurniture[]>([]);
   const [fScale, setFScale] = useState(1);
   const [fRotation, setFRotation] = useState(0);
 
   const [history, setHistory] = useState<CanvasSnapshot[]>([]);
+
+  // Track which wall/furniture is hovered for showing X button
+  const [hoveredWallId, setHoveredWallId] = useState<string | null>(null);
+  const [hoveredFurnitureId, setHoveredFurnitureId] = useState<string | null>(null);
+
+  // Track drag offset so object doesn't jump on grab
+  const dragOffsetRef = useRef<{ dcol: number; drow: number }>({ dcol: 0, drow: 0 });
+  // Track if we actually moved during drag (to distinguish click from drag)
+  const didMoveRef = useRef(false);
+
+  const handleUndo = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (history.length === 0) return;
+
+    const lastSnapshot = history[history.length - 1];
+
+    onRestoreHistory(lastSnapshot.lines, lastSnapshot.placedIcons, lastSnapshot.placedFurniture);
+
+    setHistory((prev) => prev.slice(0, -1));
+  };
+
+  const handleRedoInternal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (redoHistory.length === 0) return;
+    const nextState = redoHistory[0];
+    saveSnapshot();
+    onRedo(nextState.lines, nextState.icons, nextState.furniture);
+    setRedoHistory(prev => prev.slice(1));
+  };
 
   // Funcția de salvare a stării (o chemăm înainte de ORICE modificare)
   const saveSnapshot = () => {
@@ -88,47 +126,46 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
       };
       return [...prev, currentSnapshot].slice(-30); // Păstrăm ultimele 30 de acțiuni
     });
+    setRedoHistory([]); // O acțiune nouă șterge istoric-ul de Redo
   };
 
-  const handleUndo = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation(); // Prevenim declanșarea click-ului pe canvas când apeși butonul
-    if (history.length === 0) return;
+  const checkFurnitureCollision = (col: number, row: number, w: number, h: number, ignoreId?: string) => {
+  const xMin = col - w / 2;
+  const xMax = col + w / 2;
+  const yMin = row - h / 2;
+  const yMax = row + h / 2;
 
-    const lastSnapshot = history[history.length - 1];
+  // Verificăm pereții
+  const hitWall = lines.some((line) => {
+    if (line.id === ignoreId) return false;
+    if (line.type !== "wall") return false;
+    const lXMin = Math.min(line.start.col, line.end.col);
+    const lXMax = Math.max(line.start.col, line.end.col);
+    const lYMin = Math.min(line.start.row, line.end.row);
+    const lYMax = Math.max(line.start.row, line.end.row);
+    return lXMin < xMax && lXMax > xMin && lYMin < yMax && lYMax > yMin;
+  });
+  if (hitWall) return true;
 
-    // Restaurăm mobila locală
-    setPlacedFurniture(lastSnapshot.placedFurniture);
+  // Verificăm cealaltă mobilă
+  const hitFurniture = placedFurniture.some((f) => {
+    if (f.id === ignoreId) return false;
+    const fXMin = f.centerCol - f.widthCols / 2;
+    const fXMax = f.centerCol + f.widthCols / 2;
+    const fYMin = f.centerRow - f.heightCols / 2;
+    const fYMax = f.centerRow + f.heightCols / 2;
+    return fXMin < xMax && fXMax > xMin && fYMin < yMax && fYMax > yMin;
+  });
+  if (hitFurniture) return true;
 
-    // Trimitem liniile și iconițele înapoi la App.tsx
-    onRestoreHistory(lastSnapshot.lines, lastSnapshot.placedIcons);
-
-    // Ștergem snapshot-ul din istoric
-    setHistory((prev) => prev.slice(0, -1));
-  };
-
-  const checkFurnitureCollision = (
-    col: number,
-    row: number,
-    w: number,
-    h: number,
-  ) => {
-    const xMin = col - w / 2;
-    const xMax = col + w / 2;
-    const yMin = row - h / 2;
-    const yMax = row + h / 2;
-
-    return lines.some((line) => {
-      if (line.type !== "wall") return false;
-      // Verificăm dacă segmentul peretelui intersectează dreptunghiul mobilei
-      // O verificare simplificată de Bounding Box:
-      const lXMin = Math.min(line.start.col, line.end.col);
-      const lXMax = Math.max(line.start.col, line.end.col);
-      const lYMin = Math.min(line.start.row, line.end.row);
-      const lYMax = Math.max(line.start.row, line.end.row);
-
-      return lXMin < xMax && lXMax > xMin && lYMin < yMax && lYMax > yMin;
-    });
-  };
+  // Verificăm iconițele
+  const hitIcon = placedIcons.some((icon) => {
+    if (icon.id === ignoreId) return false;
+    return icon.col >= xMin && icon.col <= xMax && icon.row >= yMin && icon.row <= yMax;
+  });
+  
+  return hitIcon;
+};
 
   // 1. Handler pentru Rotație (Tasta R) - E OK
   useEffect(() => {
@@ -148,12 +185,11 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
 
     const handleWheel = (e: WheelEvent) => {
       if (activeTool?.startsWith("furniture_")) {
-        e.preventDefault(); // Oprește scroll-ul paginii
+        e.preventDefault();
         setFScale((prev) => Math.max(1, prev + (e.deltaY < 0 ? 1 : -1)));
       }
     };
 
-    // Important: adăugăm listener-ul direct pe elementul canvas cu passive: false
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
   }, [activeTool]);
@@ -164,6 +200,15 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
       startPointRef.current = null;
     }
   }, [activeTool]);
+
+  useEffect(() => {
+  if (draggingItem) {
+    didMoveRef.current = false;
+    if (draggingItem.type === 'icon') {
+       dragOffsetRef.current = { dcol: 0, drow: 0 };
+    }
+  }
+}, [draggingItem]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -329,22 +374,17 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
             const minRow = Math.min(l.start.row, l.end.row);
             const maxRow = Math.max(l.start.row, l.end.row);
 
-            // Verificăm dacă e fereastră orizontală (row e același)
             const isHorizontal = l.start.row === l.end.row;
-            // Verificăm dacă e fereastră verticală (col e același)
             const isVertical = l.start.col === l.end.col;
 
             if (isHorizontal) {
-              // Punctul trebuie să fie pe același rând ȘI între coloane
               return j === l.start.row && i >= minCol && i <= maxCol;
             } else if (isVertical) {
-              // Punctul trebuie să fie pe aceeași coloană ȘI între rânduri
               return i === l.start.col && j >= minRow && j <= maxRow;
             }
             return false;
           });
 
-          // 2. Dacă e sub o iconiță SAU sub un geam, nu mai desena punctul
           if (hasIcon || isOnWindow) continue;
 
           const x = offsetX + i * dotSpacing;
@@ -394,7 +434,6 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
         const x1 = offsetX + startPointRef.current.col * dotSpacing;
         const y1 = offsetY + startPointRef.current.row * dotSpacing;
 
-        // se prinde / snap la punctul grid-ului daca suntem in raza lui, daca nu, doar urmareste cursorul
         const endX = activeX !== -100 ? activeX : mousePos.x;
         const endY = activeY !== -100 ? activeY : mousePos.y;
 
@@ -402,10 +441,8 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
       }
       // --- PASUL 3: DESENĂM MOBILA PLASATĂ ---
       placedFurniture.forEach((f) => {
-        // Aici punem TRUE pentru fundal, ca să acopere punctele
         const img = getFurnitureImage(f.type, isDarkMode, true);
 
-        // FOLOSEȘTE Math.round pentru a evita "sub-pixel rendering"
         const x = Math.round(offsetX + f.centerCol * dotSpacing);
         const y = Math.round(offsetY + f.centerRow * dotSpacing);
         const w = Math.round(f.widthCols * dotSpacing);
@@ -437,7 +474,6 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
           offsetY + hoverJ * dotSpacing,
         );
 
-        // 1. DESENĂM FUNDALUL DE COLIZIUNE (Rămâne transparent ca să vedem culorile)
         ctx.globalAlpha = 0.3;
         ctx.fillStyle = hasCollision
           ? "rgba(255, 0, 0, 0.4)"
@@ -449,12 +485,10 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
           h * dotSpacing,
         );
 
-        // 2. DESENĂM IMAGINEA (Fără fundal opac în preview)
-        // Al treilea parametru 'false' asigură că SVG-ul nu are fundalul care acoperă punctele
         const previewImg = getFurnitureImage(type, isDarkMode, false);
 
         if (previewImg.complete && previewImg.naturalWidth !== 0) {
-          ctx.save(); // Salvăm starea înainte de rotația imaginii
+          ctx.save();
           ctx.rotate((fRotation * Math.PI) / 180);
           ctx.globalAlpha = 0.8;
           ctx.drawImage(
@@ -464,25 +498,22 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
             baseDims.w * dotSpacing,
             baseDims.h * dotSpacing,
           );
-          ctx.restore(); // Revenim la contextul nertotit (dar translatat pe obiect)
+          ctx.restore();
         } else {
           previewImg.onload = () => {};
         }
 
-        // 3. ADĂUGARE MESAJE (SUB MOBILĂ)
-        // Contextul este deja la (hoverI, hoverJ) datorită primului translate
         ctx.font = "bold 9px sans-serif";
         ctx.fillStyle = isDarkMode ? "white" : "#2C3E50";
         ctx.textAlign = "center";
         ctx.globalAlpha = 0.8;
 
-        // Calculăm poziția textului să fie sub zona de coliziune (h)
         const textY = (h * dotSpacing) / 2 + 25;
 
         ctx.fillText("PRESS 'R' TO ROTATE", 0, textY);
         ctx.fillText("SCROLL TO SCALE", 0, textY + 16);
 
-        ctx.restore(); // Închidem save-ul de la începutul pasului 4
+        ctx.restore();
       }
 
       // PASUL B: Randăm restul (geamurile, ușile) - acestea vor veni DEASUPRA pereților
@@ -526,36 +557,148 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
     fScale,
     fRotation,
     placedFurniture,
-  ]); // reporneste daca se schimba lista de linii sau unealta
+  ]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
+  const findWallAt = (col: number, row: number) => {
+    return lines.findIndex(l => {
+      if (l.type !== 'wall') return false;
+      const isV = l.start.col === l.end.col;
+      const isH = l.start.row === l.end.row;
+      if (isV && col === l.start.col) return row >= Math.min(l.start.row, l.end.row) && row <= Math.max(l.start.row, l.end.row);
+      if (isH && row === l.start.row) return col >= Math.min(l.start.col, l.end.col) && col <= Math.max(l.start.col, l.end.col);
+      return false;
+    });
+  };
 
-    const rect = canvasRef.current.getBoundingClientRect();
+  const findLineAt = (col: number, row: number) => {
+    return lines.findIndex(l => {
+      const isV = l.start.col === l.end.col;
+      const isH = l.start.row === l.end.row;
+      if (isV && col === l.start.col) return row >= Math.min(l.start.row, l.end.row) && row <= Math.max(l.start.row, l.end.row);
+      if (isH && row === l.start.row) return col >= Math.min(l.start.col, l.end.col) && col <= Math.max(l.start.col, l.end.col);
+      return false;
+    });
+  };
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleInternalMouseDown = (e: React.MouseEvent) => {
+    
+    didMoveRef.current = false;
+    const { x, y } = mousePosRef.current;
+    const { offsetX, offsetY, dotSpacing } = layoutRef.current;
+    const col = Math.round((x - offsetX) / dotSpacing);
+    const row = Math.round((y - offsetY) / dotSpacing);
 
-    mousePosRef.current = { x, y };
+    if (activeTool) return;
 
-    if (onMouseMove) {
-      const col = Math.round(
-        (x - layoutRef.current.offsetX) / layoutRef.current.dotSpacing,
-      );
-      const row = Math.round(
-        (y - layoutRef.current.offsetY) / layoutRef.current.dotSpacing,
-      );
-      onMouseMove(col, row);
+    // Check icons first
+    const iconIdx = placedIcons.findIndex(i => i.col === col && i.row === row);
+    if (iconIdx !== -1) {
+     // saveSnapshot();
+      dragOffsetRef.current = { dcol: 0, drow: 0 };
+      setDraggingItem({ type: 'icon', id: placedIcons[iconIdx].id });
+      return;
     }
+
+    // Check furniture
+    const furnIdx = placedFurniture.findIndex(f =>
+      col >= f.centerCol - f.widthCols / 2 &&
+      col <= f.centerCol + f.widthCols / 2 &&
+      row >= f.centerRow - f.heightCols / 2 &&
+      row <= f.centerRow + f.heightCols / 2
+    );
+    if (furnIdx !== -1) {
+      // saveSnapshot();
+      const f = placedFurniture[furnIdx];
+      dragOffsetRef.current = { dcol: col - f.centerCol, drow: row - f.centerRow };
+      setDraggingItem({ type: 'furniture', id: f.id });
+      return;
+    }
+
+    // Check any line (wall, window, door)
+    const lineIdx = findLineAt(col, row);
+    if (lineIdx !== -1) {
+      const line = lines[lineIdx];
+      // offset = click point relative to midpoint of line
+      const midCol = (line.start.col + line.end.col) / 2;
+      const midRow = (line.start.row + line.end.row) / 2;
+      dragOffsetRef.current = { dcol: col - midCol, drow: row - midRow };
+      // saveSnapshot();
+      setDraggingItem({ type: 'wall', id: line.id });
+    }
+  };
+
+  const handleInternalMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  if (!canvasRef.current) return;
+  const rect = canvasRef.current.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  mousePosRef.current = { x, y };
+
+  const col = Math.round((x - layoutRef.current.offsetX) / layoutRef.current.dotSpacing);
+  const row = Math.round((y - layoutRef.current.offsetY) / layoutRef.current.dotSpacing);
+
+  if (onMouseMove) onMouseMove(col, row);
+
+  if (draggingItem) {
+    // Salvăm istoric doar la primul milimetru de mișcare adevărată
+    if (!didMoveRef.current) {
+        saveSnapshot();
+        didMoveRef.current = true;
+    }
+
+    if (draggingItem.type === 'icon') {
+      // Mută iconița doar dacă NU există o coliziune în noua locație
+      if (!checkCollision(col, row, draggingItem.id)) {
+         setPlacedIcons(prev => prev.map(i => i.id === draggingItem.id ? { ...i, col, row } : i));
+      }
+    } else if (draggingItem.type === 'furniture') {
+      const { dcol, drow } = dragOffsetRef.current;
+      const newCol = col - dcol;
+      const newRow = row - drow;
+      const f = placedFurniture.find(f => f.id === draggingItem.id);
+      
+      // Mută mobila doar dacă nu atinge alte piese/ziduri/iconițe
+      if (f && !checkFurnitureCollision(newCol, newRow, f.widthCols, f.heightCols, draggingItem.id)) {
+        setPlacedFurniture(prev => prev.map(item =>
+          item.id === draggingItem.id
+            ? { ...item, centerCol: newCol, centerRow: newRow }
+            : item
+        ));
+      }
+    } else if (draggingItem.type === 'wall') {
+      const { dcol, drow } = dragOffsetRef.current;
+      const newMidCol = col - dcol;
+      const newMidRow = row - drow;
+      setLines(prev => prev.map(l => {
+        if (l.id !== draggingItem.id) return l;
+        const midCol = (l.start.col + l.end.col) / 2;
+        const midRow = (l.start.row + l.end.row) / 2;
+        const ddc = newMidCol - midCol;
+        const ddr = newMidRow - midRow;
+        return {
+          ...l,
+          start: { col: Math.round(l.start.col + ddc), row: Math.round(l.start.row + ddr) },
+          end: { col: Math.round(l.end.col + ddc), row: Math.round(l.end.row + ddr) },
+        };
+      }));
+    }
+  }
+};
+
+  const handleInternalMouseUp = () => {
+    setDraggingItem(null);
   };
 
   const handleMouseLeave = () => {
     mousePosRef.current = { x: -100, y: -100 };
+    setDraggingItem(null);
     if (onMouseLeave) onMouseLeave();
   };
 
-  // logica de click pe grid, gestioneaza atat plasarea device-urilor cat si desenarea liniilor
+  // logica de click pe grid
   const handleInternalClick = () => {
+    if (didMoveRef.current) return; // previne plasarea daca tocmai am facut drag
+    if (draggingItem) return;
     const { x, y } = mousePosRef.current;
     const { offsetX, offsetY, dotSpacing } = layoutRef.current;
 
@@ -565,12 +708,9 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
     if (activeTool?.startsWith("furniture_")) {
       const type = activeTool.split("_")[1] as "bed" | "couch" | "table";
 
-      // 1. Calculăm dimensiunile REALE (cu scală și rotație) pentru coliziune
       const { w, h } = getFurnitureDimensions(type, fScale, fRotation);
 
       if (!checkFurnitureCollision(col, row, w, h)) {
-        // 2. Calculăm dimensiunile scalate dar fără rotație pentru stocare
-        // (ca să știm cât spațiu ocupă ea "drept")
         const scaledBase = getFurnitureDimensions(type, fScale, 0);
 
         const newItem: PlacedFurniture = {
@@ -578,11 +718,11 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
           type,
           centerCol: col,
           centerRow: row,
-          widthCols: scaledBase.w, // SALVĂM DIMENSIUNEA SCALATĂ, NU 1
-          heightCols: scaledBase.h, // SALVĂM DIMENSIUNEA SCALATĂ, NU 1
+          widthCols: scaledBase.w,
+          heightCols: scaledBase.h,
           rotation: fRotation,
         };
-        saveSnapshot(); // SALVĂM ÎNAINTE SĂ PUNEM MOBILA
+        saveSnapshot();
 
         setPlacedFurniture((prev) => [...prev, newItem]);
       }
@@ -591,15 +731,11 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
     const targetX = offsetX + col * dotSpacing;
     const targetY = offsetY + row * dotSpacing;
 
-    // ne asiguram ca user-ul da click curat pe langa un punct de grid
     if (Math.hypot(targetX - x, targetY - y) < dotSpacing * 0.5) {
-      // mod desenare
       if (activeTool) {
         if (!startPointRef.current) {
-          // click 1: inregistreaza punctul de start
           startPointRef.current = { col, row };
         } else {
-          // click 2: daca nu am dat click in acelasi punct pe loc, trimite linia sa se salveze
           if (
             startPointRef.current.col !== col ||
             startPointRef.current.row !== row
@@ -607,30 +743,26 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
             saveSnapshot();
             onLineComplete(activeTool, startPointRef.current, { col, row });
           }
-          // reseteaza referinta pentru a lasa liber la trasat o noua linie complet diferita
           startPointRef.current = null;
         }
-      }
-      // mod plasare element din catalog
-      else {
+      } else {
         onCanvasClick(col, row);
       }
     }
   };
 
   const validateLayout = async () => {
-    // Prepare data in SetupBuildDTO format
     const data = {
       id: "layout1",
       scale: "1:1",
       maxBudget: 1000.0,
       targetEcosystem: "smart",
-      rooms: [], // TODO: convert lines to rooms
+      rooms: [],
       devices: placedIcons.map((icon) => ({
         id: icon.type + icon.col + icon.row,
         type: icon.type,
         position: { x: icon.col, y: icon.row },
-      })), // Simplified
+      })),
     };
 
     try {
@@ -653,38 +785,85 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
     }
   };
 
+  // Helper: get pixel position of wall midpoint for X button
+  const getWallMidPx = (line: any) => {
+    const { offsetX, offsetY, dotSpacing } = layout;
+    if (!dotSpacing) return null;
+    const midCol = (line.start.col + line.end.col) / 2;
+    const midRow = (line.start.row + line.end.row) / 2;
+    return {
+      x: offsetX + midCol * dotSpacing,
+      y: offsetY + midRow * dotSpacing,
+    };
+  };
+
+  // Helper: get pixel position of furniture for X button
+  const getFurniturePx = (f: any) => {
+    const { offsetX, offsetY, dotSpacing } = layout;
+    if (!dotSpacing) return null;
+    return {
+      x: offsetX + f.centerCol * dotSpacing,
+      y: offsetY + f.centerRow * dotSpacing,
+      w: f.widthCols * dotSpacing,
+      h: f.heightCols * dotSpacing,
+    };
+  };
+
+  // Siguranță: Oprește drag-ul automat dacă dai drumul la mouse oriunde pe ecran
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (draggingItem) setDraggingItem(null);
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [draggingItem, setDraggingItem]);
+
   return (
     <>
-      {/* Butonul de Undo poziționat deasupra canvas-ului */}
-      <button
-        onClick={handleUndo}
-        disabled={history.length === 0}
-        className={`absolute top-4 left-4 z-20 flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95
-        ${
-          history.length === 0
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
-            : isDarkMode
-              ? "bg-[#2D2D3D] text-white hover:bg-[#3D3D4D]" // Stil Dark: fundal închis, scris alb
-              : "bg-[#B8C6D4] text-[#2C3E50] hover:bg-[#A8B6C4]" // Stil Light: fundal albastru-gri, scris închis
-        }`}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      {/* Container pentru butoanele de Undo și Redo */}
+      <div className="absolute top-4 left-4 z-20 flex gap-2">
+        {/* Butonul de UNDO */}
+        <button
+          onClick={handleUndo}
+          disabled={history.length === 0}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95
+          ${
+            history.length === 0
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
+              : isDarkMode
+                ? "bg-[#2D2D3D] text-white hover:bg-[#3D3D4D]"
+                : "bg-[#B8C6D4] text-[#2C3E50] hover:bg-[#A8B6C4]"
+          }`}
         >
-          <path d="M3 7v6h6" />
-          <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-        </svg>
-        {isDarkMode ? "UNDO" : "UNDO"}
-      </button>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 7v6h6" />
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+          </svg>
+          UNDO
+        </button>
 
+        {/* Butonul de REDO */}
+        <button
+          onClick={handleRedoInternal}
+          disabled={redoHistory.length === 0}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95
+          ${
+            redoHistory.length === 0
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
+              : isDarkMode
+                ? "bg-[#2D2D3D] text-white hover:bg-[#3D3D4D]"
+                : "bg-[#B8C6D4] text-[#2C3E50] hover:bg-[#A8B6C4]"
+          }`}
+        >
+          REDO
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 7v6h-6" />
+            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Afișarea erorilor */}
       {errors.length > 0 && (
         <div className="absolute bottom-6 left-6 z-20 bg-red-500 text-white p-4 rounded-2xl shadow-2xl max-w-xs animate-in fade-in slide-in-from-bottom-4">
           <ul className="list-disc ml-4 text-xs font-semibold uppercase tracking-wider">
@@ -695,12 +874,165 @@ const GridCanvas: React.FC<GridCanvasProps> = ({
         </div>
       )}
 
+      {/* Overlay HTML: butoane X și DRAG pentru walls/linii */}
+      {layout.dotSpacing > 0 && lines.map((line) => {
+        const mid = getWallMidPx(line);
+        if (!mid) return null;
+        const isHovered = hoveredWallId === line.id;
+        const isDraggingThis = draggingItem?.type === 'wall' && draggingItem.id === line.id;
+        
+        return (
+          <div
+            key={`wall-overlay-${line.id}`}
+            onMouseEnter={() => setHoveredWallId(line.id)}
+            onMouseLeave={() => setHoveredWallId(null)}
+            onMouseDown={(e) => {
+              if (activeTool) return;
+              e.preventDefault();
+              e.stopPropagation();
+              if (!canvasRef.current) return;
+              const rect = canvasRef.current.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              const col = Math.round((x - layout.offsetX) / layout.dotSpacing);
+              const row = Math.round((y - layout.offsetY) / layout.dotSpacing);
+              const midCol = (line.start.col + line.end.col) / 2;
+              const midRow = (line.start.row + line.end.row) / 2;
+              dragOffsetRef.current = { dcol: col - midCol, drow: row - midRow };
+              setDraggingItem({ type: 'wall', id: line.id });
+            }}
+            style={{
+              position: 'absolute',
+              left: mid.x,
+              top: mid.y,
+              transform: 'translate(-50%, -50%)',
+              width: Math.max(
+                Math.abs((line.end.col - line.start.col) * layout.dotSpacing),
+                layout.dotSpacing * 1.2
+              ),
+              height: Math.max(
+                Math.abs((line.end.row - line.start.row) * layout.dotSpacing),
+                layout.dotSpacing * 1.2
+              ),
+              zIndex: 25,
+              cursor: isDraggingThis ? 'grabbing' : 'grab',
+              pointerEvents: activeTool ? 'none' : 'auto',
+              userSelect: 'none',
+            }}
+          >
+            {isHovered && !isDraggingThis && (
+              <button
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  saveSnapshot();
+                  setLines(prev => prev.filter(l => l.id !== line.id));
+                  setHoveredWallId(null);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: -10,
+                  right: -10,
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 10,
+                  fontWeight: 'bold',
+                  zIndex: 30,
+                  cursor: 'pointer',
+                }}
+                className={`shadow-xl border-2 transition-all duration-200 ${isDarkMode ? 'bg-[#3A3A4E] text-[#FF4D4D] border-[#1A1A1E] hover:bg-[#4A4A60]' : 'bg-white text-[#EF4444] border-[#EDEFF0] hover:bg-gray-50'}`}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Overlay HTML: butoane X și DRAG pentru furniture */}
+      {layout.dotSpacing > 0 && placedFurniture.map((f) => {
+        const pos = getFurniturePx(f);
+        if (!pos) return null;
+        const isHovered = hoveredFurnitureId === f.id;
+        const isDraggingThis = draggingItem?.type === 'furniture' && draggingItem.id === f.id;
+        
+        return (
+          <div
+            key={`furn-overlay-${f.id}`}
+            onMouseEnter={() => setHoveredFurnitureId(f.id)}
+            onMouseLeave={() => setHoveredFurnitureId(null)}
+            onMouseDown={(e) => {
+              if (activeTool) return;
+              e.preventDefault();
+              e.stopPropagation();
+              if (!canvasRef.current) return;
+              const rect = canvasRef.current.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              const col = Math.round((x - layout.offsetX) / layout.dotSpacing);
+              const row = Math.round((y - layout.offsetY) / layout.dotSpacing);
+              dragOffsetRef.current = { dcol: col - f.centerCol, drow: row - f.centerRow };
+              setDraggingItem({ type: 'furniture', id: f.id });
+            }}
+            style={{
+              position: 'absolute',
+              left: pos.x - pos.w / 2,
+              top: pos.y - pos.h / 2,
+              width: pos.w,
+              height: pos.h,
+              zIndex: 25,
+              cursor: isDraggingThis ? 'grabbing' : 'grab',
+              pointerEvents: activeTool ? 'none' : 'auto',
+              userSelect: 'none',
+            }}
+          >
+            {isHovered && !isDraggingThis && (
+              <button
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  saveSnapshot();
+                  setPlacedFurniture(prev => prev.filter(item => item.id !== f.id));
+                  setHoveredFurnitureId(null);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: -10,
+                  right: -10,
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 10,
+                  fontWeight: 'bold',
+                  zIndex: 30,
+                  cursor: 'pointer',
+                }}
+                className={`shadow-xl border-2 transition-all duration-200 ${isDarkMode ? 'bg-[#3A3A4E] text-[#FF4D4D] border-[#1A1A1E] hover:bg-[#4A4A60]' : 'bg-white text-[#EF4444] border-[#EDEFF0] hover:bg-gray-50'}`}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Canvas-ul actualizat cu noile event-uri pentru Drag & Drop */}
       <canvas
         ref={canvasRef}
-        onMouseMove={handleMouseMove}
+        onMouseDown={handleInternalMouseDown}
+        onMouseMove={handleInternalMouseMove}
+        onMouseUp={handleInternalMouseUp}
         onMouseLeave={handleMouseLeave}
         onClick={handleInternalClick}
         className="absolute inset-0 w-full h-full cursor-crosshair rounded-3xl"
+        style={{ zIndex: 10 }}
       />
     </>
   );

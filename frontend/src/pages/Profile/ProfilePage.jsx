@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { User, Bookmark, Settings, Activity } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { authFetch } from "../../utils/authFetch";
 import MySetups from "./MySetups";
 import Wishlist from "./Wishlist";
 import SettingsPage from "./Settings";
@@ -23,21 +24,35 @@ export default function ProfilePage({ darkMode }) {
     setSearchParams({ tab: newPage });
   };
 
+  // Re-fetch the profile when this page mounts AND every time the auth
+  // state changes (e.g. user logs in in another tab, or username/email is
+  // updated from Settings). Without this listener Profile would show stale
+  // data after the Settings tab successfully PUT-s a new username.
   useEffect(() => {
     fetchUser();
+    const onAuthChange = () => fetchUser();
+    window.addEventListener("auth-change", onAuthChange);
+    return () => window.removeEventListener("auth-change", onAuthChange);
   }, []);
 
   const fetchUser = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      // Not logged in — bounce to login. ProtectedRoute would do the same
+      // but ProfilePage isn't wrapped in one yet, so guard locally.
+      navigate("/login", { state: { from: "/profile", message: "Please sign in to continue." } });
+      return;
+    }
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch("http://localhost:20025/api/v1/auth/me", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      // authFetch will try POST /auth/refresh once if the access token has
+      // expired, then replay /auth/me with the new bearer.
+      const response = await authFetch("/api/v1/auth/me");
       if (response.ok) {
         const data = await response.json();
         setUser(data);
+      } else if (response.status === 401) {
+        // Refresh also failed — bounce to login.
+        navigate("/login", { state: { from: "/profile", message: "Your session expired." } });
       }
     } catch (error) {
       console.error("Failed to fetch user:", error);
@@ -60,8 +75,8 @@ export default function ProfilePage({ darkMode }) {
               {user?.username?.charAt(0)?.toUpperCase() || "U"}
             </div>
             <div className="user-info-section">
-              <h1 className="user-name">{user?.username || "User"}</h1>
-              <p className="user-email">{user?.email || "email@example.com"}</p>
+              <h1 className="user-name">{user?.username || "Loading…"}</h1>
+              <p className="user-email">{user?.email || ""}</p>
             </div>
           </div>
           <button className="settings-btn" onClick={() => setPage("settings")}>

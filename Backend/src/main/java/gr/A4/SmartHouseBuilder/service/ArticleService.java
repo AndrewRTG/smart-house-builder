@@ -15,8 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.apache.commons.text.similarity.LevenshteinDistance;
-import java.util.stream.Collectors;
+
 import java.util.List;
 
 @Service
@@ -95,42 +94,5 @@ public class ArticleService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email))
                 .getId();
-    }
-
-    public List<Article> searchArticles(String query) {
-        // 1. Dacă nu caută nimic, returnăm tot
-        if (query == null || query.trim().isEmpty()) {
-            return articleRepository.findAll();
-        }
-
-        // 2. Aducem toate articolele
-        List<Article> allArticles = articleRepository.findAll();
-
-        // 3. Pregătim unealta de Fuzzy Search
-        LevenshteinDistance distanceCalc = new LevenshteinDistance();
-        String searchTarget = query.toLowerCase();
-
-        // 4. Filtrăm lista
-        return allArticles.stream()
-                .filter(article -> {
-                    String title = article.getTitle() != null ? article.getTitle().toLowerCase() : "";
-                    String content = article.getContent() != null ? article.getContent().toLowerCase() : "";
-
-                    // Verificăm dacă titlul sau conținutul conțin exact cuvântul (căutare normală)
-                    if (title.contains(searchTarget) || content.contains(searchTarget)) {
-                        return true;
-                    }
-
-                    // Dacă nu s-a găsit exact, facem Fuzzy Search pe cuvintele din titlu
-                    for (String word : title.split("\\s+")) {
-                        // Dacă a greșit maxim 2 litere, îl considerăm corect!
-                        if (distanceCalc.apply(searchTarget, word) <= 2) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                })
-                .collect(Collectors.toList());
     }
 }

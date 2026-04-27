@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Bookmark, Copy, MessageCircle, BookOpen, Settings, Heart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CopySetupModal from '../components/CopySetupModal';
 import { useError } from '../context/ErrorContext';
+import { getCurrentUser } from '../utils/currentUser';
+import { fuzzyFilter } from '../utils/fuzzySearch';
 import '../styles/CommunityPage.css';
 
 export default function CommunityPage({ darkMode }) {
@@ -27,6 +29,25 @@ export default function CommunityPage({ darkMode }) {
 
   const API_BASE = 'http://localhost:20025/api/v1';
 
+  // ---- Fuzzy search ------------------------------------------------------
+  // useMemo so we don't re-score the entire list on every unrelated re-render
+  // (e.g. when a like count changes). Re-runs only when the data or the
+  // query change.
+  // For setups we fuzzy-match against name + description + author username.
+  // For articles we match against title + content + author username.
+  const filteredSetups = useMemo(
+    () => fuzzyFilter(setups, searchQuery, (s) => [
+      s.name, s.description, s.user?.username,
+    ]),
+    [setups, searchQuery]
+  );
+  const filteredArticles = useMemo(
+    () => fuzzyFilter(articles, searchQuery, (a) => [
+      a.title, a.content, a.user?.username,
+    ]),
+    [articles, searchQuery]
+  );
+
   // Restore scroll position and tab on mount
   useEffect(() => {
     if (location.state?.restore) {
@@ -50,20 +71,15 @@ export default function CommunityPage({ darkMode }) {
   }, [page]);
 
   const fetchCurrentUser = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-        setUserStats({ posts: 12, likes: 47 });
-      }
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
+    // Use the shared cache instead of hitting /auth/me on every page mount.
+    // Multiple components calling this within ~60s collapse to one network
+    // request, which prevented the rate limiter from blanking us out.
+    const data = await getCurrentUser();
+    if (data) {
+      setUser(data);
+      setUserStats({ posts: 12, likes: 47 });
+    } else {
+      setUser(null);
     }
   };
 
@@ -363,9 +379,15 @@ export default function CommunityPage({ darkMode }) {
         {/* CONTROLS - Search + Tabs on same line */}
         <div className="community-controls">
           <div className="search-box">
+            {/*
+              Wired to fuzzyFilter (utils/fuzzySearch.js). Empty input falls
+              through and returns the full list untouched; non-empty input
+              is matched as a fuzzy subsequence against the per-tab fields
+              listed in the useMemo blocks below, then sorted best-first.
+            */}
             <input
               type="text"
-              placeholder="Search for an article/setup"
+              placeholder="Search setups and articles (fuzzy — typos OK)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
@@ -393,9 +415,9 @@ export default function CommunityPage({ darkMode }) {
           <div className={`content-pane ${activeTab === 'setups' ? 'active' : ''}`}>
             {loading ? (
               <div className="loading">Loading setups...</div>
-            ) : setups.length > 0 ? (
+            ) : filteredSetups.length > 0 ? (
               <div className="setups-grid">
-                {setups.map((setup) => (
+                {filteredSetups.map((setup) => (
                   <div key={setup.id} className="setup-card">
                     <div className="setup-header">
                       <div className="user-info-compact">
@@ -465,9 +487,9 @@ export default function CommunityPage({ darkMode }) {
           <div className={`content-pane ${activeTab === 'articles' ? 'active' : ''}`}>
             {loading ? (
               <div className="loading">Loading articles...</div>
-            ) : articles.length > 0 ? (
+            ) : filteredArticles.length > 0 ? (
               <div className="articles-grid">
-                {articles.map((article) => (
+                {filteredArticles.map((article) => (
                   <div key={article.id} className="article-card">
                     <div className="article-header">
                       <div className="user-info-compact">

@@ -16,6 +16,4 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     Page<Article> findAll(Pageable pageable);
 
     Optional<Article> findByIdAndUserId(Long id, Long userId);
-
-    List<Article> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(String title, String content);
 }

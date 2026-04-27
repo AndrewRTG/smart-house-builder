@@ -21,7 +21,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
-    @Value("${app.rate-limit.capacity:10}")
+    // Default raised from 10 to 60 because a single page navigation in the
+    // SPA legitimately fires multiple /auth/* calls (Navbar, ProfilePage,
+    // CommunityPage, SetupDetailPage all read /auth/me on mount; React 18
+    // StrictMode runs every effect twice in dev). 10/min was triggering
+    // 429s during normal use and silently blanking out the user state.
+    @Value("${app.rate-limit.capacity:60}")
     private int capacity;
 
     @Value("${app.rate-limit.minutes:1}")
@@ -34,6 +39,17 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
         if (!path.startsWith("/api/v1/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        // Read-only / availability endpoints don't have brute-force risk and
+        // are called many times per page navigation. Excluding them keeps
+        // the limiter focused on the *write* surfaces (login, register,
+        // verify-mfa, forgot-password, reset-password) where rate-limiting
+        // actually matters.
+        if (path.equals("/api/v1/auth/me")
+                || path.equals("/api/v1/auth/check-username")
+                || path.equals("/api/v1/auth/refresh")) {
             filterChain.doFilter(request, response);
             return;
         }

@@ -14,6 +14,9 @@ import ProfilePage from './pages/Profile/ProfilePage';
 import CommunityPage from './pages/CommunityPage';
 import SetupDetailPage from './pages/SetupDetailPage';
 import ArticleDetailPage from './pages/ArticleDetailPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import NotFoundPage from './pages/NotFoundPage';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 
 function HomePage() {
   return <div></div>;
@@ -64,8 +67,22 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/profile" element={<ProfilePage darkMode={darkMode} />} />
+            {/*
+              Detail routes are registered under BOTH the singular and plural
+              forms. CommunityPage uses singular ("/setup/:id"); the Activity
+              tab uses plural ("/setups/:id"). We accept either so neither
+              caller breaks if the convention drifts again.
+            */}
             <Route path="/setup/:setupId" element={<SetupDetailPage darkMode={darkMode} />} />
+            <Route path="/setups/:setupId" element={<SetupDetailPage darkMode={darkMode} />} />
             <Route path="/article/:articleId" element={<ArticleDetailPage darkMode={darkMode} />} />
+            <Route path="/articles/:articleId" element={<ArticleDetailPage darkMode={darkMode} />} />
+            {/* Email verification link from the welcome email */}
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            {/* Social login lands here from OAuth2LoginSuccessHandler */}
+            <Route path="/oauth2/callback" element={<OAuthCallbackPage />} />
+            {/* 404 catch-all — must stay last */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </div>
       </ErrorProvider>

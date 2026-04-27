@@ -1,11 +1,22 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
+import { authFetch } from "../utils/authFetch";
+import { getCurrentUser, invalidateCurrentUser } from "../utils/currentUser";
+
+// JWT payload uses base64url (- and _ instead of + and /) and may omit
+// padding. Plain atob() chokes on those characters and silently returns
+// garbage / throws on real tokens. Normalize before decoding.
+function base64UrlDecode(s) {
+  let str = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (str.length % 4) str += "=";
+  return atob(str);
+}
 
 // Decode a JWT and return its expiry time in ms, or null if invalid.
 function getTokenExpiryMs(token) {
   if (!token) return null;
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    const payload = JSON.parse(base64UrlDecode(token.split(".")[1]));
     if (!payload?.exp) return null;
     return payload.exp * 1000;
   } catch {
@@ -51,24 +62,20 @@ function Navbar({ darkMode, setDarkMode }) {
       return;
     }
     const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem("accessToken");
-        const response = await fetch("http://localhost:20025/api/v1/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data);
-        } else if (response.status === 401) {
-          // Token was rejected by the server — force logout.
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          setIsLoggedIn(false);
-          window.dispatchEvent(new Event("auth-change"));
-        }
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
+      // Shared cache — collapses parallel /auth/me calls from Navbar +
+      // CommunityPage + SetupDetailPage etc. into ONE network request,
+      // which is what stopped the rate limiter from blanking the avatar.
+      const data = await getCurrentUser();
+      if (data) {
+        setUser(data);
+      } else if (!localStorage.getItem("accessToken")) {
+        // No token at all — really logged out.
+        setIsLoggedIn(false);
+        setUser(null);
       }
+      // If data is null but we still have a token, /auth/me failed
+      // transiently (rate limit, server hiccup). Don't kick the user out;
+      // the next refreshAuthState tick will retry.
     };
     fetchUser();
   }, [isLoggedIn]);
@@ -100,11 +107,27 @@ function Navbar({ darkMode, setDarkMode }) {
     };
   }, [refreshAuthState]);
 
-  function handleLogout() {
+  async function handleLogout() {
+    // Best-effort server-side logout so the refresh token is invalidated
+    // on the backend. We don't block local logout on this — if the network
+    // is down the user still gets logged out from the UI.
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      try {
+        await fetch("http://localhost:20025/api/v1/auth/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch {
+        // ignore — clear local state regardless
+      }
+    }
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     setIsLoggedIn(false);
     setUser(null);
+    invalidateCurrentUser();
     window.dispatchEvent(new Event("auth-change"));
     navigate("/login");
   }
@@ -208,6 +231,10 @@ function Navbar({ darkMode, setDarkMode }) {
                     </span>
                   </div>
                 )}
+                {/* Direct entry point to enable / re-configure / disable MFA */}
+                <Link to="/mfa/settings" className="navbar-auth-link" title="Two-factor authentication">
+                  <i className="bi bi-shield-lock me-1"></i>MFA
+                </Link>
                 <button
                   type="button"
                   className="navbar-auth-link"

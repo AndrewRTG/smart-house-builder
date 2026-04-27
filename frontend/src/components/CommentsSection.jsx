@@ -270,6 +270,11 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
 
     try {
       const token = localStorage.getItem('accessToken');
+      // CommentController exposes a top-level DELETE /api/v1/comments/{id}
+      // (verified against CommentController.java line 64). It does NOT
+      // expose /setups/{id}/comments/{cid} — that route doesn't exist.
+      // I previously swapped to the nested form based on a stale spec;
+      // that's what was making delete silently fail. Reverted.
       const response = await fetch(`${API_BASE}/comments/${commentId}`, {
         method: 'DELETE',
         headers: {
@@ -280,7 +285,13 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
       if (response.ok) {
         fetchComments();
       } else {
-        showError('Failed to delete comment');
+        // Surface the server's actual error so the next debugging round
+        // doesn't have to read the network tab to find out what went wrong.
+        const data = await response.json().catch(() => null);
+        const msg = data?.message
+          || data?.error
+          || `Failed to delete comment (HTTP ${response.status})`;
+        showError(msg);
       }
     } catch (error) {
       console.error('Error deleting comment:', error);

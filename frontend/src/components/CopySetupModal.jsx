@@ -36,6 +36,9 @@ export default function CopySetupModal({ isOpen, onClose, originalSetup, onSucce
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        // Backend CopySetupRequest field is `name` (verified against
+        // CopySetupRequest.java in this repo). Earlier I incorrectly
+        // changed this to `newName` based on a stale spec — reverted.
         body: JSON.stringify({ name: name.trim() }),
       });
 

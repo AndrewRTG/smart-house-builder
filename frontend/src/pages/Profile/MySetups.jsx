@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Home, Tag, Heart, MessageCircle, Plus, X, Trash2 } from "lucide-react";
 import { useError } from "../../context/ErrorContext";
+import { fuzzyFilter } from "../../utils/fuzzySearch";
 import "./MySetups.css";
 
 const API_BASE = 'http://localhost:20025/api/v1';
 
 export default function MySetups({ isDark }) {
+  const navigate = useNavigate();
   const { showError, showSuccess } = useError();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("drafts");
@@ -171,24 +174,22 @@ export default function MySetups({ isDark }) {
     if (e.key === "Escape") handleCloseModal();
   };
 
-  const filteredDrafts = drafts.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
-  );
-  const filteredPublished = published.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // Fuzzy filter — same matcher Community uses, so "smrtsec" matches
+  // "Smart Security Suite" the same way in both places.
+  const filteredDrafts = fuzzyFilter(drafts, search, (s) => [s.name, s.description]);
+  const filteredPublished = fuzzyFilter(published, search, (s) => [s.name, s.description]);
 
   const renderSetupCard = (setup, isDraft = false) => (
     <div className="setup-card" key={setup.id}>
       <div className="card-image">
         <span className={`status-badge ${isDraft ? 'draft' : 'published'}`}>
-          {isDraft ? 'Ciornă' : 'Publicat'}
+          {isDraft ? 'Draft' : 'Published'}
         </span>
       </div>
       <div className="card-body">
         <h3 className="card-title">{setup.name}</h3>
         <div className="card-meta">
-          <span className="meta-item"><Home size={14} /> {setup.deviceCount || 0} dispozitive</span>
+          <span className="meta-item"><Home size={14} /> {setup.deviceCount || 0} devices</span>
           <span className="price">{setup.price || '—'}</span>
         </div>
         <div className="card-tags">
@@ -200,7 +201,10 @@ export default function MySetups({ isDark }) {
         </div>
         {isDraft && (
           <div className="card-buttons">
-            <button className="btn-edit" onClick={() => console.log('Edit:', setup.id)}>
+            {/* The dedicated draft-edit page (/builder?draft=:id) doesn't
+                exist yet — until it does, "Edit" sends users to the same
+                detail page View uses, where they can preview and publish. */}
+            <button className="btn-edit" onClick={() => navigate(`/setups/${setup.id}`)}>
               Edit
             </button>
             <button className="btn-publish" onClick={() => handlePublish(setup.id)}>
@@ -213,7 +217,7 @@ export default function MySetups({ isDark }) {
         )}
         {!isDraft && (
           <div className="card-buttons">
-            <button className="btn-view" onClick={() => console.log('View:', setup.id)}>
+            <button className="btn-view" onClick={() => navigate(`/setups/${setup.id}`)}>
               View
             </button>
             <button

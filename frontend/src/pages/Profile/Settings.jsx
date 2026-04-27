@@ -1,15 +1,23 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Edit2, Lock, Trash2, Upload, Check, X } from "lucide-react";
 import { useError } from "../../context/ErrorContext";
+import { authFetch } from "../../utils/authFetch";
 import "./Settings.css";
 
 const API_BASE = "http://localhost:20025/api/v1";
 
 export default function Settings({ profile }) {
+  const navigate = useNavigate();
   const { showError, showSuccess } = useError();
   const [username, setUsername] = useState(profile?.username || "");
   const [email, setEmail] = useState(profile?.email || "");
   const [mfaEnabled, setMfaEnabled] = useState(profile?.mfaEnabled || false);
+  // Re-sync local state when the profile prop arrives (it's null on first
+  // render while ProfilePage is fetching /auth/me).
+  useEffect(() => { if (profile?.username) setUsername(profile.username); }, [profile?.username]);
+  useEffect(() => { if (profile?.email) setEmail(profile.email); }, [profile?.email]);
+  useEffect(() => { setMfaEnabled(!!profile?.mfaEnabled); }, [profile?.mfaEnabled]);
   const [editingUsername, setEditingUsername] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -102,22 +110,24 @@ export default function Settings({ profile }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/users/username`, {
+      // authFetch handles 401 -> refresh -> retry so a stale access token
+      // doesn't lose the user's edit.
+      const response = await authFetch(`${API_BASE}/users/username`, {
         method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newUsername: username }),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update username");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || data.message || "Failed to update username");
       }
 
       showSuccess("Username updated successfully!");
       setEditingUsername(false);
+      // Tell ProfilePage / Navbar to re-read /auth/me so the new username
+      // shows up everywhere, not just here.
+      window.dispatchEvent(new Event("auth-change"));
     } catch (err) {
       showError(err.message);
     } finally {
@@ -150,22 +160,20 @@ export default function Settings({ profile }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/users/email`, {
+      const response = await authFetch(`${API_BASE}/users/email`, {
         method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newEmail: email }),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update email");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || data.message || "Failed to update email");
       }
 
       showSuccess("Email updated successfully!");
       setEditingEmail(false);
+      window.dispatchEvent(new Event("auth-change"));
     } catch (err) {
       showError(err.message);
     } finally {
@@ -191,39 +199,46 @@ export default function Settings({ profile }) {
     }
   };
 
+  /**
+   * 2FA toggle — proper flow, NOT the dangerous one-shot /users/mfa/toggle.
+   *
+   * To enable: redirect to /mfa/setup. That page calls /auth/mfa/setup,
+   *   shows the QR + secret, and only flips mfaEnabled after the user
+   *   enters a valid 6-digit TOTP through /auth/mfa/confirm. This prevents
+   *   silent self-lockout (toggling on without ever pairing an app).
+   *
+   * To disable: DELETE /auth/mfa/disable directly (with confirm).
+   */
   const handle2FAToggle = async () => {
-    if (mfaEnabled) {
-      // User wants to disable 2FA - show warning
-      const confirmed = window.confirm(
-        "⚠️  WARNING: Disabling two-factor authentication will make your account vulnerable to unauthorized access. " +
-        "Attackers could steal your password and gain full access to your account, including sensitive data. " +
-        "\n\nAre you sure you want to disable 2FA? This action is not recommended."
-      );
-
-      if (!confirmed) return;
+    if (!mfaEnabled) {
+      // Enable: send the user through the QR-code flow.
+      navigate("/mfa/setup");
+      return;
     }
 
+    const confirmed = window.confirm(
+      "Disable two-factor authentication?\n\n" +
+      "Your account will be less secure — anyone with your password will be able to sign in."
+    );
+    if (!confirmed) return;
+
     setLoading(true);
-
     try {
-      const response = await fetch(`${API_BASE}/users/mfa/toggle`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to toggle 2FA");
+      if (!token) {
+        showError("Session expired. Please login again.");
+        return;
       }
-
-      setMfaEnabled(!mfaEnabled);
-      showSuccess(
-        !mfaEnabled
-          ? "Two-factor authentication enabled! Please scan the QR code with your authenticator app."
-          : "Two-factor authentication disabled."
-      );
+      const response = await authFetch(`${API_BASE}/auth/mfa/disable`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || data.error || "Failed to disable 2FA");
+      }
+      setMfaEnabled(false);
+      // Sync to /auth/me everywhere
+      window.dispatchEvent(new Event("auth-change"));
+      showSuccess("Two-factor authentication disabled.");
     } catch (err) {
       showError(err.message);
     } finally {
@@ -231,23 +246,18 @@ export default function Settings({ profile }) {
     }
   };
 
+  /**
+   * Delete account — the backend has no DELETE /users/me endpoint yet, so
+   * this UI tells the truth: the request was queued (or, more honestly,
+   * isn't implemented yet) and asks the user to email support. We do NOT
+   * fake a success message claiming the account is gone.
+   */
   const handleDeleteAccount = () => {
-    const confirmed = window.confirm(
-      "⚠️  This action is IRREVERSIBLE!\n\n" +
-      "Deleting your account will:\n" +
-      "• Permanently delete all your setups\n" +
-      "• Remove all your data from our servers\n" +
-      "• Cancel your subscriptions (if any)\n\n" +
-      "Type your password to confirm deletion."
+    window.alert(
+      "Account deletion is not self-serve yet.\n\n" +
+      "Please email support@smartbuildup.com from your registered address " +
+      "and we'll permanently delete your data within 30 days."
     );
-
-    if (confirmed) {
-      const password = prompt("Enter your password to confirm account deletion:");
-      if (password) {
-        // TODO: Call API to delete account
-        showSuccess("Account deletion requested. You will receive a confirmation email.");
-      }
-    }
   };
 
   return (
@@ -261,7 +271,7 @@ export default function Settings({ profile }) {
           <div className="avatar-large">
             {username?.charAt(0)?.toUpperCase() || "U"}
           </div>
-          <button className="upload-btn">
+          <button className="upload-btn" disabled title="Custom avatars are coming soon">
             <Upload size={16} />
             Change Photo
           </button>

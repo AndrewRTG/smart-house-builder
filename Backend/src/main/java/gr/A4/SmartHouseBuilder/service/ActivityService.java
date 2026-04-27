@@ -1,8 +1,16 @@
 package gr.A4.SmartHouseBuilder.service;
 
 import gr.A4.SmartHouseBuilder.dto.ActivityItem;
-import gr.A4.SmartHouseBuilder.entity.*;
-import gr.A4.SmartHouseBuilder.repository.*;
+import gr.A4.SmartHouseBuilder.entity.Comment;
+import gr.A4.SmartHouseBuilder.entity.Like;
+import gr.A4.SmartHouseBuilder.entity.Setup;
+import gr.A4.SmartHouseBuilder.entity.SetupStatus;
+import gr.A4.SmartHouseBuilder.entity.Wishlist;
+import gr.A4.SmartHouseBuilder.repository.CommentRepository;
+import gr.A4.SmartHouseBuilder.repository.LikeRepository;
+import gr.A4.SmartHouseBuilder.repository.SetupRepository;
+import gr.A4.SmartHouseBuilder.repository.UserRepository;
+import gr.A4.SmartHouseBuilder.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -197,6 +205,4 @@ public class ActivityService {
                 ? trimmed
                 : trimmed.substring(0, EXCERPT_LENGTH) + "…";
     }
-
-
 }

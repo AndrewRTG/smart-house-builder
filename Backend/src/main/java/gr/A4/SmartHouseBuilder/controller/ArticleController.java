@@ -71,15 +71,6 @@ public class ArticleController {
         return ResponseEntity.ok(articles.stream().map(this::toResponse).toList());
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<ArticleResponse>> searchArticles(
-            @RequestParam String query) {
-
-        List<Article> articles = articleService.searchArticles(query);
-
-        return ResponseEntity.ok(articles.stream().map(this::toResponse).toList());
-    }
-
     private ArticleResponse toResponse(Article article) {
         return ArticleResponse.builder()
                 .id(article.getId())

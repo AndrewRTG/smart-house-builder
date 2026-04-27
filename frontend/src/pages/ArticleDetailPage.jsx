@@ -44,18 +44,9 @@ export default function ArticleDetailPage({ darkMode }) {
   };
 
   const fetchCurrentUser = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-    }
+    // Shared cache — see utils/currentUser.js for why.
+    const data = await getCurrentUser();
+    setUser(data);
   };
 
   const fetchLikeData = async () => {

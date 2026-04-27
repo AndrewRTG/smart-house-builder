@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Heart, Bookmark } from 'lucide-react';
 import CommentsSection from '../components/CommentsSection';
 import { useError } from '../context/ErrorContext';
+import { getCurrentUser } from '../utils/currentUser';
 import '../styles/DetailPage.css';
 
 const API_BASE = 'http://localhost:20025/api/v1';
@@ -47,18 +48,9 @@ export default function SetupDetailPage({ darkMode }) {
   };
 
   const fetchCurrentUser = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-    }
+    // Shared cache — see utils/currentUser.js for why.
+    const data = await getCurrentUser();
+    setUser(data);
   };
 
   const fetchLikeData = async () => {

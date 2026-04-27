@@ -25,6 +25,11 @@ export default function OAuthCallbackPage() {
 
   useEffect(() => {
     const token = params.get("token");
+    // Backend now sends ?refreshToken=<...> alongside ?token=<...> as well.
+    // If a future build downgrades and the param is missing, we fall back
+    // to clearing the slot so authFetch's refresh path is a clean no-op
+    // instead of trying to refresh against a stale token.
+    const refreshToken = params.get("refreshToken");
     if (!token) {
       navigate("/login", {
         replace: true,
@@ -33,10 +38,11 @@ export default function OAuthCallbackPage() {
       return;
     }
     localStorage.setItem("accessToken", token);
-    // No refresh token from the OAuth flow yet — that's a backend gap to
-    // address later. Until then the user gets one access-token lifetime
-    // (~15 min) before being asked to sign in again.
-    localStorage.removeItem("refreshToken");
+    if (refreshToken) {
+      localStorage.setItem("refreshToken", refreshToken);
+    } else {
+      localStorage.removeItem("refreshToken");
+    }
     window.dispatchEvent(new Event("auth-change"));
     navigate("/profile", { replace: true });
   }, [params, navigate]);

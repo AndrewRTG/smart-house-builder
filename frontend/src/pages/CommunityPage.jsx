@@ -88,12 +88,23 @@ export default function CommunityPage({ darkMode }) {
       setLoading(true);
       const response = await fetch(`${API_BASE}/setups?page=${page}&size=10`);
       const data = await response.json();
-      setSetups(data.content || []);
+      const items = data.content || [];
+      setSetups(items);
 
-      // Fetch like counts and comment counts for all setups
-      data.content?.forEach((setup) => {
-        fetchSetupLikeData(setup.id);
-        fetchSetupCommentCount(setup.id);
+      // The backend now ships likeCount / wishlistCount / commentCount
+      // INLINE on each SetupResponse (see SetupController.toResponse). No
+      // more N+1: one COUNT per setup, server-side, in the same transaction
+      // as the list query, instead of three round trips per card from the
+      // browser. Seed the count maps in one synchronous pass.
+      setLikeCounts((prev) => {
+        const next = new Map(prev);
+        for (const s of items) next.set(`setup-${s.id}`, s.likeCount ?? 0);
+        return next;
+      });
+      setCommentCounts((prev) => {
+        const next = new Map(prev);
+        for (const s of items) next.set(`setup-${s.id}`, s.commentCount ?? 0);
+        return next;
       });
     } catch (error) {
       console.error('Failed to fetch setups:', error);
@@ -106,12 +117,19 @@ export default function CommunityPage({ darkMode }) {
     try {
       const response = await fetch(`${API_BASE}/articles?page=${page}&size=10`);
       const data = await response.json();
-      setArticles(data.content || []);
+      const items = data.content || [];
+      setArticles(items);
 
-      // Fetch like counts and comment counts for all articles
-      data.content?.forEach((article) => {
-        fetchArticleLikeData(article.id);
-        fetchArticleCommentCount(article.id);
+      // Counts inline (same fix as fetchSetups).
+      setLikeCounts((prev) => {
+        const next = new Map(prev);
+        for (const a of items) next.set(`article-${a.id}`, a.likeCount ?? 0);
+        return next;
+      });
+      setCommentCounts((prev) => {
+        const next = new Map(prev);
+        for (const a of items) next.set(`article-${a.id}`, a.commentCount ?? 0);
+        return next;
       });
     } catch (error) {
       console.error('Failed to fetch articles:', error);

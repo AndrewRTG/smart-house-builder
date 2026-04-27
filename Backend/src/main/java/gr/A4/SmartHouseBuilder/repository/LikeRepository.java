@@ -31,4 +31,13 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
     @Modifying
     @Query("DELETE FROM Like l WHERE l.setup.id = :setupId")
     void deleteAllBySetupId(@Param("setupId") Long setupId);
+
+    /**
+     * Twin of deleteAllBySetupId for articles. Required by ArticleService.deleteArticle —
+     * without it, deleting an article that has even one like throws a FK
+     * violation on likes.article_id.
+     */
+    @Modifying
+    @Query("DELETE FROM Like l WHERE l.article.id = :articleId")
+    void deleteAllByArticleId(@Param("articleId") Long articleId);
 }

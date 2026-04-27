@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.dto.ArticleRequest;
 import gr.A4.SmartHouseBuilder.dto.ArticleResponse;
 import gr.A4.SmartHouseBuilder.entity.Article;
+import gr.A4.SmartHouseBuilder.repository.CommentRepository;
+import gr.A4.SmartHouseBuilder.repository.LikeRepository;
 import gr.A4.SmartHouseBuilder.service.ArticleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,10 @@ import java.util.List;
 public class ArticleController {
     private final ArticleService articleService;
     private final ObjectMapper objectMapper;
+    // Same inline-counter pattern as SetupController. See SetupController.toResponse
+    // for the rationale (kills the CommunityPage N+1 fanout).
+    private final LikeRepository likeRepository;
+    private final CommentRepository commentRepository;
 
     @PostMapping
     public ResponseEntity<ArticleResponse> createArticle(
@@ -72,6 +78,8 @@ public class ArticleController {
     }
 
     private ArticleResponse toResponse(Article article) {
+        long likes = likeRepository.countByArticleId(article.getId());
+        long comments = commentRepository.countByArticleId(article.getId());
         return ArticleResponse.builder()
                 .id(article.getId())
                 .title(article.getTitle())
@@ -81,6 +89,8 @@ public class ArticleController {
                 .deviceIds(deserializeDeviceIds(article.getDeviceIds()))
                 .createdAt(article.getCreatedAt())
                 .updatedAt(article.getUpdatedAt())
+                .likeCount(likes)
+                .commentCount(comments)
                 .build();
     }
 

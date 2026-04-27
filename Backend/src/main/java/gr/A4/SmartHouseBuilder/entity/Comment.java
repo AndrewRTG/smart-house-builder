@@ -19,8 +19,16 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /*
+     * `nullable = true` is intentional. The hybrid-delete strategy in
+     * CommentService.deleteComment soft-deletes a comment WITH replies by
+     * calling setUser(null) so the gravestone row no longer points at the
+     * original author (privacy + UI shows a generic "User"). With the old
+     * `nullable = false`, that save() would fail at flush time. We allow
+     * NULL here and the service is the only place that ever writes it.
+     */
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
     @ManyToOne
@@ -42,7 +50,34 @@ public class Comment {
     @JsonIgnore
     private Comment parentComment;
 
-    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
+    /*
+     * IMPORTANT (2026-04-27 refactor): cascade and orphanRemoval REMOVED.
+     *
+     * The hybrid-delete strategy in CommentService.deleteComment is:
+     *   - leaf comment (no active replies)  -> repository.delete (hard)
+     *   - non-leaf                            -> setDeleted(true) (soft)
+     *
+     * With CascadeType.ALL still in place, a hard-delete on a non-leaf would
+     * silently cascade-wipe every descendant reply, defeating the soft
+     * delete. Worse, with orphanRemoval=true, simply CLEARING the in-memory
+     * `replies` collection (which JPA does invisibly during merges) would
+     * delete all those rows. Removing the cascade makes the lifecycle of
+     * each Comment row explicit: only the service decides who lives.
+     *
+     * Side effects this triggers and how each is handled:
+     *   1. SetupService.deleteSetup used to rely on the cascade to wipe a
+     *      setup's whole comment tree when the setup itself is deleted.
+     *      That now goes through CommentService.deleteCommentTreeForSetup
+     *      which deletes leaves first, then parents, post-order — which
+     *      respects the self-FK without needing cascade.
+     *   2. ArticleService.deleteArticle had the SAME implicit dependency
+     *      and the SAME fix: deleteCommentTreeForArticle.
+     *   3. parent_comment_id at the DB level is left as ON DELETE NO ACTION
+     *      because we never want a parent's removal to silently take its
+     *      children with it. The service is the only path that touches the
+     *      tree, and it walks bottom-up.
+     */
+    @OneToMany(mappedBy = "parentComment")
     private List<Comment> replies;
 
     /**

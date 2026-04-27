@@ -21,4 +21,8 @@ public class ArticleResponse {
     private List<Long> deviceIds;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // Inline counters (2026-04-27, same fix as SetupResponse).
+    @lombok.Builder.Default private Long likeCount = 0L;
+    @lombok.Builder.Default private Long commentCount = 0L;
 }

@@ -6,6 +6,9 @@ import gr.A4.SmartHouseBuilder.dto.CopySetupRequest;
 import gr.A4.SmartHouseBuilder.dto.SetupRequest;
 import gr.A4.SmartHouseBuilder.dto.SetupResponse;
 import gr.A4.SmartHouseBuilder.entity.Setup;
+import gr.A4.SmartHouseBuilder.repository.CommentRepository;
+import gr.A4.SmartHouseBuilder.repository.LikeRepository;
+import gr.A4.SmartHouseBuilder.repository.WishlistRepository;
 import gr.A4.SmartHouseBuilder.service.SetupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,12 @@ import java.util.List;
 public class SetupController {
     private final SetupService setupService;
     private final ObjectMapper objectMapper;
+    // Used by toResponse to fill the inline counters on each card so the
+    // CommunityPage doesn't fan out to /like-count, /wishlist-count, and
+    // /comment-count for every setup it renders.
+    private final LikeRepository likeRepository;
+    private final WishlistRepository wishlistRepository;
+    private final CommentRepository commentRepository;
 
     @PostMapping
     public ResponseEntity<SetupResponse> createSetup(
@@ -107,6 +116,21 @@ public class SetupController {
     }
 
     private SetupResponse toResponse(Setup setup) {
+        // Three counts in three small scalar queries each — Hibernate logs
+        // them as `SELECT COUNT(*)`, no joins, no N+1 because there's just
+        // ONE per setup card, not one per type per card. For a 10-item page
+        // that's 30 cheap COUNT queries instead of 30 round trips of
+        // /like-count + /wishlist-count + /comment-count from the browser.
+        Long setupId = setup.getId();
+        long likes = likeRepository.countBySetupId(setupId);
+        long wishlists = wishlistRepository.countBySetupId(setupId);
+        long comments = commentRepository.countBySetupId(setupId);
+
+        // Author info, also inlined so the frontend doesn't have to do a
+        // separate /auth/me lookup just to render the avatar.
+        Long authorId = setup.getUser() != null ? setup.getUser().getId() : null;
+        String authorName = setup.getUser() != null ? setup.getUser().getUsername() : "User";
+
         return SetupResponse.builder()
                 .id(setup.getId())
                 .name(setup.getName())
@@ -117,6 +141,11 @@ public class SetupController {
                 .createdAt(setup.getCreatedAt())
                 .updatedAt(setup.getUpdatedAt())
                 .copiedFromId(setup.getCopiedFromId())
+                .likeCount(likes)
+                .wishlistCount(wishlists)
+                .commentCount(comments)
+                .authorId(authorId)
+                .authorUsername(authorName)
                 .build();
     }
 

@@ -17,6 +17,7 @@ import ArticleDetailPage from './pages/ArticleDetailPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function HomePage() {
   return <div></div>;
@@ -61,12 +62,21 @@ function App() {
             <Route path="/builder" element={<BuilderPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/community" element={<CommunityPage darkMode={darkMode} />} />
-            <Route path="/mfa/setup" element={<MfaSetupPage />} />
             <Route path="/mfa/verify" element={<MfaVerifyPage />} />
-            <Route path="/mfa/settings" element={<MfaSettingsPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/profile" element={<ProfilePage darkMode={darkMode} />} />
+            {/*
+              Auth-required group. ProtectedRoute kicks anyone without a
+              token to /login and remembers where they were going so the
+              login form can send them back. Replaces the ad-hoc
+              localStorage.getItem('accessToken') checks each of these
+              pages used to do on its own.
+            */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<ProfilePage darkMode={darkMode} />} />
+              <Route path="/mfa/setup" element={<MfaSetupPage />} />
+              <Route path="/mfa/settings" element={<MfaSettingsPage />} />
+            </Route>
             {/*
               Detail routes are registered under BOTH the singular and plural
               forms. CommunityPage uses singular ("/setup/:id"); the Activity

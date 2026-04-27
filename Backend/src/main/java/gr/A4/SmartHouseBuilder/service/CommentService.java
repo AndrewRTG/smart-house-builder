@@ -134,7 +134,13 @@ public class CommentService {
         //     child we just removed, we can clean the parent up too, and
         //     keep walking up the chain until we hit a real comment or run
         //     out of ancestors.
-        boolean hasReplies = comment.getReplies() != null && !comment.getReplies().isEmpty();
+        //
+        // We count children with a fresh DB query rather than reading
+        // comment.getReplies() because we removed CascadeType.ALL from the
+        // entity (see Comment.java) and the in-memory list is now lazy and
+        // sometimes stale within a transaction. The repository's
+        // countByParentCommentId is the source of truth.
+        boolean hasReplies = commentRepository.countByParentCommentId(commentId) > 0;
 
         if (hasReplies) {
             comment.setContent(null);
@@ -173,6 +179,52 @@ public class CommentService {
             commentRepository.delete(ancestor);
             ancestor = grandparent;
         }
+    }
+
+    /**
+     * Hard-delete every comment attached to a setup, regardless of soft-deleted
+     * state. Used by SetupService.deleteSetup as a replacement for the
+     * implicit JPA cascade we removed from Comment.replies (see Comment.java
+     * for the rationale).
+     *
+     * Algorithm: post-order DFS from each root. We delete leaves first, then
+     * their parents, so the self-FK parent_comment_id never points at a
+     * non-existent row mid-transaction. A bulk JPQL delete won't work for the
+     * same reason — Postgres evaluates FKs row by row.
+     */
+    @Transactional
+    public void deleteCommentTreeForSetup(Long setupId) {
+        commentRepository.findBySetupIdAndParentCommentIsNull(setupId)
+                .forEach(this::deleteSubtree);
+    }
+
+    /**
+     * Twin of deleteCommentTreeForSetup but for an article.
+     * ArticleService used to leave comments dangling on article delete (the
+     * row's FK to articles is non-nullable, so an article delete would 500
+     * once the article had even one comment); calling this from
+     * ArticleService.deleteArticle fixes that.
+     */
+    @Transactional
+    public void deleteCommentTreeForArticle(Long articleId) {
+        commentRepository.findByArticleIdAndParentCommentIsNull(articleId)
+                .forEach(this::deleteSubtree);
+    }
+
+    /**
+     * Post-order recursive delete. Reads child rows from the DB (not the
+     * possibly-stale in-memory replies collection, which we no longer
+     * cascade-fetch).
+     */
+    private void deleteSubtree(Comment node) {
+        // Snapshot children before we start deleting, otherwise iterating a
+        // collection that's mutating under us is undefined behaviour.
+        List<Comment> children = new ArrayList<>(
+                commentRepository.findByParentCommentId(node.getId()));
+        for (Comment child : children) {
+            deleteSubtree(child);
+        }
+        commentRepository.delete(node);
     }
 
     @Transactional(readOnly = true)

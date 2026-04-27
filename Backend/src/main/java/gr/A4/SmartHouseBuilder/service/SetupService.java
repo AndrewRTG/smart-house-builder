@@ -36,7 +36,11 @@ public class SetupService {
     private final SetupRepository setupRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
-    // These three are only needed for the cascade-delete path in deleteSetup.
+    // These three repos + CommentService are only needed for the
+    // cascade-delete path in deleteSetup. We go through CommentService for
+    // the comment subtree because Comment.java no longer has CascadeType.ALL
+    // — see the doc comment on Comment.replies for why.
+    private final CommentService commentService;
     // The setup entity has no inverse collections for these (they live on
     // @ManyToOne sides), so we clear them explicitly before removing the setup.
     private final CommentRepository commentRepository;
@@ -116,15 +120,18 @@ public class SetupService {
         //   - wishlist.setup_id  (on-delete: no action)
         //
         // For comments: Comment has a self-referencing parent_comment_id FK
-        // (for threaded replies), so a single bulk DELETE WHERE setup_id=X is
-        // unsafe — Postgres can hit the FK mid-statement. Instead we fetch
-        // the ROOTS only and delete each one; the Comment entity's
-        // CascadeType.ALL + orphanRemoval=true on its 'replies' collection
-        // tells Hibernate to remove children recursively, safely.
+        // (for threaded replies). After the 2026-04-27 entity refactor,
+        // Comment.replies no longer has CascadeType.ALL, so we can't just
+        // delete the root and let JPA recurse. CommentService.deleteCommentTreeForSetup
+        // walks each root post-order (leaves first, then the parent, then
+        // the grandparent...) so the self-FK never points at a missing row
+        // mid-transaction. The previous comment in this file claimed the
+        // cascade was the only safe path; that's no longer true and the
+        // explicit walk is the new contract.
         //
         // Likes and wishlist don't have self-refs, so a single bulk DELETE is
         // fine for them and saves a round trip per row.
-        commentRepository.findBySetupIdAndParentCommentIsNull(id).forEach(commentRepository::delete);
+        commentService.deleteCommentTreeForSetup(id);
         likeRepository.deleteAllBySetupId(id);
         wishlistRepository.deleteAllBySetupId(id);
 

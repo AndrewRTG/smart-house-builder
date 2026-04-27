@@ -20,6 +20,13 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /** Used by ancestor-cleanup in soft-delete: how many replies does this stub still have? */
     long countByParentCommentId(Long parentCommentId);
 
+    /**
+     * Children of a given comment. Used by CommentService.deleteSubtree to walk
+     * the tree post-order without relying on Comment.replies (which is no
+     * longer cascade-fetched after we dropped CascadeType.ALL).
+     */
+    java.util.List<Comment> findByParentCommentId(Long parentCommentId);
+
     /** Activity tab: "your comments", most recent first. Covers both setup and article comments. */
     java.util.List<Comment> findByUserIdOrderByCreatedAtDesc(Long userId, org.springframework.data.domain.Pageable pageable);
 

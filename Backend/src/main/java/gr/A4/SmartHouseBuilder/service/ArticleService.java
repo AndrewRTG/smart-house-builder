@@ -7,6 +7,7 @@ import gr.A4.SmartHouseBuilder.dto.ArticleRequest;
 import gr.A4.SmartHouseBuilder.entity.Article;
 import gr.A4.SmartHouseBuilder.entity.User;
 import gr.A4.SmartHouseBuilder.repository.ArticleRepository;
+import gr.A4.SmartHouseBuilder.repository.LikeRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,10 @@ public class ArticleService {
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    // Needed only by deleteArticle, to wipe child rows before deleting the
+    // article itself. Comments and likes have non-nullable FKs to article_id.
+    private final CommentService commentService;
+    private final LikeRepository likeRepository;
 
     @Transactional
     public Article createArticle(String email, ArticleRequest request) {
@@ -68,6 +73,14 @@ public class ArticleService {
         Long userId = getUserId(email);
         Article article = articleRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Article not found or not owned by you"));
+
+        // Articles have non-nullable FKs from comments.article_id and
+        // likes.article_id. Before this refactor an article with even one
+        // comment threw at flush time — the implicit JPA cascade we used to
+        // have on Comment.replies wasn't doing anything for the
+        // article_id FK. Now we always explicitly clean up children.
+        commentService.deleteCommentTreeForArticle(id);
+        likeRepository.deleteAllByArticleId(id);
 
         articleRepository.delete(article);
         log.info("Article deleted: {} by user: {}", id, email);

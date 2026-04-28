@@ -141,9 +141,6 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="flex-1 flex flex-col lg:flex-row gap-6 mt-2 mb-10">
-                  <div className="w-full lg:w-[280px] flex-shrink-0">
-                    <WizardSidebar />
-                  </div>
 
                   <div className={`flex-1 relative min-h-[600px] rounded-3xl ${theme.canvasBorder}`}>
                     <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-inner border border-transparent">

@@ -94,7 +94,11 @@ import React, { useState, useEffect , useRef} from 'react';
 
   const App: React.FC = () => {
 
-
+    // --- COD NOU PENTRU FILTRARE ---
+    const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
+    const [devices, setDevices] = useState<any[]>([]); // Aici vom ține produsele de la backend
+    const [loading, setLoading] = useState(false);
+    // -------------------------------
 
     const generateLayoutId = () => {
       const randomSegment = () => Math.floor(1000 + Math.random() * 9000).toString();
@@ -282,6 +286,47 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
       }, []);
+
+      //FILTRE DE LA ECHIPA1------------------------
+    useEffect(() => {
+      const fetchFilteredDevices = async () => {
+        setLoading(true);
+        try {
+          let url = new URL('http://localhost:20025/api/devices');
+
+          // Parametrii ceruți de backend
+          url.searchParams.append('minPrice', priceRange[0].toString());
+          url.searchParams.append('maxPrice', priceRange[1].toString());
+
+          // Mapăm protocoalele
+          protocols.forEach(p => url.searchParams.append('protocol', p));
+
+          // Mapăm categoriile din Sidebar la ID-urile din baza de date
+          const categoryMapping: Record<string, number> = {
+            "LightBulb/bec": 1,
+            "Senzori": 2,
+            "Plug/priza": 3,
+            "Hub": 4,
+            "Smart locks": 5
+          };
+          categories.forEach(catName => {
+            const id = categoryMapping[catName];
+            if (id) url.searchParams.append('categoryId', id.toString());
+          });
+
+          const response = await fetch(url.toString());
+          const data = await response.json();
+          setDevices(data); // Punem produsele primite în listă
+        } catch (error) {
+          console.error("Eroare la preluarea datelor:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchFilteredDevices();
+    }, [priceRange, categories, protocols, brands, ecosystem]);
+    //-----------------------------
 
       // culorile temei pentru restul aplicatiei
       const theme = {
@@ -817,21 +862,28 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
                   ))}
                 </div>
 
+                {/* AFISARE CATALOG SCHIMBATA - ECHIPA 1 */}
                 <div className="flex flex-col gap-3 max-h-[230px] overflow-y-auto no-scrollbar px-1 py-1">
-                  {catalogDevices.map((d) => {
-                    const IconComponent = ICON_MAP[d.type] || ControllerIcon;
-                    return (
-                      <div
-                        key={d.id}
-                        onClick={() => {
-                          setActiveTool(null); 
-                          setSelectedDevice(selectedDevice?.id === d.id ? null : d);
-                        }}
-                        className={`flex items-center justify-between p-3 rounded-2xl shadow-sm cursor-pointer border-2 transition-all ${selectedDevice?.id === d.id
-                            ? `scale-[1.02] z-10 ${isDarkMode ? 'border-[#00B4D8]' : 'border-[#2C3E50]'}`
-                            : `border-transparent ${theme.card}`
-                          }`}
-                      >
+                  {loading ? (
+                      <div className="text-[10px] text-center opacity-50 py-4">Se încarcă produsele...</div>
+                  ) : devices.length === 0 ? (
+                      <div className="text-[10px] text-center opacity-50 py-4">Niciun dispozitiv găsit pentru filtrele selectate.</div>
+                  ) : (
+                      devices.map((d) => {
+                        const IconComponent = ICON_MAP[d.type] || ControllerIcon;
+                        return (
+                            <div
+                                key={d.id}
+                                onClick={() => {
+                                  setActiveTool(null);
+                                  setSelectedDevice(selectedDevice?.id === d.id ? null : d);
+                                }}
+                                className={`flex items-center justify-between p-3 rounded-2xl shadow-sm cursor-pointer border-2 transition-all ${
+                                    selectedDevice?.id === d.id ? `scale-[1.02] z-10 ${isDarkMode ? 'border-[#00B4D8]' : 'border-[#2C3E50]'}` : `border-transparent ${theme.card}`
+                                }`}
+                            >
+                            {/*-----------------------------------*/}
+
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm`}>
                             <IconComponent color={isDarkMode ? "white" : "#000000"} />

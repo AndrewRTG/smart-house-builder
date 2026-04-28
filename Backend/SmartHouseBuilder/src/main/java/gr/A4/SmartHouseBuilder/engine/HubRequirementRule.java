@@ -5,47 +5,25 @@ import gr.A4.SmartHouseBuilder.model.SetupBuild;
 import gr.A4.SmartHouseBuilder.model.ValidationResult;
 
 public class HubRequirementRule implements IValidationRule {
-
     @Override
     public ValidationResult validate(SetupBuild build) {
-        if (build == null) {
-            return new ValidationResult(false, "ERROR", "SetupBuild is null.");
-        }
-
-        if (build.getDevices() == null || build.getDevices().isEmpty()) {
-            return new ValidationResult(true, "INFO", "There are no devices to be checked.");
-        }
-
         boolean hasHub = false;
-        boolean requiresHub = false;
+        boolean needsHub = false;
 
-        for (PlacedDevice placedDevice : build.getDevices()) {
-            if (placedDevice == null || placedDevice.getDevice() == null) {
-                continue;
-            }
+        for (PlacedDevice pd : build.getDevices()) {
+            String proto = pd.getDevice().getProtocol();
+            String type = pd.getDevice().getDeviceType();
 
-            String name = placedDevice.getDevice().getName();
-            String deviceType = placedDevice.getDevice().getDeviceType();
-
-            if ((name != null && name.toLowerCase().contains("hub")) ||
-                (deviceType != null && deviceType.toLowerCase().contains("hub"))) {
-                hasHub = true;
-            }
-
-            // Heuristică simplă: anumite device-uri pot avea nevoie de hub
-            String protocol = placedDevice.getDevice().getProtocol();
-            if (protocol != null) {
-                String normalized = protocol.toLowerCase();
-                if (normalized.contains("zigbee") || normalized.contains("zwave") || normalized.contains("z-wave")) {
-                    requiresHub = true;
-                }
+            if (type != null && type.toLowerCase().contains("hub")) hasHub = true;
+            
+            if (proto != null && (proto.toLowerCase().contains("zigbee") || proto.toLowerCase().contains("z-wave"))) {
+                needsHub = true;
             }
         }
 
-        if (requiresHub && !hasHub) {
-            return new ValidationResult(false, "ERROR", "There are devices that need a hub, but no hub has been found in this layout.");
+        if (needsHub && !hasHub) {
+            return new ValidationResult(false, "ERROR", "Ai dispozitive Zigbee/Z-Wave dar lipsește un Hub.");
         }
-
-        return new ValidationResult(true, "INFO", "Hub requirements are met.");
+        return new ValidationResult(true, "INFO", "Cerințe Hub îndeplinite.");
     }
 }

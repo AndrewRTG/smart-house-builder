@@ -5,36 +5,21 @@ import gr.A4.SmartHouseBuilder.model.SetupBuild;
 import gr.A4.SmartHouseBuilder.model.ValidationResult;
 
 public class EcosystemMatchRule implements IValidationRule {
-
     @Override
     public ValidationResult validate(SetupBuild build) {
-        if (build == null) {
-            return new ValidationResult(false, "ERROR", "SetupBuild is null.");
-        }
-
-        if (build.getTargetEcosystem() == null || build.getTargetEcosystem().isBlank()) {
-            return new ValidationResult(false, "ERROR", "Target Ecosystem is missing.");
-        }
-
-        if (build.getDevices() == null || build.getDevices().isEmpty()) {
-            return new ValidationResult(true, "INFO", "There are no devices to check.");
+        if (build == null || build.getTargetEcosystem() == null) {
+            return new ValidationResult(false, "ERROR", "Date incomplete pentru ecosistem.");
         }
 
         String target = build.getTargetEcosystem().trim();
 
-        for (PlacedDevice placedDevice : build.getDevices()) {
-            if (placedDevice == null || placedDevice.getDevice() == null) {
-                return new ValidationResult(false, "ERROR", "Invalid device given.");
-            }
-
-            String ecosystem = placedDevice.getDevice().getEcosystem();
-            if (ecosystem == null || !target.equalsIgnoreCase(ecosystem.trim())) {
-                String deviceName = placedDevice.getDevice().getName();
-
-                return new ValidationResult(false, "ERROR", "'" + deviceName + "' is not compatible with '" + target + "' ecosystem.");
+        for (PlacedDevice pd : build.getDevices()) {
+            String deviceEco = pd.getDevice().getEcosystem();
+            if (deviceEco == null || !target.equalsIgnoreCase(deviceEco.trim())) {
+                return new ValidationResult(false, "ERROR", 
+                    "Dispozitivul '" + pd.getDevice().getName() + "' nu este compatibil cu " + target);
             }
         }
-
-        return new ValidationResult(true, "INFO", "All devices are compatible with given ecosystem.");
+        return new ValidationResult(true, "INFO", "Toate dispozitivele sunt compatibile.");
     }
 }

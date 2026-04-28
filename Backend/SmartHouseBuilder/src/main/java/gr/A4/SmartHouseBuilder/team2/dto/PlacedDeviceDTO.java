@@ -4,7 +4,11 @@ import lombok.Data;
 
 @Data
 public class PlacedDeviceDTO {
-    private PointDTO coordinates;
-    private Double rotationAngle;
-    private DeviceDTO device;
+    private String id;
+    private String name;
+    private String category;
+    private String protocol;
+    private String ecosystem;
+    private Double x;
+    private Double y;
 }

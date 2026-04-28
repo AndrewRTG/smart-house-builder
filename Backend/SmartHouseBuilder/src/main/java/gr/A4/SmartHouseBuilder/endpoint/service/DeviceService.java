@@ -55,8 +55,9 @@ public class DeviceService {
                         d.getBestPrice(),d.getBestPriceUrl()
                 )).toList();
     }
-    public List<DeviceResponse> getFilteredDevices(Integer categoryId, String brand, Double maxPrice,Double minPrice,String protocol) {
-        List<Device> devices = deviceRepository.findWithFilters(categoryId, brand, maxPrice,minPrice,protocol);
+    public List<DeviceResponse> getFilteredDevices(List<Integer> categoryIds, String brand, Double maxPrice, Double minPrice, List<String> protocols){
+        List<Device> devices = deviceRepository.findWithFilters(categoryIds, brand, maxPrice, minPrice, protocols);
+
 
         return devices.stream()
                 .map(d -> new DeviceResponse(

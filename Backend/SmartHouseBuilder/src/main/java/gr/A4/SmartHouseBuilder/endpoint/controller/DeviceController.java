@@ -30,13 +30,13 @@ public class DeviceController {
     @ApiResponse(responseCode = "200", description = "List retrieved successfully")
     @GetMapping
     public ResponseEntity<List<DeviceResponse>> getAllDevices (
-            @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) List<Integer> categoryIds,
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) String protocol)
+            @RequestParam(required = false) List<String> protocols)
     {
-        List<DeviceResponse> devices = deviceService.getFilteredDevices(categoryId, brand, maxPrice,minPrice,protocol);
+        List<DeviceResponse> devices = deviceService.getFilteredDevices(categoryIds, brand, maxPrice, minPrice, protocols);
         return ResponseEntity.ok(devices);
     }
     @Operation(

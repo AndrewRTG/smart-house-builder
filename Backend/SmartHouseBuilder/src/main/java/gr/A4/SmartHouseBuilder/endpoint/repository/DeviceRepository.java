@@ -8,19 +8,19 @@ import java.util.List;
 
 public interface DeviceRepository extends JpaRepository<Device,Integer> {
     @Query(value = "SELECT * FROM devices WHERE " +
-            "(:categoryId IS NULL OR category_id = :categoryId) AND " +
+            "(:#{#categoryIds == null || #categoryIds.isEmpty()} = true OR category_id IN (:categoryIds)) AND " +
             "(:brand IS NULL OR (brand ILIKE CONCAT('%', CAST(:brand AS TEXT), '%') " +
             "OR similarity(LOWER(brand), LOWER(CAST(:brand AS TEXT))) > 0.3)) AND " +
             "(:maxPrice IS NULL OR best_price <= :maxPrice) AND " +
             "(:minPrice IS NULL OR best_price>= :minPrice) AND " +
-            "(:protocol IS NULL OR communication_protocol = :protocol)",
+            "(:#{#protocols == null || #protocols.isEmpty()} = true OR communication_protocol IN (:protocols))",
             nativeQuery = true)
     List<Device> findWithFilters(
-            @Param("categoryId") Integer categoryId,
+            @Param("categoryIds") List<Integer> categoryIds,
             @Param("brand") String brand,
             @Param("maxPrice") Double maxPrice,
             @Param("minPrice") Double minPrice,
-            @Param("protocol") String protocol
+            @Param("protocols") List<String> protocols
     );
     @Query(value = """
             SELECT name FROM devices 

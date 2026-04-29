@@ -126,7 +126,7 @@ export default function Sidebar({ filters, setFilters }) {
 
               {isProtocolOpen && (
                   <div className="mt-3">
-                      {['Zigbee', 'Z-Wave', 'Wi-Fi', 'Matter'].map(p => (
+                      {['Zigbee', 'Z-Wave', 'WiFi', 'Matter'].map(p => (
                           <div key={p} className="form-check small mb-2">
                               <input
                                   className="form-check-input"

@@ -20,7 +20,7 @@ export default function CatalogPage() {
         const fetchDevices = () => {
             setLoading(true);
 
-            let url = new URL('http://localhost:20025/api/devices');
+            let url = new URL('/api/devices', window.location.origin);
 
             url.searchParams.append('minPrice', filters.minPrice);
             url.searchParams.append('maxPrice', filters.maxPrice);
@@ -29,13 +29,13 @@ export default function CatalogPage() {
                 const categoryMapping = { "Lighting": 1, "Sensors": 2, "Smart Plugs & Switches": 3, "Hubs & Controllers": 4, "Security": 5};
                 filters.categories.forEach(catName => {
                     const id = categoryMapping[catName];
-                    if (id) url.searchParams.append('categoryId', id);
+                    if (id) url.searchParams.append('categoryIds', id);
                 });
             }
 
             if (filters.protocols.length > 0) {
                 filters.protocols.forEach(prot => {
-                    url.searchParams.append('protocol', prot);
+                    url.searchParams.append('protocols', prot);
                 });
             }
 

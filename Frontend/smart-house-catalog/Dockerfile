@@ -11,9 +11,16 @@ COPY . .
 RUN npm run build
 
 # === ETAPA 2: Productie (Servirea fisierelor) ===
+
 FROM nginx:alpine
 
-# Luam rezultatul din etapa 1 (folderul dist) si il punem in serverul web
+# Ștergem configurația standard a Nginx
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copiem fișierul nostru de configurare în locul celui standard
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copiem fișierul build-uit din prima etapă
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80

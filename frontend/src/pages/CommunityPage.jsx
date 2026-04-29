@@ -27,6 +27,8 @@ export default function CommunityPage({ darkMode }) {
   const [priceRange, setPriceRange] = useState(500);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [selectedSetupToCopy, setSelectedSetupToCopy] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
 
   const API_BASE = 'http://localhost:20025/api/v1';
 
@@ -446,6 +448,9 @@ export default function CommunityPage({ darkMode }) {
 
         {/* CONTROLS - Search + Tabs on same line */}
         <div className="community-controls">
+          <button className="filters-btn" onClick={() => setDrawerOpen(true)}>
+            ☰ Filters
+          </button>
           <div className="search-box">
             {/*
               Wired to fuzzyFilter (utils/fuzzySearch.js). Empty input falls
@@ -631,7 +636,76 @@ export default function CommunityPage({ darkMode }) {
         </div>
         <p className="footer-text">©2026 SmartHouse-Builder. All rights reserved.</p>
       </footer>
+      {drawerOpen && (
+          <div className="drawer-overlay" onClick={() => setDrawerOpen(false)}>
+            <div className="drawer-panel" onClick={e => e.stopPropagation()}>
+              <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
 
+              <div className="sidebar-section user-profile" onClick={() => { navigate('/profile'); setDrawerOpen(false); }}>
+                <div className="user-avatar">{user?.username?.charAt(0)?.toUpperCase() || 'U'}</div>
+                <div className="user-info">
+                  <div className="user-name">{user?.username || 'User'}</div>
+                  <div className="user-stats">
+                    <span className="stat-item">{userStats.posts} <small>Postări</small></span>
+                    <span className="stat-item">{userStats.likes} <small>Like-uri</small></span>
+                  </div>
+                </div>
+              </div>
+
+              <button className="sidebar-btn">+ Postare noua</button>
+
+              <div className="sidebar-links">
+                <button className="sidebar-link" onClick={() => { navigate('/profile?tab=wishlist'); setDrawerOpen(false); }}>
+                  <Bookmark size={16} /> Wishlist
+                </button>
+                <button className="sidebar-link">
+                  <BookOpen size={16} /> Guides
+                </button>
+                <button className="sidebar-link" onClick={() => { navigate('/profile?tab=mysetups'); setDrawerOpen(false); }}>
+                  <Settings size={16} /> My Setups
+                </button>
+              </div>
+
+              <div className="sidebar-section">
+                <div className="sidebar-title">Pret</div>
+                <div className="price-range">
+                  <span>0</span>
+                  <input type="range" min="0" max="1000" value={priceRange}
+                         onChange={(e) => setPriceRange(e.target.value)} className="range-input" />
+                  <span>{priceRange}</span>
+                </div>
+                <input type="text" placeholder="Introduceti categoria produsului" className="sidebar-input" />
+              </div>
+
+              <div className="sidebar-section">
+                <div className="sidebar-title">Device Type</div>
+                <div className="checkbox-group">
+                  <label className="checkbox-label"><input type="checkbox" /> Bec</label>
+                  <label className="checkbox-label"><input type="checkbox" defaultChecked /> Masina de spalat</label>
+                  <label className="checkbox-label"><input type="checkbox" /> Mixer</label>
+                  <label className="checkbox-label"><input type="checkbox" /> Other Devices</label>
+                </div>
+              </div>
+
+              <div className="sidebar-section">
+                <div className="sidebar-title">Protocol</div>
+                <select className="sidebar-select">
+                  <option>Select Protocol</option>
+                  <option>Zigbee</option>
+                  <option>Z-Wave</option>
+                  <option>Wi-Fi</option>
+                  <option>Matter</option>
+                </select>
+                <div className="checkbox-group">
+                  <label className="checkbox-label"><input type="checkbox" /> Zigbee</label>
+                  <label className="checkbox-label"><input type="checkbox" defaultChecked /> Z-Wave</label>
+                  <label className="checkbox-label"><input type="checkbox" /> Wi-Fi</label>
+                  <label className="checkbox-label"><input type="checkbox" /> Matter</label>
+                </div>
+              </div>
+            </div>
+          </div>
+      )}
       {/* COPY SETUP MODAL */}
       <CopySetupModal
         isOpen={copyModalOpen}

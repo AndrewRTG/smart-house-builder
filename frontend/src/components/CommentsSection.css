@@ -125,26 +125,33 @@
 /* Recursive comment node styles */
 .comment-node {
   position: relative;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
+}
+
+.reply-node {
+  padding-left: 14px;
+  margin-top: 10px;
 }
 
 .comment-indent-line {
   position: absolute;
-  left: 12px;
-  top: 40px;
-  bottom: 0;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
   width: 2px;
-  background-color: #ddd;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(80, 146, 206, 0.7) 0%, rgba(80, 146, 206, 0.2) 100%);
 }
 
 .dark-mode .comment-indent-line {
-  background-color: #444;
+  background: linear-gradient(180deg, rgba(125, 179, 224, 0.55) 0%, rgba(125, 179, 224, 0.16) 100%);
 }
 
 .comment-body {
   background-color: #f9f9f9;
-  border-radius: 6px;
-  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -152,6 +159,16 @@
 
 .dark-mode .comment-body {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.reply-body {
+  background-color: #f3f7fb;
+  border-color: rgba(80, 146, 206, 0.14);
+}
+
+.dark-mode .reply-body {
+  background-color: rgba(255, 255, 255, 0.035);
+  border-color: rgba(125, 179, 224, 0.14);
 }
 
 .comment-header {
@@ -407,7 +424,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 0;
+  margin-top: 4px;
 }
 
 /* Responsive */
@@ -441,12 +458,18 @@
     padding-bottom: 6px;
   }
 
+  .reply-node {
+    padding-left: 12px;
+    margin-top: 8px;
+  }
+
   .comment-indent-line {
-    left: 10px;
+    top: 8px;
+    bottom: 8px;
   }
 
   .comment-body {
-    padding: 10px;
+    padding: 12px;
     gap: 6px;
   }
 
@@ -508,13 +531,18 @@
     padding-bottom: 6px;
   }
 
+  .reply-node {
+    padding-left: 10px;
+    margin-top: 8px;
+  }
+
   .comment-indent-line {
-    left: 10px;
-    top: 36px;
+    top: 8px;
+    bottom: 8px;
   }
 
   .comment-body {
-    padding: 10px;
+    padding: 11px;
     gap: 6px;
     border-radius: 4px;
   }
@@ -631,13 +659,18 @@
     padding-bottom: 4px;
   }
 
+  .reply-node {
+    padding-left: 8px;
+    margin-top: 6px;
+  }
+
   .comment-indent-line {
-    left: 8px;
-    top: 32px;
+    top: 7px;
+    bottom: 7px;
   }
 
   .comment-body {
-    padding: 8px;
+    padding: 10px;
     gap: 4px;
     border-radius: 3px;
   }

@@ -303,8 +303,8 @@
 }
 
 .tab.active {
-  background-color: var(--text-main);
-  color: white;
+  background-color: var(--tab-active-bg);
+  color: var(--tab-active-text);
 }
 
 .dark-mode .tab:hover {
@@ -526,6 +526,19 @@
 .article-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
+}
+
+.clickable-card {
+  cursor: pointer;
+}
+
+.clickable-card:focus-visible {
+  outline: 3px solid rgba(80, 146, 206, 0.5);
+  outline-offset: 3px;
+}
+
+.dark-mode .clickable-card:focus-visible {
+  outline-color: rgba(168, 205, 236, 0.65);
 }
 
 .article-header {

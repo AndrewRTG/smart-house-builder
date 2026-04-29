@@ -5,6 +5,7 @@ import CopySetupModal from '../components/CopySetupModal';
 import { useError } from '../context/ErrorContext';
 import { getCurrentUser } from '../utils/currentUser';
 import { fuzzyFilter } from '../utils/fuzzySearch';
+import { getStoredLikedItems, setStoredLike } from '../utils/likedItemsStorage';
 import '../styles/CommunityPage.css';
 
 export default function CommunityPage({ darkMode }) {
@@ -43,7 +44,7 @@ export default function CommunityPage({ darkMode }) {
   );
   const filteredArticles = useMemo(
     () => fuzzyFilter(articles, searchQuery, (a) => [
-      a.title, a.content, a.user?.username,
+      a.title, a.content, a.authorUsername,
     ]),
     [articles, searchQuery]
   );
@@ -69,6 +70,16 @@ export default function CommunityPage({ darkMode }) {
     fetchArticles();
     fetchCurrentUser();
   }, [page]);
+
+  useEffect(() => {
+    if (!user) {
+      setLikes(new Map());
+      return;
+    }
+
+    const storedLikes = getStoredLikedItems(user);
+    setLikes(new Map(Object.entries(storedLikes)));
+  }, [user]);
 
   const fetchCurrentUser = async () => {
     // Use the shared cache instead of hitting /auth/me on every page mount.
@@ -205,6 +216,44 @@ export default function CommunityPage({ darkMode }) {
     navigate(path, { state: { restore: true } });
   };
 
+  const openArticleDetail = (articleId) => {
+    goToDetail(`/article/${articleId}`);
+  };
+
+  const openSetupDetail = (setupId) => {
+    goToDetail(`/setup/${setupId}`);
+  };
+
+  const isInteractiveTarget = (event) => {
+    const target = event.target;
+    return typeof target?.closest === 'function'
+      && Boolean(target.closest('button, a, input, textarea, select'));
+  };
+
+  const handleArticleCardClick = (event, articleId) => {
+    if (isInteractiveTarget(event)) return;
+    openArticleDetail(articleId);
+  };
+
+  const handleSetupCardClick = (event, setupId) => {
+    if (isInteractiveTarget(event)) return;
+    openSetupDetail(setupId);
+  };
+
+  const handleArticleCardKeyDown = (event, articleId) => {
+    if (isInteractiveTarget(event)) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    openArticleDetail(articleId);
+  };
+
+  const handleSetupCardKeyDown = (event, setupId) => {
+    if (isInteractiveTarget(event)) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    openSetupDetail(setupId);
+  };
+
   const toggleWishlist = async (setupId, isWishlisted) => {
     if (!user) {
       showError('Please login to save setups');
@@ -274,6 +323,7 @@ export default function CommunityPage({ darkMode }) {
         const newLikes = new Map(likes);
         newLikes.set(key, data.isLiked);
         setLikes(newLikes);
+        setStoredLike(targetType, targetId, data.isLiked, user);
 
         // Update like count
         const newCounts = new Map(likeCounts);
@@ -436,7 +486,15 @@ export default function CommunityPage({ darkMode }) {
             ) : filteredSetups.length > 0 ? (
               <div className="setups-grid">
                 {filteredSetups.map((setup) => (
-                  <div key={setup.id} className="setup-card">
+                  <div
+                    key={setup.id}
+                    className="setup-card clickable-card"
+                    onClick={(event) => handleSetupCardClick(event, setup.id)}
+                    onKeyDown={(event) => handleSetupCardKeyDown(event, setup.id)}
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`Open setup ${setup.name}`}
+                  >
                     <div className="setup-header">
                       <div className="user-info-compact">
                         <div className="avatar-small">{setup.user?.email?.[0]?.toUpperCase() || 'U'}</div>
@@ -486,7 +544,7 @@ export default function CommunityPage({ darkMode }) {
                         </button>
                         <button
                           className="footer-icon-btn"
-                          onClick={() => goToDetail(`/setup/${setup.id}`)}
+                          onClick={() => openSetupDetail(setup.id)}
                           title="Comments"
                         >
                           <MessageCircle size={20} />
@@ -508,13 +566,21 @@ export default function CommunityPage({ darkMode }) {
             ) : filteredArticles.length > 0 ? (
               <div className="articles-grid">
                 {filteredArticles.map((article) => (
-                  <div key={article.id} className="article-card">
+                  <div
+                    key={article.id}
+                    className="article-card clickable-card"
+                    onClick={(event) => handleArticleCardClick(event, article.id)}
+                    onKeyDown={(event) => handleArticleCardKeyDown(event, article.id)}
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`Open article ${article.title}`}
+                  >
                     <div className="article-header">
                       <div className="user-info-compact">
-                        <div className="avatar-small">{article.user?.email?.[0]?.toUpperCase() || 'U'}</div>
+                        <div className="avatar-small">{article.authorUsername?.[0]?.toUpperCase() || 'U'}</div>
                         <div>
                           <div className="setup-author">
-                            {article.user?.username || 'User'}
+                            {article.authorUsername || 'User'}
                           </div>
                           <div className="setup-date">
                             {new Date(article.createdAt).toLocaleDateString()}
@@ -538,7 +604,7 @@ export default function CommunityPage({ darkMode }) {
                         </button>
                         <button
                           className="footer-icon-btn"
-                          onClick={() => goToDetail(`/article/${article.id}`)}
+                          onClick={() => openArticleDetail(article.id)}
                           title="Comments"
                         >
                           <MessageCircle size={20} />

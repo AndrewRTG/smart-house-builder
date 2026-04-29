@@ -67,10 +67,16 @@ function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete,
   };
 
   return (
-    <div className="comment-node" style={{ marginLeft: `${indentLevel * 24}px` }}>
+    <div
+      className={`comment-node ${depth > 0 ? 'reply-node' : 'root-node'}`}
+      style={{ marginLeft: `${indentLevel * 20}px` }}
+    >
       <div className="comment-indent-line" style={{ display: depth > 0 ? 'block' : 'none' }} />
 
-      <div className={`comment-body ${comment.deleted ? 'deleted' : ''}`} id={`comment-${comment.id}`}>
+      <div
+        className={`comment-body ${comment.deleted ? 'deleted' : ''} ${depth > 0 ? 'reply-body' : ''}`}
+        id={`comment-${comment.id}`}
+      >
         <div className="comment-header">
           <div className="comment-user">
             <div className={`comment-avatar ${comment.deleted ? 'deleted' : ''}`}>

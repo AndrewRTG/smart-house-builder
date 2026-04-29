@@ -20,6 +20,8 @@ body {
   --card-bg: #5092ce;
   --text-main: #111827;
   --text-secondary: #eef4fb;
+  --tab-active-bg: #111827;
+  --tab-active-text: #ffffff;
   --btn-bg: #ffffff;
   --btn-text: #1f2937;
   --toggle-bg: #1f2937;
@@ -37,6 +39,8 @@ body {
   --card-bg: #2c2c30;
   --text-main: #ffffff;
   --text-secondary: #d1d5db;
+  --tab-active-bg: #5092ce;
+  --tab-active-text: #ffffff;
   --btn-bg: #374151;
   --btn-text: #ffffff;
   --toggle-bg: #facc15;

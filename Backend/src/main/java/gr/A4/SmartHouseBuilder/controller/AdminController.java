@@ -1,12 +1,12 @@
 package gr.A4.SmartHouseBuilder.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gr.A4.SmartHouseBuilder.entity.Device;
+import gr.A4.SmartHouseBuilder.endpoint.entity.Device;
 import gr.A4.SmartHouseBuilder.entity.Setup;
 import gr.A4.SmartHouseBuilder.entity.SetupStatus;
 import gr.A4.SmartHouseBuilder.entity.Article;
 import gr.A4.SmartHouseBuilder.entity.User;
-import gr.A4.SmartHouseBuilder.repository.DeviceRepository;
+import gr.A4.SmartHouseBuilder.endpoint.repository.DeviceRepository;
 import gr.A4.SmartHouseBuilder.repository.SetupRepository;
 import gr.A4.SmartHouseBuilder.repository.ArticleRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
@@ -33,61 +33,61 @@ public class AdminController {
                     .name("Amazon Alexa Echo Dot")
                     .brand("Amazon")
                     .type("Smart Speaker")
-                    .price(59.99)
+                    .bestPrice(59.99)
                     .build(),
             Device.builder()
                     .name("Philips Hue Smart Bulb")
                     .brand("Philips")
                     .type("Smart Light")
-                    .price(49.99)
+                    .bestPrice(49.99)
                     .build(),
             Device.builder()
                     .name("Google Nest Thermostat")
                     .brand("Google")
                     .type("Thermostat")
-                    .price(249.99)
+                    .bestPrice(249.99)
                     .build(),
             Device.builder()
                     .name("LIFX A19 Color A19")
                     .brand("LIFX")
                     .type("Smart Light")
-                    .price(39.99)
+                    .bestPrice(39.99)
                     .build(),
             Device.builder()
                     .name("Nanoleaf Essentials Light Strip")
                     .brand("Nanoleaf")
                     .type("RGB Light")
-                    .price(79.99)
+                    .bestPrice(79.99)
                     .build(),
             Device.builder()
                     .name("August Smart Lock Pro")
                     .brand("August")
                     .type("Smart Lock")
-                    .price(329.99)
+                    .bestPrice(329.99)
                     .build(),
             Device.builder()
                     .name("Sonos Arc Soundbar")
                     .brand("Sonos")
                     .type("Speaker")
-                    .price(799.99)
+                    .bestPrice(799.99)
                     .build(),
             Device.builder()
                     .name("Wyze Cam v3")
                     .brand("Wyze")
                     .type("Security Camera")
-                    .price(29.99)
+                    .bestPrice(29.99)
                     .build(),
             Device.builder()
                     .name("Eve MotionBlinds")
                     .brand("Eve")
                     .type("Smart Blinds")
-                    .price(139.99)
+                    .bestPrice(139.99)
                     .build(),
             Device.builder()
                     .name("Meross Smart Plug")
                     .brand("Meross")
                     .type("Smart Plug")
-                    .price(24.99)
+                    .bestPrice(24.99)
                     .build()
         );
 

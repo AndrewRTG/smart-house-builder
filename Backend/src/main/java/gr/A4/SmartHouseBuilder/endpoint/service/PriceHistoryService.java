@@ -4,7 +4,7 @@ import gr.A4.SmartHouseBuilder.endpoint.dto.PriceHistoryRequest;
 import gr.A4.SmartHouseBuilder.endpoint.dto.PriceHistoryResponse;
 import gr.A4.SmartHouseBuilder.endpoint.entity.Device;
 import gr.A4.SmartHouseBuilder.endpoint.entity.PriceHistory;
-import gr.A4.SmartHouseBuilder.endpoint.exception.ResourceNotFoundException;
+import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
 import gr.A4.SmartHouseBuilder.endpoint.repository.DeviceRepository;
 import gr.A4.SmartHouseBuilder.endpoint.repository.PriceHistoryRepository;
 import jakarta.transaction.Transactional;

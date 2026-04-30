@@ -49,13 +49,17 @@ public class SecurityConfig {
                                 "/api/v1/auth/**",
                                 "/api/v1/admin/**",
                                 "/login/oauth2/**",
-                                "/oauth2/**"
+                                "/oauth2/**",
+                                "/api/devices/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/setups",
                                 "/api/v1/setups/**",
                                 "/api/v1/articles",
-                                "/api/v1/articles/**"
+                                "/api/v1/articles/**",
+                                "/api/v1/devices",
+                                "/api/v1/devices/**",
+                                "/api/devices"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -18,6 +18,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import ProductsPage from '../smart-house-catalog/src/pages/CatalogPage'
 
 function HomePage() {
   return <div></div>;
@@ -27,9 +28,7 @@ function BuilderPage() {
   return <h1 className="p-4">Builder Page</h1>;
 }
 
-function ProductsPage() {
-  return <h1 className="p-4">Products Page</h1>;
-}
+
 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -60,7 +59,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/builder" element={<BuilderPage />} />
-            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/products" element={<ProductsPage darkMode={darkMode} />} />
             <Route path="/community" element={<CommunityPage darkMode={darkMode} />} />
             <Route path="/mfa/verify" element={<MfaVerifyPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />

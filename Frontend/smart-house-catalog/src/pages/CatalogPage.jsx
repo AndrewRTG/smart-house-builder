@@ -3,8 +3,7 @@ import Sidebar from '../components/SideBar';
 import ProductCard from '../components/ProductCard.jsx'
 import Navbar from '../components/NavBar';
 
-export default function CatalogPage() {
-
+export default function CatalogPage({ darkMode }) {
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -55,9 +54,7 @@ export default function CatalogPage() {
     }, [filters, searchTerm]);
 
     return (
-        <div className="min-vh-100" style={{ backgroundColor: '#efefef' }}>
-            <Navbar />
-
+        <div className="min-vh-100" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-main)', transition: 'background-color 0.3s ease, color 0.3s ease' }}>
             <div className="container-fluid mt-4 px-4 d-flex flex-column d-md-block clearfix">
                 <div className="col-12 col-md-3 float-md-start pe-md-4 mb-4 order-2">
                     <Sidebar filters={filters} setFilters={setFilters} />
@@ -82,7 +79,7 @@ export default function CatalogPage() {
                         </div>
 
                         <div className="d-flex align-items-center gap-2 align-self-end align-self-md-auto">
-                            <span className="fw-bold small text-nowrap text-dark">Sort by:</span>
+                            <span className="fw-bold small text-nowrap" style={{ color: 'var(--text-main)' }}>Sort by:</span>
 
                             <select className="form-select border-0 shadow-sm rounded-2 fw-bold text-secondary" style={{ backgroundColor: '#cde0f5', width: '140px', cursor: 'pointer' }}>
                                 <option>Lowest price</option>

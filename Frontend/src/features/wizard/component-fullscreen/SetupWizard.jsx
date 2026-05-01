@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
 import './wizard.css';
 
-//VARIANTA BUNA !!!
+// VERSIUNEA PE CARE MERGE AI-UL + responsive + engleza + loading spinner
 
 // ── COMPONENT: Suggested Products View ──────────────────────────────────────
 const SuggestedProductsView = ({ onConfirm, onBack }) => {
@@ -15,17 +15,31 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         const fetchSuggestions = async () => {
             setLoading(true);
             try {
-                // 1. Apelăm API-ul
-                const res = await fetch('http://localhost:20025/api/devices/suggestions');
+                // 1. Construim string-ul cu criterii folosind starea din Zustand (obiectul 's')
+                const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}`;
+
+                // 2. Apelăm API-ul (adăugând criteriile în URL)
+                const res = await fetch(`http://localhost:20025/api/devices/suggestions?criteria=${encodeURIComponent(criterii)}`);
                 const data = await res.json();
 
-                // 2. Mapăm JSON-ul primit
+                // 3. Mapăm JSON-ul primit cu switch complet pe categoryId
                 const mappedData = data.map(item => {
-                    let icon = '🔌';
-                    if (item.categoryId === 1) icon = '🛡️';
-                    else if (item.categoryId === 6) icon = '🖥️';
-                    else if (item.categoryId === 9) icon = '🎵';
-
+                    let icon = '📦';
+                    switch (item.categoryId) {
+                        case 1:  icon = '📷'; break; // SMART CAMERAS
+                        case 2:  icon = '🔌'; break; // SMART POWER STRIPS
+                        case 3:  icon = '🎮'; break; // GAMING CONSOLES
+                        case 4:  icon = '🍳'; break; // SMART APPLIANCES
+                        case 5:  icon = '🎛️'; break; // SMART HUBS
+                        case 6:  icon = '🖥️'; break; // SMART MONITORS
+                        case 7:  icon = '🔋'; break; // SMART OUTLETS
+                        case 8:  icon = '📡'; break; // SMART SENSORS
+                        case 9:  icon = '🎵'; break; // SMART AUDIO
+                        case 10: icon = '📺'; break; // SMART TVs
+                        case 11: icon = '🤖'; break; // ROBOT VACUUMS
+                        case 12: icon = '🌐'; break; // SMART ROUTERS
+                        default: icon = '📦'; break;
+                    }
                     return {
                         id: item.id.toString(),
                         name: item.name,
@@ -36,7 +50,6 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
                     };
                 });
 
-                // 3. Setăm direct TOATE produsele (fără nicio filtrare)
                 setProducts(mappedData);
             } catch (error) {
                 console.error("Failed to fetch products from backend:", error);
@@ -47,7 +60,7 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         };
 
         fetchSuggestions();
-    }, []); // Nu mai depindem de buget
+    }, [s.priceRange, s.ecosystem, s.techLevel, s.categories]);
 
     const toggleProduct = (id) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -60,14 +73,18 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
     return (
         <div className="step-content">
             <h2>Recommended Devices</h2>
-            <p>We found {products.length} products that fit your {s.priceRange[1]}€ budget</p>
+            <p>We found {products.length} products matching your criteria.</p>
 
             <div className="custom-scrollbar" style={{ maxHeight: '380px', overflowY: 'auto', padding: '10px' }}>
                 {loading ? (
                     <div style={{ padding: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
                         <div className="spinner" style={{ width: '30px', height: '30px', border: '3px solid var(--wz-border)', borderTop: '3px solid var(--wz-accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                        Searching the database for the best deals...
+                        AI is searching for the best deals... 🤖
                         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                    </div>
+                ) : products.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b6b' }}>
+                        No products found matching your criteria. Try increasing your budget!
                     </div>
                 ) : (
                     <div className="suggestions-list">
@@ -137,7 +154,7 @@ const RoomImageCard = ({ name, icon, isSelected, onClick }) => (
         <div className="room-image-placeholder" style={{
             width: '100%',
             height: '110px',
-            border: '2px dashed var(--wz-border)', // Dashed border requested (chenar)
+            border: '2px dashed var(--wz-border)',
             borderRadius: '10px',
             display: 'flex',
             flexDirection: 'column',
@@ -171,15 +188,13 @@ const SetupWizard = ({ onFinish }) => {
     const s = useWizardStore();
     const [showResults, setShowResults] = useState(false);
 
-    // Added more rooms to show off the responsive grid
     const ROOM_OPTIONS = [
-        { id: 'living', name: 'Living Room', icon: '🛋️' },
-        { id: 'kitchen', name: 'Kitchen', icon: '🍳' },
-        { id: 'bedroom', name: 'Bedroom', icon: '🛏️' },
-        { id: 'bathroom', name: 'Bathroom', icon: '🛁' },
+        { id: 'living',   name: 'Living Room', icon: '🛋️' },
+        { id: 'kitchen',  name: 'Kitchen',     icon: '🍳' },
+        { id: 'bedroom',  name: 'Bedroom',     icon: '🛏️' },
+        { id: 'bathroom', name: 'Bathroom',    icon: '🛁' },
     ];
 
-    // Render the final results screen if 'Get Suggestions' is clicked
     if (showResults) {
         return (
             <div className="wizard-card w-full max-w-3xl mx-auto">
@@ -224,9 +239,9 @@ const SetupWizard = ({ onFinish }) => {
                     </div>
                     <div className="options-list custom-scrollbar" style={{ maxHeight: '280px', overflowY: 'auto' }}>
                         {[
-                            { id: "Security", icon: "🛡️", desc: "Cameras, sensors, alarms" },
-                            { id: "Comfort", icon: "🏠", desc: "Lighting, climate, automation" },
-                            { id: "Energy", icon: "⚡", desc: "Smart plugs, energy monitoring" },
+                            { id: "Security",      icon: "🛡️", desc: "Cameras, sensors, alarms" },
+                            { id: "Comfort",       icon: "🏠", desc: "Lighting, climate, automation" },
+                            { id: "Energy",        icon: "⚡", desc: "Smart plugs, energy monitoring" },
                             { id: "Entertainment", icon: "🎵", desc: "Audio, TV, smart streaming" }
                         ].map(opt => (
                             <div key={opt.id} className={`option-card ${s.categories.includes(opt.id) ? 'selected' : ''}`} onClick={() => s.toggleCategory(opt.id)}>
@@ -263,8 +278,6 @@ const SetupWizard = ({ onFinish }) => {
                 <div className="step-content">
                     <h2>Which rooms are you equipping?</h2>
                     <p>Select the spaces you want to configure. (Images will be integrated by the design team via API)</p>
-
-                    {/* Responsive Grid for Rooms */}
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
@@ -295,7 +308,7 @@ const SetupWizard = ({ onFinish }) => {
                         <div className={`step-circle ${s.step === idx ? 'active' : ''} ${s.step > idx ? 'completed' : ''}`}>
                             {s.step > idx ? '✓' : idx}
                         </div>
-                        <span className="step-label">{["Budget", "Priorities", "Level", "Rooms"][idx-1]}</span>
+                        <span className="step-label">{["Budget", "Priorities", "Level", "Rooms"][idx - 1]}</span>
                     </div>
                 ))}
             </div>

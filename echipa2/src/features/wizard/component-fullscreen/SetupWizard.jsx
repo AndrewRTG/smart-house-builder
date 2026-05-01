@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import useWizardStore from '../../../store/wizardStore.js';
+import useWizardStore from '../../../store/wizardStore.js'; // Verifică dacă calea e corectă
 import './wizard.css';
-//VARIANTA CU FETCH!!!
-// ── COMPONENTA ACTUALIZATĂ: Vizualizare Sugestii Produse (Fără filtrare) ──────────
+
+// ── COMPONENTA ACTUALIZATĂ: Vizualizare Sugestii Produse (Filtrate de AI) ──────────
 const SuggestedProductsView = ({ onConfirm, onBack }) => {
     const s = useWizardStore();
     const [products, setProducts] = useState([]);
@@ -13,17 +13,33 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         const fetchSuggestions = async () => {
             setLoading(true);
             try {
-                // 1. Apelăm API-ul
-                const res = await fetch('http://localhost:20025/api/devices/suggestions');
+                // 1. Construim string-ul cu criterii folosind starea din Zustand (obiectul 's')
+                const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}`;
+
+                // 2. Apelăm Noul API (adăugând criteriile în URL)
+                // Notă: Dacă backend-ul tău de Java rulează pe 8080, schimbă portul 20025 de mai jos cu 8080!
+                const res = await fetch(`http://localhost:20025/api/devices/suggestions?criteria=${encodeURIComponent(criterii)}`);
                 const data = await res.json();
 
-                // 2. Mapăm JSON-ul primit
+                // 3. Mapezi data (am înlocuit "..." cu logica reală de mapare)
                 const mappedData = data.map(item => {
-                    let icon = '🔌';
-                    if (item.categoryId === 1) icon = '🛡️';
-                    else if (item.categoryId === 6) icon = '🖥️';
-                    else if (item.categoryId === 9) icon = '🎵';
+                    let icon = '📦'; // Iconița default dacă nu găsește categoria
 
+                    switch (item.categoryId) {
+                        case 1: icon = '📷'; break; // CAMERE SMART
+                        case 2: icon = '🔌'; break; // PRELUNGITOARE SMART
+                        case 3: icon = '🎮'; break; // CONSOLE DE GAMING
+                        case 4: icon = '🍳'; break; // ELECTROCASNICE SMART
+                        case 5: icon = '🎛️'; break; // HUB-URI SMART
+                        case 6: icon = '🖥️'; break; // MONITOARE SMART
+                        case 7: icon = '🔋'; break; // PRIZE SMART
+                        case 8: icon = '📡'; break; // SENZORI SMART
+                        case 9: icon = '🎵'; break; // SISTEME AUDIO SMART
+                        case 10: icon = '📺'; break; // TELEVIZOARE SMART
+                        case 11: icon = '🤖'; break; // ASPIRATOARE ROBOT
+                        case 12: icon = '🌐'; break; // ROUTERE SMART
+                        default: icon = '📦'; break;
+                    }
                     return {
                         id: item.id.toString(),
                         name: item.name,
@@ -34,7 +50,6 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
                     };
                 });
 
-                // 3. Setăm direct TOATE produsele (fără nicio filtrare)
                 setProducts(mappedData);
             } catch (error) {
                 console.error("Eroare la conectarea cu backend-ul:", error);
@@ -45,7 +60,7 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         };
 
         fetchSuggestions();
-    }, []); // <-- Am scos bugetul de aici pentru că nu mai filtram după el
+    }, [s.priceRange, s.ecosystem, s.techLevel, s.categories]); // Se reapelează dacă se schimbă ceva
 
     const toggleProduct = (id) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -58,11 +73,15 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
     return (
         <div className="step-content">
             <h2>Dispozitive recomandate</h2>
-            <p>Am găsit {products.length} produse disponibile în catalog.</p>
+            <p>Am găsit {products.length} produse disponibile în catalog, potrivite pentru tine.</p>
 
             <div className="custom-scrollbar" style={{ maxHeight: '380px', overflowY: 'auto', padding: '10px' }}>
                 {loading ? (
-                    <div style={{ padding: '40px', textAlign: 'center' }}>Se caută cele mai bune oferte...</div>
+                    <div style={{ padding: '40px', textAlign: 'center' }}>AI-ul caută cele mai bune oferte... 🤖</div>
+                ) : products.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b6b' }}>
+                        Nu am găsit produse care să corespundă exact criteriilor tale. Încearcă un buget mai mare!
+                    </div>
                 ) : (
                     <div className="suggestions-list">
                         {products.map(p => (
@@ -103,6 +122,7 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         </div>
     );
 };
+
 // ── COMPONENTA: Card Imagine Cameră ───────────────────────────────────────
 const RoomImageCard = ({ name, icon, isSelected, onClick }) => (
     <div className={`room-image-card ${isSelected ? 'selected' : ''}`} onClick={onClick}>
@@ -206,7 +226,7 @@ const SetupWizard = ({ onFinish }) => {
             case 4: return (
                 <div className="step-content">
                     <h2>Ce camere dotezi?</h2>
-                    <p>Alege spațiile pe care vrei să le configurezi (imaginile vin din API).</p>
+                    <p>Alege spațiile pe care vrei să le configurezi.</p>
                     <div className="rooms-image-grid">
                         {ROOM_OPTIONS.map(room => (
                             <RoomImageCard

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
 import './wizard.css';
 
+//VARIANTA BUNA !!!
+
 // ── COMPONENT: Suggested Products View ──────────────────────────────────────
 const SuggestedProductsView = ({ onConfirm, onBack }) => {
     const s = useWizardStore();
@@ -13,65 +15,39 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         const fetchSuggestions = async () => {
             setLoading(true);
             try {
-                // ====================================================================
-                // 🔌 HOW TO CONNECT FRONTEND TO BACKEND 🔌
-                // ====================================================================
-                // 1. Set your backend URL endpoint.
-                // const API_URL = 'http://localhost:8080/api/recommendations'; // Local backend example
-                // const API_URL = 'https://api.yourdomain.com/v1/recommendations'; // Production backend
-                //
-                // 2. Prepare the payload using the data collected in the Wizard Store (s).
-                // const requestPayload = {
-                //     maxBudget: s.priceRange[1],
-                //     ecosystem: s.ecosystem,
-                //     categories: s.categories,
-                //     protocols: s.protocols,
-                //     techLevel: s.techLevel,
-                //     rooms: s.rooms
-                // };
-                //
-                // 3. Make the HTTP POST request to your Backend.
-                // const response = await fetch(API_URL, {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //         // 'Authorization': `Bearer ${token}` // Uncomment if API requires authentication
-                //     },
-                //     body: JSON.stringify(requestPayload)
-                // });
-                //
-                // 4. Handle Backend Errors gracefully.
-                // if (!response.ok) {
-                //     throw new Error(`Backend error: ${response.status} ${response.statusText}`);
-                // }
-                //
-                // 5. Parse the JSON response and update the React state.
-                // const fetchedProducts = await response.json();
-                // setProducts(fetchedProducts);
-                // ====================================================================
+                // 1. Apelăm API-ul
+                const res = await fetch('http://localhost:20025/api/devices/suggestions');
+                const data = await res.json();
 
-                // MOCK DATA (Simulating the backend response for now until API is ready)
-                // Remove this once you uncomment the actual fetch logic above.
-                await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-                const mockData = [
-                    { id: 'p1', name: 'Philips Hue RGB', brand: 'Philips', price: 89, category: 'Lighting', icon: '💡', protocol: 'Zigbee' },
-                    { id: 'p2', name: 'Nest Thermostat', brand: 'Google', price: 249, category: 'Comfort', icon: '🌡️', protocol: 'Wi-Fi' },
-                    { id: 'p3', name: 'Smart Lock Pro', brand: 'August', price: 199, category: 'Security', icon: '🔒', protocol: 'Z-Wave' },
-                    { id: 'p4', name: 'Ring Doorbell', brand: 'Amazon', price: 159, category: 'Security', icon: '🔔', protocol: 'Wi-Fi' },
-                ];
+                // 2. Mapăm JSON-ul primit
+                const mappedData = data.map(item => {
+                    let icon = '🔌';
+                    if (item.categoryId === 1) icon = '🛡️';
+                    else if (item.categoryId === 6) icon = '🖥️';
+                    else if (item.categoryId === 9) icon = '🎵';
 
-                // Grossly filter by code just to simulate backend logic
-                const filtered = mockData.filter(p => p.price <= s.priceRange[1]);
-                setProducts(filtered);
+                    return {
+                        id: item.id.toString(),
+                        name: item.name,
+                        brand: item.brand,
+                        price: item.price || 0,
+                        icon: icon,
+                        protocol: item.communicationProtocol || 'Unknown'
+                    };
+                });
+
+                // 3. Setăm direct TOATE produsele (fără nicio filtrare)
+                setProducts(mappedData);
             } catch (error) {
                 console.error("Failed to fetch products from backend:", error);
-                // You can add an error state here to show an error message to the user
+                setProducts([]);
             } finally {
                 setLoading(false);
             }
         };
+
         fetchSuggestions();
-    }, [s.priceRange]);
+    }, []); // Nu mai depindem de buget
 
     const toggleProduct = (id) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -107,7 +83,9 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
                                     <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{p.name}</div>
                                     <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{p.brand} · {p.protocol}</div>
                                 </div>
-                                <div style={{ fontWeight: 800, color: 'var(--wz-accent)' }}>{p.price}€</div>
+                                <div style={{ fontWeight: 800, color: 'var(--wz-accent)' }}>
+                                    {p.price > 0 ? `${p.price}€` : 'Unavailable'}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -116,7 +94,7 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
 
             <div className="nav-footer">
                 <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>
-                    Total selected: <span style={{ color: 'var(--wz-accent)' }}>{totalPrice}€</span>
+                    Total selected: <span style={{ color: 'var(--wz-accent)' }}>{totalPrice.toFixed(2)}€</span>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button className="btn-wizard btn-prev" onClick={onBack}>Back</button>
@@ -310,8 +288,6 @@ const SetupWizard = ({ onFinish }) => {
     };
 
     return (
-        // The wizard container is standalone, meaning it will sit nicely underneath any navbar
-        // added to the App.tsx later.
         <div className={`wizard-container w-full max-w-3xl ${s.darkMode ? 'dark-mode' : ''}`}>
             <div className="progress-tracker">
                 {[1, 2, 3, 4].map(idx => (

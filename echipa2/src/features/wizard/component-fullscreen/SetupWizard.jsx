@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
 import './wizard.css';
-
+//VARIANTA CU FETCH!!!
 // ── COMPONENTA ACTUALIZATĂ: Vizualizare Sugestii Produse (Fără filtrare) ──────────
 const SuggestedProductsView = ({ onConfirm, onBack }) => {
     const s = useWizardStore();

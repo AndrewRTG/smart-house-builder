@@ -3,59 +3,198 @@ import useWizardStore from '../../../store/wizardStore.js';
 import './wizard.css';
 
 // VERSIUNEA PE CARE MERGE AI-UL + responsive + engleza + loading spinner
+// + 2 panouri de recomandari: AI si Algorithm
+
+// ═══════════════════════════════════════════════════════════════════
+// 🤖 ALGORITHM PLACEHOLDER
+// ---------------------------------------------------------------
+// Momentan folosim o selectie RANDOM din produse ca placeholder.
+// ----------------------------------------------------------------
+// COLEGUL CARE IMPLEMENTEAZA ALGORITMUL:
+//   → Inlocuieste functia `getAlgorithmRecommendations(products, store)`
+//     de mai jos cu logica ta reala.
+//   → Primesti: lista completa de produse (array) + starea din store (s)
+//   → Trebuie sa returnezi: un sub-array din produse, filtrat/sortat
+//     dupa criteriile algoritmului tau.
+//   → NU modifica nimic altceva din componenta.
+// ═══════════════════════════════════════════════════════════════════
+const getAlgorithmRecommendations = (products, store) => {
+    // ⚠️  RANDOM PLACEHOLDER — VA FI INLOCUIT CU ALGORITMUL COLEGULUI ⚠️
+    if (!products || products.length === 0) return [];
+    const shuffled = [...products].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(4, shuffled.length));
+    // ⚠️  SFARSIT PLACEHOLDER ⚠️
+};
+
+// ── HELPER: map categoryId → icon ───────────────────────────────────────────
+const getCategoryIcon = (categoryId) => {
+    switch (categoryId) {
+        case 1:  return '📷'; // SMART CAMERAS
+        case 2:  return '🔌'; // SMART POWER STRIPS
+        case 3:  return '🎮'; // GAMING CONSOLES
+        case 4:  return '🍳'; // SMART APPLIANCES
+        case 5:  return '🎛️'; // SMART HUBS
+        case 6:  return '🖥️'; // SMART MONITORS
+        case 7:  return '🔋'; // SMART OUTLETS
+        case 8:  return '📡'; // SMART SENSORS
+        case 9:  return '🎵'; // SMART AUDIO
+        case 10: return '📺'; // SMART TVs
+        case 11: return '🤖'; // ROBOT VACUUMS
+        case 12: return '🌐'; // SMART ROUTERS
+        default: return '📦';
+    }
+};
+
+// ── SUBCOMPONENT: Product Card ───────────────────────────────────────────────
+const ProductCard = ({ p, isSelected, onToggle }) => (
+    <div
+        className={`option-card ${isSelected ? 'selected' : ''}`}
+        onClick={() => onToggle(p.id)}
+        style={{ marginBottom: '10px' }}
+    >
+        <div className="option-icon">{p.icon}</div>
+        <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{p.name}</div>
+            <div style={{ fontSize: '0.73rem', opacity: 0.7 }}>{p.brand} · {p.protocol}</div>
+        </div>
+        <div style={{ fontWeight: 800, color: 'var(--wz-accent)', whiteSpace: 'nowrap' }}>
+            {p.price > 0 ? `${p.price}€` : 'Unavailable'}
+        </div>
+    </div>
+);
+
+// ── SUBCOMPONENT: Recommendation Panel ──────────────────────────────────────
+const RecommendationPanel = ({ title, subtitle, icon, accentColor, products, selectedIds, onToggle, loading, emptyMessage }) => (
+    <div style={{
+        flex: 1,
+        border: `2px solid ${accentColor}30`,
+        borderRadius: '20px',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        background: `${accentColor}06`,
+        minWidth: 0,
+    }}>
+        {/* Panel Header */}
+        <div style={{
+            padding: '16px 20px 14px',
+            borderBottom: `1px solid ${accentColor}20`,
+            background: `${accentColor}0e`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+        }}>
+            <span style={{ fontSize: '1.3rem' }}>{icon}</span>
+            <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--wz-text)' }}>{title}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--wz-muted)', marginTop: '1px' }}>{subtitle}</div>
+            </div>
+        </div>
+
+        {/* Panel Body */}
+        <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '14px', maxHeight: '320px' }}>
+            {loading ? (
+                <div style={{ padding: '30px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                    <div style={{
+                        width: '26px', height: '26px',
+                        border: `3px solid ${accentColor}30`,
+                        borderTop: `3px solid ${accentColor}`,
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }} />
+                    <span style={{ fontSize: '0.78rem', color: 'var(--wz-muted)' }}>Searching...</span>
+                </div>
+            ) : products.length === 0 ? (
+                <div style={{ padding: '30px 0', textAlign: 'center', color: '#ff6b6b', fontSize: '0.8rem' }}>
+                    {emptyMessage}
+                </div>
+            ) : (
+                products.map(p => (
+                    <ProductCard
+                        key={p.id}
+                        p={p}
+                        isSelected={selectedIds.includes(p.id)}
+                        onToggle={onToggle}
+                    />
+                ))
+            )}
+        </div>
+
+        {/* Panel Footer - total */}
+        <div style={{
+            padding: '10px 20px',
+            borderTop: `1px solid ${accentColor}20`,
+            background: `${accentColor}0e`,
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            textAlign: 'right',
+            color: 'var(--wz-muted)'
+        }}>
+            Selected: <span style={{ color: accentColor }}>
+                {products
+                    .filter(p => selectedIds.includes(p.id))
+                    .reduce((sum, p) => sum + p.price, 0)
+                    .toFixed(2)}€
+            </span>
+        </div>
+    </div>
+);
 
 // ── COMPONENT: Suggested Products View ──────────────────────────────────────
 const SuggestedProductsView = ({ onConfirm, onBack }) => {
     const s = useWizardStore();
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedIds, setSelectedIds] = useState([]);
+
+    // Produse brute din API (folosite de ambele panouri)
+    const [allProducts, setAllProducts]           = useState([]);
+    const [loadingAI, setLoadingAI]               = useState(true);
+    const [loadingAlgo, setLoadingAlgo]           = useState(true);
+
+    // Produse filtrate per panou
+    const [aiProducts, setAiProducts]             = useState([]);
+    const [algoProducts, setAlgoProducts]         = useState([]);
+
+    // Selectii unificate — userul poate selecta din ambele panouri
+    const [selectedIds, setSelectedIds]           = useState([]);
 
     useEffect(() => {
         const fetchSuggestions = async () => {
-            setLoading(true);
+            setLoadingAI(true);
+            setLoadingAlgo(true);
             try {
-                // 1. Construim string-ul cu criterii folosind starea din Zustand (obiectul 's')
-                const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}`;
+                // 1. Construim string-ul cu criterii
+                const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}. Protocoale preferate: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
 
-                // 2. Apelăm API-ul (adăugând criteriile în URL)
+                // 2. Fetch catre backend (AI)
                 const res = await fetch(`http://localhost:20025/api/devices/suggestions?criteria=${encodeURIComponent(criterii)}`);
                 const data = await res.json();
 
-                // 3. Mapăm JSON-ul primit cu switch complet pe categoryId
-                const mappedData = data.map(item => {
-                    let icon = '📦';
-                    switch (item.categoryId) {
-                        case 1:  icon = '📷'; break; // SMART CAMERAS
-                        case 2:  icon = '🔌'; break; // SMART POWER STRIPS
-                        case 3:  icon = '🎮'; break; // GAMING CONSOLES
-                        case 4:  icon = '🍳'; break; // SMART APPLIANCES
-                        case 5:  icon = '🎛️'; break; // SMART HUBS
-                        case 6:  icon = '🖥️'; break; // SMART MONITORS
-                        case 7:  icon = '🔋'; break; // SMART OUTLETS
-                        case 8:  icon = '📡'; break; // SMART SENSORS
-                        case 9:  icon = '🎵'; break; // SMART AUDIO
-                        case 10: icon = '📺'; break; // SMART TVs
-                        case 11: icon = '🤖'; break; // ROBOT VACUUMS
-                        case 12: icon = '🌐'; break; // SMART ROUTERS
-                        default: icon = '📦'; break;
-                    }
-                    return {
-                        id: item.id.toString(),
-                        name: item.name,
-                        brand: item.brand,
-                        price: item.price || 0,
-                        icon: icon,
-                        protocol: item.communicationProtocol || 'Unknown'
-                    };
-                });
+                // 3. Mapam raspunsul
+                const mapped = data.map(item => ({
+                    id: item.id.toString(),
+                    name: item.name,
+                    brand: item.brand,
+                    price: item.price || 0,
+                    icon: getCategoryIcon(item.categoryId),
+                    protocol: item.communicationProtocol || 'Unknown',
+                    categoryId: item.categoryId,
+                }));
 
-                setProducts(mappedData);
+                setAllProducts(mapped);
+                setAiProducts(mapped);       // AI primeste tot ce a returnat Gemini
+                setLoadingAI(false);
+
+                // 4. Algoritmul primeste aceleasi produse si le filtreaza dupa logica lui
+                // ⚠️ INLOCUIESTE `getAlgorithmRecommendations` cu algoritmul colegului ⚠️
+                const algoResult = getAlgorithmRecommendations(mapped, s);
+                setAlgoProducts(algoResult);
+                setLoadingAlgo(false);
+
             } catch (error) {
                 console.error("Failed to fetch products from backend:", error);
-                setProducts([]);
-            } finally {
-                setLoading(false);
+                setAiProducts([]);
+                setAlgoProducts([]);
+                setLoadingAI(false);
+                setLoadingAlgo(false);
             }
         };
 
@@ -66,63 +205,71 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
 
-    const totalPrice = products
-        .filter(p => selectedIds.includes(p.id))
-        .reduce((sum, p) => sum + p.price, 0);
+    // Toate produsele unice selectate (din oricare panou)
+    const allUnique = [...new Map([...aiProducts, ...algoProducts].map(p => [p.id, p])).values()];
+    const selectedProducts = allUnique.filter(p => selectedIds.includes(p.id));
+    const totalPrice = selectedProducts.reduce((sum, p) => sum + p.price, 0);
 
     return (
         <div className="step-content">
             <h2>Recommended Devices</h2>
-            <p>We found {products.length} products matching your criteria.</p>
+            <p>
+                Two recommendation engines analyzed your preferences.
+                Pick the ones you like from either list!
+            </p>
 
-            <div className="custom-scrollbar" style={{ maxHeight: '380px', overflowY: 'auto', padding: '10px' }}>
-                {loading ? (
-                    <div style={{ padding: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
-                        <div className="spinner" style={{ width: '30px', height: '30px', border: '3px solid var(--wz-border)', borderTop: '3px solid var(--wz-accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                        AI is searching for the best deals... 🤖
-                        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                    </div>
-                ) : products.length === 0 ? (
-                    <div style={{ padding: '40px', textAlign: 'center', color: '#ff6b6b' }}>
-                        No products found matching your criteria. Try increasing your budget!
-                    </div>
-                ) : (
-                    <div className="suggestions-list">
-                        {products.map(p => (
-                            <div
-                                key={p.id}
-                                className={`option-card ${selectedIds.includes(p.id) ? 'selected' : ''}`}
-                                onClick={() => toggleProduct(p.id)}
-                                style={{ marginBottom: '12px' }}
-                            >
-                                <div className="option-icon">{p.icon}</div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{p.name}</div>
-                                    <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{p.brand} · {p.protocol}</div>
-                                </div>
-                                <div style={{ fontWeight: 800, color: 'var(--wz-accent)' }}>
-                                    {p.price > 0 ? `${p.price}€` : 'Unavailable'}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+            {/* ── Cele 2 panouri side-by-side ── */}
+            <div style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'stretch',
+                flexWrap: 'wrap',
+            }}>
+                {/* Panoul 1: AI */}
+                <RecommendationPanel
+                    title="AI Recommendations"
+                    subtitle="Powered by Gemini"
+                    icon="🤖"
+                    accentColor="#00b4d8"
+                    products={aiProducts}
+                    selectedIds={selectedIds}
+                    onToggle={toggleProduct}
+                    loading={loadingAI}
+                    emptyMessage="AI found no matches. Try a higher budget!"
+                />
+
+                {/* Panoul 2: Algorithm */}
+                <RecommendationPanel
+                    title="Algorithm Pick"
+                    subtitle="Smart filter by our engine"
+                    icon="⚙️"
+                    accentColor="#7c3aed"
+                    products={algoProducts}
+                    selectedIds={selectedIds}
+                    onToggle={toggleProduct}
+                    loading={loadingAlgo}
+                    emptyMessage="Algorithm found no matches."
+                />
             </div>
 
+            {/* ── Footer ── */}
             <div className="nav-footer">
                 <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>
-                    Total selected: <span style={{ color: 'var(--wz-accent)' }}>{totalPrice.toFixed(2)}€</span>
+                    Total selected ({selectedProducts.length} items):{' '}
+                    <span style={{ color: 'var(--wz-accent)' }}>{totalPrice.toFixed(2)}€</span>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button className="btn-wizard btn-prev" onClick={onBack}>Back</button>
                     <button
                         className="btn-wizard btn-next"
-                        onClick={() => onConfirm(products.filter(p => selectedIds.includes(p.id)))}
+                        onClick={() => onConfirm(selectedProducts)}
                     >
                         Start Project 〉
                     </button>
                 </div>
             </div>
+
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
         </div>
     );
 };

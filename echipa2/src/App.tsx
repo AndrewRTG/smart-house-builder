@@ -66,6 +66,13 @@ import React, { useState, useEffect , useRef} from 'react';
     plugs: Plug[];
   }
 
+
+  interface HistorySnapshot {
+  lines: any[];
+  icons: any[];
+  furniture: any[];
+}
+
   const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
 
   // mapare icon cu denumire element
@@ -183,22 +190,57 @@ import React, { useState, useEffect , useRef} from 'react';
 
     // dimensiunile calculate ale gridului
     const [layout, setLayout] = useState({ offsetX: 0, offsetY: 0, dotSpacing: 0 });
-    const [redoHistory, setRedoHistory] = useState<{ lines: any[], icons: any[], furniture: any[] }[]>([]);
 
-    const handleRestoreHistory = (oldLines: any[], oldIcons: any[], oldFurniture: any[]) => {
-  //salvam starea in redo inainte sa facem undo
-  setRedoHistory(prev => [{ lines, icons: placedIcons, furniture: placedFurniture }, ...prev].slice(0, 30));
-  
-  setLines(oldLines);
-  setPlacedIcons(oldIcons);
-  setPlacedFurniture(oldFurniture);
-};
 
-const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) => {
-  setLines(nextLines);
-  setPlacedIcons(nextIcons);
-  setPlacedFurniture(nextFurniture);
-};
+    const [undoStack, setUndoStack] = useState<HistorySnapshot[]>([]);
+    const [redoStack, setRedoStack] = useState<HistorySnapshot[]>([]);
+
+
+    const saveHistory = () => {
+      const currentSnapshot: HistorySnapshot = {
+        lines: [...lines],
+        icons: [...placedIcons],
+        furniture: [...placedFurniture]
+      };
+      
+      setUndoStack(prev => [currentSnapshot, ...prev].slice(0, 30));
+      setRedoStack([]); // Ștergem redo când facem o acțiune nouă
+    };
+
+    const handleUndo = () => {
+      if (undoStack.length === 0) return;
+
+      // Luăm prima stare din stivă (cea mai recentă salvată)
+      const prevState = undoStack[0];
+      const remaining = undoStack.slice(1);
+
+      // Salvăm starea ACTUALĂ în Redo (ca să putem da Redo înapoi la ea)
+      setRedoStack(prev => [{ lines: [...lines], icons: [...placedIcons], furniture: [...placedFurniture] }, ...prev]);
+
+      // Aplicăm starea precedentă
+      setLines([...prevState.lines]);
+      setPlacedIcons([...prevState.icons]);
+      setPlacedFurniture([...prevState.furniture]);
+      
+      setUndoStack(remaining);
+    };
+
+    const handleRedo = () => {
+      if (redoStack.length === 0) return;
+
+      const nextState = redoStack[0];
+      const remaining = redoStack.slice(1);
+
+      // Salvăm starea ACTUALĂ în Undo (ca să putem da Undo din nou)
+      setUndoStack(prev => [{ lines: [...lines], icons: [...placedIcons], furniture: [...placedFurniture] }, ...prev]);
+
+      setLines([...nextState.lines]);
+      setPlacedIcons([...nextState.icons]);
+      setPlacedFurniture([...nextState.furniture]);
+      
+      setRedoStack(remaining);
+    };
+      
 
         // state pentru JSON-urile generate pentru export
     const [exportData, setExportData] = useState<{
@@ -316,6 +358,8 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
     if (!selectedDevice || activeTool) return;
     const isOccupied = checkUniversalCollision(col, row);
     if (!isOccupied) {
+
+      saveHistory();
       setPlacedIcons([...placedIcons, {
         col, row, id: Date.now().toString(), type: selectedDevice.type,
         name: selectedDevice.name, brand: selectedDevice.brand,
@@ -649,9 +693,6 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
                       onCanvasClick={handleCanvasClick}
                       onLineComplete={handleLineComplete}
                       onUpdate={setLayout}
-                      onRestoreHistory={handleRestoreHistory}
-                      redoHistory={redoHistory}
-                      setRedoHistory={setRedoHistory}
                       onRedo={handleRedo}
                       draggingItem={draggingItem}
                       setDraggingItem={setDraggingItem}
@@ -660,11 +701,17 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
                       layout={layout}
                       setPlacedIcons={setPlacedIcons}
                       checkCollision={checkUniversalCollision}
+                      saveHistory={saveHistory}
+                      undo={handleUndo} 
+                      redo={handleRedo} 
+                      canUndo={undoStack.length > 0} // Trimitem true/false
+                      canRedo={redoStack.length > 0}
                     />
 
                     {layout.dotSpacing > 0 && placedIcons.map((icon, index) => {
                       const IconComponent = ICON_MAP[icon.type] || ControllerIcon;
                       const isDraggingThis = draggingItem?.type === 'icon' && draggingItem.id === icon.id;
+                      const isHovered = hoveredIconIndex === index;
                       
                       return (
                           <div
@@ -672,6 +719,7 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
                             onMouseEnter={() => setHoveredIconIndex(index)}
                             onMouseLeave={() => setHoveredIconIndex(null)}
                             onMouseDown={(e) => {
+                              if ((e.target as HTMLElement).closest('button')) return;
                               if (activeTool) return;
                               e.preventDefault();
                               e.stopPropagation();
@@ -685,10 +733,10 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
                               height: layout.dotSpacing * (icon.scale || 1),
                               transform: `translate(-50%, -50%) rotate(${icon.rotation || 0}deg)`,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              zIndex: isDraggingThis ? 50 : 20,
+                              zIndex: isDraggingThis ? 100 : 30, // Asigură-te că e deasupra canvas-ului (care e de obicei 10-20)
                               cursor: isDraggingThis ? 'grabbing' : 'grab',
                               opacity: isDraggingThis ? 0.6 : 1,
-                              pointerEvents: activeTool || draggingItem ? 'none' : 'auto',
+                              pointerEvents: activeTool ? 'none' : 'auto', 
                               userSelect: 'none'
                             }}
                           >
@@ -701,16 +749,38 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
                               </div>
                             )}
 
-                            {hoveredIconIndex === index && !isDraggingThis && (
-                              <div
+                            {isHovered && !isDraggingThis && !activeTool && (
+                              <button
                                 onClick={(e) => {
-                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  e.stopPropagation(); // Prevenim orice acțiune a canvas-ului
+                                  saveHistory(); // Salvăm starea înainte de ștergere pentru UNDO
                                   setPlacedIcons(placedIcons.filter((_, i) => i !== index));
+                                  setHoveredIconIndex(null);
                                 }}
-                                className={`absolute -top-3 -right-4 w-6 h-6 flex items-center justify-center rounded-full shadow-xl z-30 text-[10px] font-bold transition-all duration-200 border-2 cursor-pointer ${isDarkMode ? 'bg-[#3A3A4E] text-[#FF4D4D] border-[#1A1A1E] hover:bg-[#4A4A60]' : 'bg-white text-[#EF4444] border-[#EDEFF0] hover:bg-gray-50'}`}
+                                // Folosim absolute și un z-index mare
+                                className={`
+                                    absolute 
+                                    -top-2 -right-2 
+                                    w-5 h-5 
+                                    flex items-center justify-center 
+                                    rounded-full 
+                                    shadow-md 
+                                    z-[60] 
+                                    text-[10px] 
+                                    font-bold 
+                                    transition-all 
+                                    duration-200 
+                                    border 
+                                    cursor-pointer 
+                                    ${isDarkMode 
+                                      ? 'bg-[#1A1A1E] text-red-500 border-red-500/30 hover:bg-red-500 hover:text-white' 
+                                      : 'bg-white text-red-600 border-red-200 hover:bg-red-600 hover:text-white'
+                                    }
+                                  `}
                               >
                                 ✕
-                              </div>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -745,6 +815,9 @@ const handleRedo = (nextLines: any[], nextIcons: any[], nextFurniture: any[]) =>
                 </div> {/* <--- Aici se închide viewport-ul */}
 
                 <div id="floating-menu" className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex gap-8 px-10 py-4 rounded-full shadow-2xl border transition-all duration-300 ${isDarkMode ? 'bg-[#2F2F41]/90 backdrop-blur-md border-[#3A3A4E]' : 'bg-white/90 backdrop-blur-md border-[#C2C9CC]'}`}>
+                    
+                    
+                    
                     {['Wall', 'Window', 'Door', 'Line', 'Furniture'].map((tool) => {
                       const isFurniture = tool === 'Furniture';
                       const isSelected = isFurniture 

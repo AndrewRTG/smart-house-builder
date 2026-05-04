@@ -97,7 +97,7 @@ const svgToBase64_2 = (svgString: string) => {
 const createDoorSVG = (strokeColor: string, isDarkMode: boolean) => {
   const bgColor = isDarkMode ? '#5293DE' : '#C2C9CC';
   
-  const strokeW = 6; 
+  const strokeW = 4; 
   const off = 15; 
   const size = 412;
   const end = size - off;
@@ -304,7 +304,7 @@ export const getFurnitureImage = (
   const canvasBgColor = isDarkMode ? '#5293DE' : '#C2C9CC'; 
   
   // Scădem stroke-ul pentru că SVG-ul devine "mai mic" ca scară
-  const strokeWidth = "6"; 
+  const strokeWidth = "4"; 
 
   let svgContent = config.svg
   .replace('<svg', '<svg style="overflow: visible;" '); // ADAUGĂ ASTA

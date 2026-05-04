@@ -102,7 +102,6 @@ import React, { useState, useEffect , useRef} from 'react';
   const App: React.FC = () => {
 
 
-
     const generateLayoutId = () => {
       const randomSegment = () => Math.floor(1000 + Math.random() * 9000).toString();
       return `layout-uuid-${randomSegment()}-${randomSegment()}`;

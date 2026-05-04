@@ -1,6 +1,6 @@
 import React, { useState, useEffect , useRef} from 'react';
-  import GridCanvas from './GridCanvas';
-  import {WallIcon,DoorIcon,LineIcon,WindowIcon,FurnitureIcon, LogoIcon, ControllerIcon, SenzorIcon, LockIcon, RouterIcon, TvIcon, InterfonIcon, PrelungitorIcon, SoundSystemIcon, BecIcon, PrizaIcon, AspiratorIcon, HubIcon } from './Icons';
+  import GridCanvas from '../../Frontend/src/features/canvas/GridCanvas';
+  import {WallIcon,DoorIcon,LineIcon,WindowIcon,FurnitureIcon, LogoIcon, ControllerIcon, SenzorIcon, LockIcon, RouterIcon, TvIcon, InterfonIcon, PrelungitorIcon, SoundSystemIcon, BecIcon, PrizaIcon, AspiratorIcon, HubIcon } from '../../Frontend/src/features/canvas/Icons';
 
   // importam componenta si store-ul
   import WizardSidebar from './features/wizard/components/WizardSidebar.jsx';

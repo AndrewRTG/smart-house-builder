@@ -1,17 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --font-montserrat: 'Montserrat', sans-serif;
+:root {
+  font-family: 'Montserrat', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
 }
 
-/* ascund sidebarul in dreapta de la catalog ca imi strica borderul atunci cand selectam*/
+/* Custom Scrollbar for the Canvas Viewport */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Hide scrollbar for catalog list */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
-
 .no-scrollbar {
-  -ms-overflow-style: none;  
-  scrollbar-width: none;  
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }

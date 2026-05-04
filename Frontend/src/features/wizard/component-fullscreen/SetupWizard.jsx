@@ -284,7 +284,7 @@ const RoomImageCard = ({ name, icon, isSelected, onClick }) => (
             padding: '10px',
             borderRadius: '16px',
             border: isSelected ? '2px solid var(--wz-accent)' : '2px solid transparent',
-            backgroundColor: isSelected ? 'var(--wz-accent-soft)' : 'var(--wz-bg)',
+            backgroundColor: isSelected ? 'var(--wz-accent)' : 'var(--wz-bg)',
             transition: 'all 0.2s ease',
             display: 'flex',
             flexDirection: 'column',
@@ -307,7 +307,7 @@ const RoomImageCard = ({ name, icon, isSelected, onClick }) => (
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'var(--wz-card)',
+            backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--wz-card)',
             position: 'relative',
             overflow: 'hidden'
         }}>
@@ -326,7 +326,6 @@ const RoomImageCard = ({ name, icon, isSelected, onClick }) => (
                 </div>
             )}
         </div>
-        <div className="room-label" style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--wz-text)' }}>{name}</div>
     </div>
 );
 
@@ -344,11 +343,13 @@ const SetupWizard = ({ onFinish }) => {
 
     if (showResults) {
         return (
-            <div className="wizard-card w-full max-w-3xl mx-auto">
-                <SuggestedProductsView
-                    onBack={() => setShowResults(false)}
-                    onConfirm={(selectedProducts) => onFinish(selectedProducts)}
-                />
+            <div className={`wizard-container w-full max-w-3xl ${s.darkMode ? 'dark-mode' : ''}`}>
+                <div className="wizard-card">
+                    <SuggestedProductsView
+                        onBack={() => setShowResults(false)}
+                        onConfirm={(selectedProducts) => onFinish(selectedProducts)}
+                    />
+                </div>
             </div>
         );
     }
@@ -356,6 +357,28 @@ const SetupWizard = ({ onFinish }) => {
     const renderStep = () => {
         switch (s.step) {
             case 1: return (
+                <div className="step-content">
+                    <h2>Which rooms are you equipping?</h2>
+                    <p>Select the spaces you want to configure. (Images will be integrated by the design team via API)</p>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                        gap: '15px',
+                        marginTop: '20px'
+                    }}>
+                        {ROOM_OPTIONS.map(room => (
+                            <RoomImageCard
+                                key={room.id}
+                                name={room.name}
+                                icon={room.icon}
+                                isSelected={s.rooms.includes(room.id)}
+                                onClick={() => s.toggleRoom(room.id)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+            case 2: return (
                 <div className="step-content">
                     <h2>What is your total budget?</h2>
                     <p>Estimate the maximum amount you are willing to invest.</p>
@@ -375,7 +398,7 @@ const SetupWizard = ({ onFinish }) => {
                     </div>
                 </div>
             );
-            case 2: return (
+            case 3: return (
                 <div className="step-content">
                     <h2>What are your priorities?</h2>
                     <p>Select your preferred ecosystem and categories of interest.</p>
@@ -403,7 +426,7 @@ const SetupWizard = ({ onFinish }) => {
                     </div>
                 </div>
             );
-            case 3: return (
+            case 4: return (
                 <div className="step-content">
                     <h2>Technical Level</h2>
                     <p>Choose the complexity level suitable for your experience.</p>
@@ -421,28 +444,6 @@ const SetupWizard = ({ onFinish }) => {
                     ))}
                 </div>
             );
-            case 4: return (
-                <div className="step-content">
-                    <h2>Which rooms are you equipping?</h2>
-                    <p>Select the spaces you want to configure. (Images will be integrated by the design team via API)</p>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '15px',
-                        marginTop: '20px'
-                    }}>
-                        {ROOM_OPTIONS.map(room => (
-                            <RoomImageCard
-                                key={room.id}
-                                name={room.name}
-                                icon={room.icon}
-                                isSelected={s.rooms.includes(room.id)}
-                                onClick={() => s.toggleRoom(room.id)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            );
             default: return null;
         }
     };
@@ -455,7 +456,7 @@ const SetupWizard = ({ onFinish }) => {
                         <div className={`step-circle ${s.step === idx ? 'active' : ''} ${s.step > idx ? 'completed' : ''}`}>
                             {s.step > idx ? '✓' : idx}
                         </div>
-                        <span className="step-label">{["Budget", "Priorities", "Level", "Rooms"][idx - 1]}</span>
+                        <span className="step-label">{["Rooms", "Budget", "Priorities", "Level"][idx - 1]}</span>
                     </div>
                 ))}
             </div>

@@ -1,0 +1,336 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ── Navbar uses the same CSS variables as wizard.css ── */
+/* Light mode values are defined here as fallbacks;       */
+/* dark-mode class overrides them just like the wizard.  */
+
+.navbar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 64px;
+    background: #BDD3E7;
+    border-bottom: 1px solid #A8C2D8;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    padding: 0 24px;
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark mode overrides (ready for later) ── */
+.navbar.dark-mode {
+    background: #162040;
+    border-bottom-color: #1E3060;
+}
+
+/* ── Logo ── */
+.navbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 24px;
+    border-right: 2px solid #A8C2D8;
+    height: 100%;
+    flex-shrink: 0;
+    text-decoration: none;
+    transition: border-color 0.22s;
+}
+
+.navbar.dark-mode .navbar-logo {
+    border-right-color: #1E3060;
+}
+
+.navbar-logo-icon {
+    width: 36px;
+    height: 36px;
+    background: #FFFFFF;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2D4E6C;
+    box-shadow: 0 2px 8px rgba(45, 78, 108, 0.15);
+    flex-shrink: 0;
+}
+
+.navbar.dark-mode .navbar-logo-icon {
+    background: #0D1733;
+    color: #BDD3E7;
+}
+
+.navbar-logo-text {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #383B3D;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+}
+
+.navbar.dark-mode .navbar-logo-text {
+    color: #EAF0FF;
+}
+
+.navbar-logo-accent {
+    color: #2D4E6C;
+}
+
+.navbar.dark-mode .navbar-logo-accent {
+    color: #7EB8D4;
+}
+
+/* ── Nav Links ── */
+.navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 28px;
+    flex: 1;
+}
+
+.navbar-link {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #383B3D;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: color 0.18s, background 0.18s;
+    white-space: nowrap;
+}
+
+.navbar-link:hover {
+    color: #2D4E6C;
+    background: rgba(45, 78, 108, 0.08);
+}
+
+.navbar.dark-mode .navbar-link {
+    color: #A8C2D8;
+}
+
+.navbar.dark-mode .navbar-link:hover {
+    color: #EAF0FF;
+    background: rgba(189, 211, 231, 0.08);
+}
+
+.navbar-divider {
+    width: 1px;
+    height: 20px;
+    background: #A8C2D8;
+    flex-shrink: 0;
+    margin: 0 4px;
+}
+
+.navbar.dark-mode .navbar-divider {
+    background: #1E3060;
+}
+
+/* ── Right Actions ── */
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ── Setup Wizard Button ── */
+.navbar-wizard-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    background: #2D4E6C;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(45, 78, 108, 0.3);
+    transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+    letter-spacing: 0.01em;
+}
+
+.navbar-wizard-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(45, 78, 108, 0.4);
+}
+
+.navbar-wizard-btn:active {
+    transform: translateY(0);
+}
+
+/* ── Avatar Button ── */
+.navbar-avatar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #2D4E6C;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: box-shadow 0.18s, transform 0.18s;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(45, 78, 108, 0.25);
+}
+
+.navbar-avatar-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45, 78, 108, 0.35);
+}
+
+.navbar-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* ── Dark Mode Toggle ── */
+.navbar-theme-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.toggle-track {
+    width: 48px;
+    height: 26px;
+    background: #FFFFFF;
+    border: 2px solid #A8C2D8;
+    border-radius: 50px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    transition: background 0.25s, border-color 0.25s;
+}
+
+.navbar-theme-toggle.active .toggle-track {
+    background: #2D4E6C;
+    border-color: #2D4E6C;
+}
+
+.toggle-thumb {
+    position: absolute;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2D4E6C;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.navbar-theme-toggle.active .toggle-thumb {
+    transform: translateX(22px);
+    background: #FFFFFF;
+    color: #2D4E6C;
+}
+
+/* ── Responsive Navbar ────────────────────────────── */
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0 12px;
+        height: 56px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+    }
+
+    .navbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .navbar-logo,
+    .navbar-links,
+    .navbar-actions {
+        flex-shrink: 0;
+    }
+
+    .navbar-logo {
+        padding-right: 16px;
+    }
+
+    .navbar-links {
+        margin-left: 12px;
+        gap: 2px;
+    }
+
+    .navbar-link {
+        font-size: 0.82rem;
+        padding: 5px 10px;
+        white-space: nowrap;
+    }
+
+    .navbar-logo-text {
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .navbar-wizard-btn {
+        white-space: nowrap;
+        padding: 8px 14px;
+        font-size: 0.8rem;
+    }
+
+    .navbar-actions {
+        gap: 6px;
+        margin-left: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar {
+        padding: 0 10px;
+        height: 52px;
+    }
+
+    .navbar-logo-icon {
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+    }
+
+    .navbar-logo-text {
+        font-size: 0.82rem;
+    }
+
+    .navbar-wizard-btn {
+        font-size: 0.76rem;
+        padding: 7px 12px;
+    }
+
+    .toggle-track {
+        width: 40px;
+        height: 22px;
+    }
+
+    .toggle-thumb {
+        width: 15px;
+        height: 15px;
+    }
+
+    .navbar-theme-toggle.active .toggle-thumb {
+        transform: translateX(18px);
+    }
+}

@@ -34,9 +34,13 @@ public class DeviceController {
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) List<String> protocols)
+            @RequestParam(required = false) List<String> protocols,
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+            )
     {
-        List<DeviceResponse> devices = deviceService.getFilteredDevices(categoryIds, brand, maxPrice, minPrice, protocols);
+        List<DeviceResponse> devices = deviceService.getFilteredDevices(categoryIds, brand, maxPrice,
+                minPrice, protocols, sortBy, sortDir);
         return ResponseEntity.ok(devices);
     }
     @Operation(

@@ -1,6 +1,7 @@
 package gr.A4.SmartHouseBuilder.endpoint.repository;
 
 import gr.A4.SmartHouseBuilder.endpoint.entity.Device;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,7 +21,8 @@ public interface DeviceRepository extends JpaRepository<Device,Integer> {
             @Param("brand") String brand,
             @Param("maxPrice") Double maxPrice,
             @Param("minPrice") Double minPrice,
-            @Param("protocols") List<String> protocols
+            @Param("protocols") List<String> protocols,
+            Sort sort
     );
     @Query(value = """
             SELECT name FROM devices 

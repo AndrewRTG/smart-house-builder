@@ -9,6 +9,7 @@ import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
 import gr.A4.SmartHouseBuilder.endpoint.repository.DeviceRepository;
 import gr.A4.SmartHouseBuilder.endpoint.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -55,9 +56,20 @@ public class DeviceService {
                         d.getBestPrice(),d.getBestPriceUrl()
                 )).toList();
     }
-    public List<DeviceResponse> getFilteredDevices(List<Integer> categoryIds, String brand, Double maxPrice, Double minPrice, List<String> protocols){
-        List<Device> devices = deviceRepository.findWithFilters(categoryIds, brand, maxPrice, minPrice, protocols);
+    public List<DeviceResponse> getFilteredDevices(List<Integer> categoryIds, String brand, Double maxPrice, Double minPrice, List<String> protocols, String sortBy, String sortDir){
+        String databaseColumn = switch (sortBy.toLowerCase()) {
+            case "price" -> "best_price";
+            case "name" -> "name";
+            case "brand" -> "brand";
+            case "date" -> "id";
+            default -> "id";
+        };
 
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(databaseColumn).ascending()
+                : Sort.by(databaseColumn).descending();
+
+        List<Device> devices = deviceRepository.findWithFilters(categoryIds, brand, maxPrice, minPrice, protocols, sort);
 
         return devices.stream()
                 .map(d -> new DeviceResponse(

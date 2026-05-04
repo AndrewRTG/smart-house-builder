@@ -4,12 +4,20 @@ import gr.A4.SmartHouseBuilder.engine.CompatibilityEngine;
 import gr.A4.SmartHouseBuilder.model.ValidationResult;
 import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import gr.A4.SmartHouseBuilder.team2.model.StoredLayout;
+import lombok.RequiredArgsConstructor;
 import gr.A4.SmartHouseBuilder.team2.util.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
 import java.util.ArrayList;
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
+@RequiredArgsConstructor
 public class LayoutService {
     private final List<StoredLayout> db = new ArrayList<>();
     private final CompatibilityEngine compatibilityEngine;
@@ -22,13 +30,13 @@ public class LayoutService {
 
     public SetupBuildDTO validateLayout(StoredLayout layout) {
         SetupBuildDTO dto = layout.getContent();
-        
+
         var engineModel = modelMapper.toEngineModel(dto);
-        
+
         List<ValidationResult> results = compatibilityEngine.runAllChecks(engineModel);
-        
+
         dto.setErrors(results);
-        
+
         return dto;
     }
 

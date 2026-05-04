@@ -1,8 +1,8 @@
-package gr.A4.SmartHouseBuilder.endpoint.controller;
+package gr.A4.SmartHouseBuilder.controller;
 
-import gr.A4.SmartHouseBuilder.endpoint.dto.DeviceRequest;
-import gr.A4.SmartHouseBuilder.endpoint.dto.DeviceResponse;
-import gr.A4.SmartHouseBuilder.endpoint.service.DeviceService;
+import gr.A4.SmartHouseBuilder.dto.DeviceRequest;
+import gr.A4.SmartHouseBuilder.dto.DeviceResponse;
+import gr.A4.SmartHouseBuilder.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

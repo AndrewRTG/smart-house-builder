@@ -1,12 +1,12 @@
 package gr.A4.SmartHouseBuilder.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gr.A4.SmartHouseBuilder.endpoint.entity.Device;
+import gr.A4.SmartHouseBuilder.entity.Device;
 import gr.A4.SmartHouseBuilder.entity.Setup;
 import gr.A4.SmartHouseBuilder.entity.SetupStatus;
 import gr.A4.SmartHouseBuilder.entity.Article;
 import gr.A4.SmartHouseBuilder.entity.User;
-import gr.A4.SmartHouseBuilder.endpoint.repository.DeviceRepository;
+import gr.A4.SmartHouseBuilder.repository.DeviceRepository;
 import gr.A4.SmartHouseBuilder.repository.SetupRepository;
 import gr.A4.SmartHouseBuilder.repository.ArticleRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;

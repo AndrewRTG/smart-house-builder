@@ -1,4 +1,4 @@
-package gr.A4.SmartHouseBuilder.endpoint.dto;
+package gr.A4.SmartHouseBuilder.dto;
 
 import java.util.Map;
 

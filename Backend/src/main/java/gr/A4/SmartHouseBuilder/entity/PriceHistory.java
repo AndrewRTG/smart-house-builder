@@ -1,4 +1,4 @@
-package gr.A4.SmartHouseBuilder.endpoint.entity;
+package gr.A4.SmartHouseBuilder.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -1,8 +1,8 @@
-package gr.A4.SmartHouseBuilder.endpoint.controller;
+package gr.A4.SmartHouseBuilder.controller;
 
-import gr.A4.SmartHouseBuilder.endpoint.dto.PriceHistoryRequest;
-import gr.A4.SmartHouseBuilder.endpoint.dto.PriceHistoryResponse;
-import gr.A4.SmartHouseBuilder.endpoint.service.PriceHistoryService;
+import gr.A4.SmartHouseBuilder.dto.PriceHistoryRequest;
+import gr.A4.SmartHouseBuilder.dto.PriceHistoryResponse;
+import gr.A4.SmartHouseBuilder.service.PriceHistoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

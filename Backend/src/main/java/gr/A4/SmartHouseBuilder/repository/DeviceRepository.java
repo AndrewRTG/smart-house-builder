@@ -1,6 +1,6 @@
-package gr.A4.SmartHouseBuilder.endpoint.repository;
+package gr.A4.SmartHouseBuilder.repository;
 
-import gr.A4.SmartHouseBuilder.endpoint.entity.Device;
+import gr.A4.SmartHouseBuilder.entity.Device;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

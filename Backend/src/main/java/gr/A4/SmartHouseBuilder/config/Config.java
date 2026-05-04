@@ -1,4 +1,4 @@
-package gr.A4.SmartHouseBuilder.endpoint.controller;
+package gr.A4.SmartHouseBuilder.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

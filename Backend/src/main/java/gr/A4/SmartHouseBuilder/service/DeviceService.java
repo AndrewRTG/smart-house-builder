@@ -1,13 +1,13 @@
-package gr.A4.SmartHouseBuilder.endpoint.service;
+package gr.A4.SmartHouseBuilder.service;
 
 
-import gr.A4.SmartHouseBuilder.endpoint.dto.DeviceRequest;
-import gr.A4.SmartHouseBuilder.endpoint.dto.DeviceResponse;
-import gr.A4.SmartHouseBuilder.endpoint.entity.Category;
-import gr.A4.SmartHouseBuilder.endpoint.entity.Device;
+import gr.A4.SmartHouseBuilder.dto.DeviceRequest;
+import gr.A4.SmartHouseBuilder.dto.DeviceResponse;
+import gr.A4.SmartHouseBuilder.entity.Category;
+import gr.A4.SmartHouseBuilder.entity.Device;
 import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
-import gr.A4.SmartHouseBuilder.endpoint.repository.DeviceRepository;
-import gr.A4.SmartHouseBuilder.endpoint.repository.CategoryRepository;
+import gr.A4.SmartHouseBuilder.repository.DeviceRepository;
+import gr.A4.SmartHouseBuilder.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;

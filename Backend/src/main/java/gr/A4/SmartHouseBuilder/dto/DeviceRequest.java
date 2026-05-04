@@ -1,4 +1,4 @@
-package gr.A4.SmartHouseBuilder.endpoint.dto;
+package gr.A4.SmartHouseBuilder.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

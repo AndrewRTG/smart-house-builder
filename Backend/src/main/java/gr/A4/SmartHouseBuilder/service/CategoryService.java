@@ -1,10 +1,10 @@
-package gr.A4.SmartHouseBuilder.endpoint.service;
+package gr.A4.SmartHouseBuilder.service;
 
 
-import gr.A4.SmartHouseBuilder.endpoint.dto.CategoryRequest;
-import gr.A4.SmartHouseBuilder.endpoint.dto.CategoryResponse;
-import gr.A4.SmartHouseBuilder.endpoint.entity.Category;
-import gr.A4.SmartHouseBuilder.endpoint.repository.CategoryRepository;
+import gr.A4.SmartHouseBuilder.dto.CategoryRequest;
+import gr.A4.SmartHouseBuilder.dto.CategoryResponse;
+import gr.A4.SmartHouseBuilder.entity.Category;
+import gr.A4.SmartHouseBuilder.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

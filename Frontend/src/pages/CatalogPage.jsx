@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/SideBar';
-import ProductCard from '../components/ProductCard.jsx'
-import Navbar from '../components/NavBar';
+import Sidebar from '../components/catalog/SideBar';
+import ProductCard from '../components/catalog/ProductCard.jsx'
 
-export default function CatalogPage({ darkMode }) {
+    export default function CatalogPage({ darkMode }) {
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");

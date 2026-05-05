@@ -18,7 +18,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import ProductsPage from '../smart-house-catalog/src/pages/CatalogPage'
+import ProductsPage from './pages/CatalogPage';
 
 function HomePage() {
   return <div></div>;
@@ -27,8 +27,6 @@ function HomePage() {
 function BuilderPage() {
   return <h1 className="p-4">Builder Page</h1>;
 }
-
-
 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {

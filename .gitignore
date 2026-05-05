@@ -35,10 +35,9 @@ dist/
 .vite/
 *.local
 
-# IDE
-.idea/
-
 # Sensitive configuration — never commit!
 application-dev.properties
 application-prod.properties
+
+.env
 

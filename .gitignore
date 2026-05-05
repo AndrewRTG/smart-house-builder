@@ -30,8 +30,8 @@ hs_err_pid*
 replay_pid*
 
 # Node / frontend
-frontend/node_modules/
-frontend/dist/
+Frontend/node_modules/
+Frontend/dist/
 .vite/
 *.local
 

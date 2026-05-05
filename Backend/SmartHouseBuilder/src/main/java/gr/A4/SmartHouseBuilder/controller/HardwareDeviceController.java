@@ -1,6 +1,7 @@
 package gr.A4.SmartHouseBuilder.controller;
 
 import gr.A4.SmartHouseBuilder.model.HardwareDevice;
+import gr.A4.SmartHouseBuilder.service.DeviceSuggestionAlgorithmService;
 import gr.A4.SmartHouseBuilder.service.SimpleAiService;
 import gr.A4.SmartHouseBuilder.service.WizardOptimizerService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class HardwareDeviceController {
 
     private final WizardOptimizerService wizardOptimizer;
     private final SimpleAiService aiService;
+    private final DeviceSuggestionAlgorithmService algorithmService;
 
     @GetMapping("/suggestions")
     public List<HardwareDevice> getSuggestions(@RequestParam String criteria) {
@@ -39,5 +41,9 @@ public class HardwareDeviceController {
         }
 
         return aiService.getSmartSuggestions(request, layoutIds);
+    }
+    @GetMapping("/algorithmSuggestions")
+    public List<HardwareDevice> getAlgorithmSuggestions(@RequestParam String criteria) {
+        return algorithmService.getSmartSuggestions(criteria);
     }
 }

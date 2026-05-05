@@ -2,30 +2,6 @@ import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
 import './wizard.css';
 
-// VERSIUNEA PE CARE MERGE AI-UL + responsive + engleza + loading spinner
-// + 2 panouri de recomandari: AI si Algorithm
-
-// ═══════════════════════════════════════════════════════════════════
-// 🤖 ALGORITHM PLACEHOLDER
-// ---------------------------------------------------------------
-// Momentan folosim o selectie RANDOM din produse ca placeholder.
-// ----------------------------------------------------------------
-// COLEGUL CARE IMPLEMENTEAZA ALGORITMUL:
-//   → Inlocuieste functia `getAlgorithmRecommendations(products, store)`
-//     de mai jos cu logica ta reala.
-//   → Primesti: lista completa de produse (array) + starea din store (s)
-//   → Trebuie sa returnezi: un sub-array din produse, filtrat/sortat
-//     dupa criteriile algoritmului tau.
-//   → NU modifica nimic altceva din componenta.
-// ═══════════════════════════════════════════════════════════════════
-const getAlgorithmRecommendations = (products, store) => {
-    // ⚠️  RANDOM PLACEHOLDER — VA FI INLOCUIT CU ALGORITMUL COLEGULUI ⚠️
-    if (!products || products.length === 0) return [];
-    const shuffled = [...products].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, Math.min(4, shuffled.length));
-    // ⚠️  SFARSIT PLACEHOLDER ⚠️
-};
-
 // ── HELPER: map categoryId → icon ───────────────────────────────────────────
 const getCategoryIcon = (categoryId) => {
     switch (categoryId) {
@@ -144,62 +120,69 @@ const RecommendationPanel = ({ title, subtitle, icon, accentColor, products, sel
 const SuggestedProductsView = ({ onConfirm, onBack }) => {
     const s = useWizardStore();
 
-    // Produse brute din API (folosite de ambele panouri)
-    const [allProducts, setAllProducts]           = useState([]);
-    const [loadingAI, setLoadingAI]               = useState(true);
-    const [loadingAlgo, setLoadingAlgo]           = useState(true);
+    // Loading states for each panel independently
+    const [loadingAI, setLoadingAI]       = useState(true);
+    const [loadingAlgo, setLoadingAlgo]   = useState(true);
 
     // Produse filtrate per panou
-    const [aiProducts, setAiProducts]             = useState([]);
-    const [algoProducts, setAlgoProducts]         = useState([]);
+    const [aiProducts, setAiProducts]     = useState([]);
+    const [algoProducts, setAlgoProducts] = useState([]);
 
     // Selectii unificate — userul poate selecta din ambele panouri
-    const [selectedIds, setSelectedIds]           = useState([]);
+    const [selectedIds, setSelectedIds]   = useState([]);
 
     useEffect(() => {
-        const fetchSuggestions = async () => {
+        const fetchSuggestions = () => {
             setLoadingAI(true);
             setLoadingAlgo(true);
-            try {
-                // 1. Construim string-ul cu criterii
-                const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}. Protocoale preferate: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
 
-                // 2. Fetch catre backend (AI)
-                const res = await fetch(`http://localhost:20025/api/devices/suggestions?criteria=${encodeURIComponent(criterii)}`);
-                const data = await res.json();
+            // 1. Construim string-ul cu criterii
+            const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}. Protocoale preferate: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
+            const encodedCriteria = encodeURIComponent(criterii);
 
-                // 3. Mapam raspunsul
-                const mapped = data.map(item => ({
-                    id: item.id.toString(),
-                    name: item.name,
-                    brand: item.brand,
-                    price: item.price || 0,
-                    icon: getCategoryIcon(item.categoryId),
-                    protocol: item.communicationProtocol || 'Unknown',
-                    categoryId: item.categoryId,
-                }));
+            // 2. Fetch catre backend (AI Gemini)
+            fetch(`http://localhost:20025/api/devices/suggestions?criteria=${encodedCriteria}`)
+                .then(res => res.json())
+                .then(data => {
+                    setAiProducts(data.map(item => ({
+                        id: item.id.toString(),
+                        name: item.name,
+                        brand: item.brand,
+                        price: item.price || 0,
+                        icon: getCategoryIcon(item.categoryId),
+                        protocol: item.communicationProtocol || 'Unknown',
+                        categoryId: item.categoryId,
+                    })));
+                })
+                .catch(err => {
+                    console.error("Failed to fetch AI products:", err);
+                    setAiProducts([]);
+                })
+                .finally(() => setLoadingAI(false));
 
-                setAllProducts(mapped);
-                setAiProducts(mapped);       // AI primeste tot ce a returnat Gemini
-                setLoadingAI(false);
-
-                // 4. Algoritmul primeste aceleasi produse si le filtreaza dupa logica lui
-                // ⚠️ INLOCUIESTE `getAlgorithmRecommendations` cu algoritmul colegului ⚠️
-                const algoResult = getAlgorithmRecommendations(mapped, s);
-                setAlgoProducts(algoResult);
-                setLoadingAlgo(false);
-
-            } catch (error) {
-                console.error("Failed to fetch products from backend:", error);
-                setAiProducts([]);
-                setAlgoProducts([]);
-                setLoadingAI(false);
-                setLoadingAlgo(false);
-            }
+            // 3. Fetch catre backend (Local Algorithm)
+            fetch(`http://localhost:20025/api/devices/algorithmSuggestions?criteria=${encodedCriteria}`)
+                .then(res => res.json())
+                .then(data => {
+                    setAlgoProducts(data.map(item => ({
+                        id: item.id.toString(),
+                        name: item.name,
+                        brand: item.brand,
+                        price: item.price || 0,
+                        icon: getCategoryIcon(item.categoryId),
+                        protocol: item.communicationProtocol || 'Unknown',
+                        categoryId: item.categoryId,
+                    })));
+                })
+                .catch(err => {
+                    console.error("Failed to fetch Algorithm products:", err);
+                    setAlgoProducts([]);
+                })
+                .finally(() => setLoadingAlgo(false));
         };
 
         fetchSuggestions();
-    }, [s.priceRange, s.ecosystem, s.techLevel, s.categories]);
+    }, [s.priceRange, s.ecosystem, s.techLevel, s.categories, s.protocols]);
 
     const toggleProduct = (id) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -291,13 +274,6 @@ const RoomImageCard = ({ name, icon, isSelected, onClick }) => (
             gap: '10px'
         }}
     >
-        {/* ========================================================= */}
-        {/* FRONTEND/DESIGN TEAM INSTRUCTIONS:                        */}
-        {/* Replace the 'div.room-image-placeholder' below with the   */}
-        {/* actual <img src="..." /> tag when assets are ready.       */}
-        {/* Keep the aspect ratio or fixed height so the grid         */}
-        {/* doesn't break responsively.                               */}
-        {/* ========================================================= */}
         <div className="room-image-placeholder" style={{
             width: '100%',
             height: '110px',

@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: 225px 1fr;
   grid-template-rows: 1fr auto;
-  min-height: calc(100vh - 88px);
+  min-height: calc(100vh - 64px);
   background-color: var(--bg-main);
   color: var(--text-main);
 }

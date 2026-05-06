@@ -53,7 +53,7 @@ body {
 }
 
 .page-container {
-  min-height: calc(100vh - 88px);
+  min-height: calc(100vh - 64px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,6 +100,19 @@ body {
 .navbar-brand,
 .nav-link {
   transition: color 0.3s ease;
+}
+
+/* Tailwind defines a global `.collapse` utility that conflicts with
+   Bootstrap's `.collapse` navbar behavior. Force the navbar container
+   back to Bootstrap semantics after the builder styles load. */
+.custom-navbar .navbar-collapse {
+  visibility: visible !important;
+}
+
+@media (min-width: 992px) {
+  .custom-navbar .navbar-collapse {
+    display: flex !important;
+  }
 }
 
 .btn {

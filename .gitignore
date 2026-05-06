@@ -41,3 +41,5 @@ application-prod.properties
 
 .env
 
+branch-snapshots/
+

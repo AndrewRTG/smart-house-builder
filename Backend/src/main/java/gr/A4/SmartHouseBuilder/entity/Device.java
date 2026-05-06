@@ -35,7 +35,10 @@ public class Device {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(name = "communication_protocol")
     private String communicationProtocol;
 
     @JdbcTypeCode(SqlTypes.JSON)

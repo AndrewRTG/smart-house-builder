@@ -50,7 +50,9 @@ public class SecurityConfig {
                                 "/api/v1/admin/**",
                                 "/login/oauth2/**",
                                 "/oauth2/**",
-                                "/api/devices/**"
+                                "/api/devices/**",
+                                "/api/ai/**",
+                                "/api/team2/layouts/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/setups",

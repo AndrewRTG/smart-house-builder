@@ -1,4 +1,4 @@
-package gr.A4.SmartHouseBuilder.config;
+ackage gr.A4.SmartHouseBuilder.config;
 
 import gr.A4.SmartHouseBuilder.entity.Article;
 import gr.A4.SmartHouseBuilder.entity.Role;

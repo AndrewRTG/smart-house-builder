@@ -5,7 +5,6 @@ export default function Sidebar({ filters, setFilters }) {
     const [isPriceOpen, setIsPriceOpen] = useState(false);
     const [isProtocolOpen, setIsProtocolOpen] = useState(false);
     const [showAll, setShowAll] = useState(false);
-
     const handleCheckboxChange = (type, value) => {
         const currentList = filters[type];
         const newList = currentList.includes(value)
@@ -13,18 +12,17 @@ export default function Sidebar({ filters, setFilters }) {
             : [...currentList, value];
         setFilters({ ...filters, [type]: newList });
     };
-
     const allCategories = ['Lighting', 'Sensors', 'Smart Plugs & Switches', 'Hubs & Controllers', 'Security'];
     const displayLimit = 3;
     const categoriesToShow = showAll ? allCategories : allCategories.slice(0, displayLimit);
 
     const cardStyle = {
-        backgroundColor: 'var(--card-bg)',
+        backgroundColor: 'var(--section-bg)',
         transition: 'background-color 0.3s ease, color 0.3s ease',
     };
 
     const wrapperStyle = {
-        backgroundColor: 'var(--navbar-bg)',
+        backgroundColor: 'var(--sidebar-bg)',
         minHeight: '80vh',
         transition: 'background-color 0.3s ease',
     };
@@ -54,7 +52,7 @@ export default function Sidebar({ filters, setFilters }) {
                 </div>
             </div>
 
-            <div className="rounded-3 p-3 mb-3" style={cardStyle}>
+            <div className="rounded-3 p-3 mb-3 text-dark" style={cardStyle}>
                 <div
                     className="d-flex justify-content-between align-items-center"
                     style={{ cursor: 'pointer' }}
@@ -66,38 +64,43 @@ export default function Sidebar({ filters, setFilters }) {
 
                 {isPriceOpen && (
                     <div className="mt-3 px-1">
-                        <div className="d-flex justify-content-between mb-2">
-                            <span style={{ color: 'var(--text-main)' }}>{filters.minPrice} RON</span>
-                            <span style={{ color: 'var(--text-main)' }}>{filters.maxPrice} RON</span>
+                        <div className="d-flex justify-content-between mb-2" style={{ color: 'var(--text-main)' }} >
+                            <span className="price-label-text">{filters.minPrice} RON</span>
+                            <span className="price-label-text">{filters.maxPrice} RON</span>
                         </div>
 
                         <div className="price-slider-wrapper">
-                            <div className="slider-track"></div>
+                            <div className="slider-track-base"></div>
+
+                            <div
+                                className="slider-range-highlight"
+                                style={{
+                                    left: `${(filters.minPrice / 1000) * 100}%`,
+                                    width: `${((filters.maxPrice - filters.minPrice) / 1000) * 100}%`
+                                }}
+                            ></div>
+
                             <input
-                                type="range" min="0" max="1000"
+                                type="range"
+                                min="0"
+                                max="1000"
+                                className="thumb thumb-left"
                                 value={filters.minPrice}
                                 onChange={(e) => {
                                     const value = Math.min(Number(e.target.value), filters.maxPrice - 50);
-                                    setFilters({ ...filters, minPrice: value });
+                                    setFilters({...filters, minPrice: value});
                                 }}
                             />
                             <input
-                                type="range" min="0" max="1000"
+                                type="range"
+                                min="0"
+                                max="1000"
+                                className="thumb thumb-right"
                                 value={filters.maxPrice}
                                 onChange={(e) => {
                                     const value = Math.max(Number(e.target.value), filters.minPrice + 50);
-                                    setFilters({ ...filters, maxPrice: value });
+                                    setFilters({...filters, maxPrice: value});
                                 }}
-                            />
-                        </div>
-
-                        <div className="input-group input-group-sm mb-3 shadow-sm">
-                            <span className="input-group-text border-end-0" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', borderColor: 'var(--divider-color)' }}></span>
-                            <input
-                                type="text"
-                                className="form-control border-start-0"
-                                placeholder="Product category"
-                                style={{ backgroundColor: 'var(--input-bg)', color: 'var(--input-text)', borderColor: 'var(--divider-color)' }}
                             />
                         </div>
 

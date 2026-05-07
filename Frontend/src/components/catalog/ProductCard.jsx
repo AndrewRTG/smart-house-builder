@@ -1,21 +1,65 @@
 import React from 'react';
 
-export default function ProductCard({device}){
-    return(
-        <div className="card h-100 border-0 rounded-4" style={{
-                                                                        backgroundColor: '#d2d2d2',
-                                                                        padding: '10px',
-                                                                        boxShadow: '0px 5px 20px rgba(0, 0, 0, 0.40)'}}>
-            <div className="bg-white rounded-4 mb-3 d-flex justify-content-center align-items-center" style={{height: '200px'}}>
+export default function ProductCard({ device, viewMode = 'grid' }) {
+    const cardBaseStyle = {
+        backgroundColor: 'var(--card-bg)',
+        padding: '12px',
+        boxShadow: '0px 5px 20px rgba(0, 0, 0, 0.40)',
+        border: '0',
+        borderRadius: '1.2rem',
+        transition: 'all 0.3s ease'
+    };
+
+    if (viewMode === 'list') {
+        return (
+            <div className="card w-100 mb-2" style={cardBaseStyle}>
+                <div className="d-flex align-items-center gap-3">
+                    <div className="bg-white rounded-3 d-flex justify-content-center align-items-center" style={{ width: '120px', height: '100px', flexShrink: 0 }}>
+                        <img
+                            src={device.imageUrl}
+                            alt={device.name}
+                            style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }}
+                        />
+                    </div>
+
+                    <div className="flex-grow-1 min-width-0">
+                        <h6 className="fw-bold text-truncate mb-1" style={{ color: 'var(--text-main)' }}>
+                            {device.name}
+                        </h6>
+                        <div className="d-flex gap-2 mb-2">
+                            {device.specifications?.overallPick && (
+                                <span className="badge rounded-pill text-dark" style={{ backgroundColor: '#d0e1f9', fontSize: '0.6rem' }}>
+                                    Overall pick
+                                </span>
+                            )}
+                            <span className="fs-6 fw-bold" style={{ color: 'var(--text-main)' }}>
+                                {device.bestPrice} RON
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="d-flex flex-column align-items-end gap-2" style={{ minWidth: '100px' }}>
+                        <button className="btn btn-sm rounded-3 fw-bold" style={{ width: '60px', height: '60px', backgroundColor: 'var(--section-bg)' }}>
+                            <svg color= "var(--text-main)" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="card h-100" style={cardBaseStyle}>
+            <div className="bg-white rounded-4 mb-3 d-flex justify-content-center align-items-center" style={{ height: '200px' }}>
                 <img
-                src={device.imageUrl}
-                alt={device.name}
-                style={{ maxHeight: '200px', objectFit: 'contain'}}
+                    src={device.imageUrl}
+                    alt={device.name}
+                    style={{ maxHeight: '180px', objectFit: 'contain' }}
                 />
             </div>
 
             <div className="card-body p-0 d-flex flex-column">
-                <h6 className="card-title fw-bold text-truncate mb-2">
+                <h6 className="card-title fw-bold text-truncate mb-2" style={{ color: 'var(--text-main)' }}>
                     {device.name}
                 </h6>
 
@@ -33,15 +77,15 @@ export default function ProductCard({device}){
                 </div>
 
                 <div className="mt-auto d-flex justify-content-between align-items-end mb-3">
-                    <span className="fs-5 fw-bold" style={{ color: '#1a365d' }}>
-                        {device.bestPrice}RON
+                    <span className="fs-5 fw-bold" style={{ color: 'var(--text-main)' }}>
+                        {device.bestPrice} RON
                     </span>
                     <span className="text-muted small">
                         {device.bestStoreName}
                     </span>
                 </div>
 
-                <button className="btn w-100 rounded-pill fw-bold shadow-sm" style={{ backgroundColor: '#ffffff', color: '#1a365d' }}>
+                <button className="btn w-100 rounded-pill fw-bold shadow-sm" style={{ backgroundColor: 'var(--section-bg)', color: 'var(--text-main)' }}>
                     Add to Cart
                 </button>
             </div>

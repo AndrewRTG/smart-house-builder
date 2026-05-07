@@ -13,12 +13,13 @@ import ProductCard from '../components/catalog/ProductCard.jsx'
         categories: [],
         brand: ""
     });
+    const [viewMode, setViewMode] = useState('grid');
 
     useEffect(() => {
         const fetchDevices = () => {
             setLoading(true);
 
-            let url = new URL('/api/devices', window.location.origin);
+            let url = new URL('http://localhost:20025/api/devices');
 
             url.searchParams.append('minPrice', filters.minPrice);
             url.searchParams.append('maxPrice', filters.maxPrice);
@@ -62,7 +63,7 @@ import ProductCard from '../components/catalog/ProductCard.jsx'
                 <div className="col-12 col-md-9 float-md-end mb-4 order-1">
                     <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
 
-                        <div className="flex-grow-1 w-100">
+                        <div className="flex-grow-1 w-100" style={{ maxWidth: '900px' }}>
                             <div className="input-group rounded-3 overflow-hidden bg-white" style={{ border: '1px solid #dee2e6' }}>
                               <span className="input-group-text bg-white border-0 ps-3 text-muted">
                                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -80,26 +81,34 @@ import ProductCard from '../components/catalog/ProductCard.jsx'
                         <div className="d-flex align-items-center gap-2 align-self-end align-self-md-auto">
                             <span className="fw-bold small text-nowrap" style={{ color: 'var(--text-main)' }}>Sort by:</span>
 
-                            <select className="form-select border-0 shadow-sm rounded-2 fw-bold text-secondary" style={{ backgroundColor: '#cde0f5', width: '140px', cursor: 'pointer' }}>
+                            <select className="form-select border-0 shadow-sm rounded-2 fw-bold" style={{ color: 'var(--text-main)', backgroundColor: 'var(--section-bg)', width: '160px', cursor: 'pointer'}}>
                                 <option>Lowest price</option>
                                 <option>Highest price</option>
                             </select>
 
-                            <div className="btn-group shadow-sm rounded-2 overflow-hidden ms-2" style={{ backgroundColor: '#cde0f5' }}>
-                                <button className="btn btn-sm border-0 px-2 d-flex align-items-center justify-content-center text-muted" style={{ width: '36px' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                            <div className="btn-group shadow-sm rounded-2 overflow-hidden ms-2" style={{ backgroundColor: 'var(--section-bg)', height: '38px'}}>
+                                <button
+                                    className={`btn btn-sm border-0 px-2 d-flex align-items-center justify-content-center p-0 ${viewMode === 'list' ? 'text-black' : 'text-muted'}`}
+                                    style={{ width: '40px', height: '44px', marginTop: '-2px', backgroundColor: viewMode === 'list' ? '#5092CE' : 'transparent', borderRadius: '0', verticalAlign: 'top' }}
+                                    onClick={() => setViewMode('list')}
+                                >
+                                    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
                                 </button>
-                                <button className="btn btn-sm border-0 px-2 d-flex align-items-center justify-content-center text-black" style={{ backgroundColor: '#5b9bd5', width: '36px' }}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+
+                                <button
+                                    className={`btn btn-sm border-0 px-2 d-flex align-items-center justify-content-center p-0 ${viewMode === 'grid' ? 'text-black' : 'text-muted'}`}
+                                    style={{ width: '40px', height: '44px',marginTop: '-2px', backgroundColor: viewMode === 'grid' ? '#5092CE' : 'transparent', borderRadius: '0', verticalAlign: 'top' }}
+                                    onClick={() => setViewMode('grid')}
+                                >
+                                    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                                 </button>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
                 <div className="col-12 col-md-9 float-md-end order-3">
-                    <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    <div className={`row ${viewMode === 'grid' ? 'row-cols-1 row-cols-md-2 row-cols-lg-3' : 'row-cols-1'} g-4`}>
                         {loading ? (
                             <div className="col-12 text-center">Se caută produsele...</div>
                         ) : devices.length === 0 ? (
@@ -107,7 +116,7 @@ import ProductCard from '../components/catalog/ProductCard.jsx'
                         ) : (
                             devices.map((device) => (
                                 <div className="col" key={device.id}>
-                                    <ProductCard device={device} />
+                                    <ProductCard device={device} viewMode={viewMode} />
                                 </div>
                             ))
                         )}

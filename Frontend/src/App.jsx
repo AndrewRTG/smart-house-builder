@@ -19,6 +19,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProductsPage from './pages/CatalogPage';
+import './App.css';
 
 function HomePage() {
   return <div></div>;

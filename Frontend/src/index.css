@@ -17,7 +17,9 @@ body {
 .light-mode {
   --bg-main: #f3f4f6;
   --navbar-bg: #bdd3e7;
-  --card-bg: #5092ce;
+  --sidebar-bg:#5092ce;
+  --card-bg: #D9D9D9;
+  --section-bg: #bdd3e7;
   --text-main: #111827;
   --text-secondary: #eef4fb;
   --tab-active-bg: #111827;
@@ -28,7 +30,7 @@ body {
   --toggle-text: #ffffff;
   --input-bg: #ffffff;
   --input-text: #111827;
-  --divider-color: rgba(255, 255, 255, 0.45);
+  --divider-color: rgb(255 255 255);
   --text-instruction: #333333;
 }
 
@@ -36,7 +38,9 @@ body {
 .dark-mode {
   --bg-main: #1a1a1e;
   --navbar-bg: #2f2f41;
-  --card-bg: #2c2c30;
+  --sidebar-bg:#2c2c30;
+  --card-bg: #2C2C30;
+  --section-bg: #0d316c;
   --text-main: #ffffff;
   --text-secondary: #d1d5db;
   --tab-active-bg: #5092ce;

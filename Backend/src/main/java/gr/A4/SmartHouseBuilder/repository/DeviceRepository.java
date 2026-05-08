@@ -10,10 +10,10 @@ import java.util.List;
 public interface DeviceRepository extends JpaRepository<Device,Integer> {
     @Query(value = "SELECT * FROM devices WHERE " +
             "(:#{#categoryIds == null || #categoryIds.isEmpty()} = true OR category_id IN (:categoryIds)) AND " +
-            "(:brand IS NULL OR (brand ILIKE CONCAT('%', CAST(:brand AS TEXT), '%') " +
+            "(CAST(:brand AS TEXT) IS NULL OR (brand ILIKE CONCAT('%', CAST(:brand AS TEXT), '%') " +
             "OR similarity(LOWER(brand), LOWER(CAST(:brand AS TEXT))) > 0.3)) AND " +
-            "(:maxPrice IS NULL OR best_price <= :maxPrice) AND " +
-            "(:minPrice IS NULL OR best_price>= :minPrice) AND " +
+            "(CAST(:maxPrice AS NUMERIC) IS NULL OR best_price <= :maxPrice) AND " +
+            "(CAST(:minPrice AS NUMERIC) IS NULL OR best_price >= :minPrice) AND " +
             "(:#{#protocols == null || #protocols.isEmpty()} = true OR communication_protocol IN (:protocols))",
             nativeQuery = true)
     List<Device> findWithFilters(

@@ -22,6 +22,7 @@ public class LikeService {
     private final UserRepository userRepository;
     private final SetupRepository setupRepository;
     private final ArticleRepository articleRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public boolean toggleSetupLike(Long setupId, String email) {
@@ -44,6 +45,18 @@ public class LikeService {
                     .build();
             likeRepository.save(like);
             log.info("Setup liked: {} by user: {}", setupId, email);
+
+            String setupOwner = setup.getUser().getUsername();
+            String userThatLiked = user.getUsername();
+
+            if (!setupOwner.equals(userThatLiked)) {
+                notificationService.triggerNotification(
+                        setupOwner,
+                        userThatLiked + " liked your setup!"
+                );
+            }
+
+
             return true;
         }
     }
@@ -69,6 +82,16 @@ public class LikeService {
                     .build();
             likeRepository.save(like);
             log.info("Article liked: {} by user: {}", articleId, email);
+
+            String articleOwner = article.getUser().getUsername();
+            String userThatLiked = user.getUsername();
+
+            if (!articleOwner.equals(userThatLiked)) {
+                notificationService.triggerNotification(
+                        articleOwner,
+                        userThatLiked + " liked your article!"
+                );
+            }
             return true;
         }
     }

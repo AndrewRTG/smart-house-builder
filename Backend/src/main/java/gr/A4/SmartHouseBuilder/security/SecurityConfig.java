@@ -61,8 +61,8 @@ public class SecurityConfig {
                                 "/api/v1/articles/**",
                                 "/api/v1/devices",
                                 "/api/v1/devices/**",
-                                "/api/devices",
-                                "/api/v1/notifications/**"
+                                "/api/devices"
+
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

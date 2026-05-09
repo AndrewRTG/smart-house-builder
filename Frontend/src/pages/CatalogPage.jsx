@@ -18,8 +18,7 @@ import ProductCard from '../components/catalog/ProductCard.jsx'
         const fetchDevices = () => {
             setLoading(true);
 
-            let url = new URL('/api/devices', window.location.origin);
-
+            let url = new URL('http://localhost:20025/api/devices');
             url.searchParams.append('minPrice', filters.minPrice);
             url.searchParams.append('maxPrice', filters.maxPrice);
             if (searchTerm) url.searchParams.append('brand', searchTerm);
@@ -38,13 +37,26 @@ import ProductCard from '../components/catalog/ProductCard.jsx'
             }
 
             fetch(url)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Serverul a răspuns cu o eroare: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    setDevices(data);
+                    if (Array.isArray(data)) {
+                        setDevices(data);
+                    } else if (data && Array.isArray(data.content)) {
+                        setDevices(data.content);
+                    } else {
+                        console.error("Format de date necunoscut de la server:", data);
+                        setDevices([]);
+                    }
                     setLoading(false);
                 })
                 .catch(error => {
                     console.error("Eroare la preluarea dispozitivelor:", error);
+                    setDevices([]);
                     setLoading(false);
                 });
         };

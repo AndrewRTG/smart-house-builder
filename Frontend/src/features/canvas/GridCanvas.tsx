@@ -5,7 +5,7 @@ import {
   drawDoor,
   getFurnitureDimensions,
   getFurnitureImage,
-} from "./CanvasUtils.ts";
+} from "./CanvasUtils";
 
 
 export interface PlacedFurniture {

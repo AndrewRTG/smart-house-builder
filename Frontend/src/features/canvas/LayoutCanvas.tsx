@@ -7,7 +7,7 @@ import {
     PrizaIcon, AspiratorIcon, HubIcon
 } from './Icons';
 import WizardSidebar from '../wizard/components/WizardSidebar';
-
+import useFilterStore from '../../store/useFilterStore';
 // --- INTERFACES ---
 interface Wall { x1: number; y1: number; x2: number; y2: number; }
 interface Window { x: number; y: number; width: number; height: number; distanceFromFloor: number; }
@@ -42,20 +42,7 @@ const TOOL_ICON_MAP: Record<string, React.FC<{ color: string }>> = {
     wall: WallIcon, window: WindowIcon, door: DoorIcon, line: LineIcon, furniture: FurnitureIcon
 };
 
-const catalogDevices = [
-    {id: '1', name: 'Philips Hue E27', price: '49€', brand: 'Philips', type: 'bec', status: 'online'},
-    {id: '2', name: 'Nest Thermostat', price: '279€', brand: 'Google', type: 'senzor', status: 'online'},
-    {id: '3', name: 'Lock', price: '30€', brand: 'Amazon', type: 'lock', status: 'online'},
-    {id: '4', name: 'Router', price: '200€', brand: 'Amazon', type: 'router', status: 'online'},
-    {id: '5', name: 'Ps5', price: '400€', brand: 'Sony', type: 'controller', status: 'online'},
-    {id: '6', name: 'Smart Tv', price: '638€', brand: 'Samsung', type: 'tv', status: 'online'},
-    {id: '7', name: 'Door Camera', price: '64€', brand: 'Amazon', type: 'interfon', status: 'online'},
-    {id: '8', name: 'Extension Cord', price: '15€', brand: 'Amazon', type: 'prelungitor', status: 'online'},
-    {id: '9', name: 'Sound system', price: '148€', brand: 'Amazon', type: 'soundsystem', status: 'online'},
-    {id: '10', name: 'Plug', price: '5€', brand: 'Amazon', type: 'priza', status: 'online'},
-    {id: '11', name: 'Smart vacum', price: '250€', brand: 'Amazon', type: 'aspirator', status: 'online'},
-    {id: '12', name: 'Hub', price: '300€', brand: 'Amazon', type: 'hub', status: 'online'}
-];
+
 
 interface LayoutCanvasProps { isDarkMode: boolean; onBack: () => void; }
 
@@ -98,6 +85,96 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         floatingBg:   isDarkMode ? 'rgba(47,47,65,0.92)' : 'rgba(255,255,255,0.92)',
         furnitureMenuBg: isDarkMode ? '#3A3A4E' : '#ffffff',
     };
+
+    const [fetchedDevices, setFetchedDevices] = useState<any[]>([]);
+    const [isCatalogLoading, setIsCatalogLoading] = useState(true);
+
+    const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
+
+    const getIconTypeForCategory = (categoryId: number) => {
+        const iconMapping: Record<number, string> = {
+            1: 'interfon',
+            2: 'prelungitor',
+            3: 'controller',
+            4: 'hub',
+            5: 'hub',
+            6: 'tv',
+            7: 'priza',
+            8: 'senzor',
+            9: 'soundsystem',
+            10: 'tv',
+            11: 'aspirator',
+            12: 'router'
+        };
+        return iconMapping[categoryId] || 'bec';
+    };
+
+    const getCategoryIdByName = (name: string) => {
+        const mapping: Record<string, number> = {
+            "Smart locks": 5, "Sound Systems": 9, "Interfon video": 1,
+            "Aspirator robot": 11, "Prelungitor": 2, "LightBulb/bec": 1,
+            "Router": 12, "Plug/priza": 7, "Smart TV": 10,
+            "Hub": 5, "Monitor": 6, "Senzori": 8, "Console gaming": 3
+        };
+        return mapping[name];
+    };
+
+    useEffect(() => {
+        const fetchCatalog = async () => {
+            setIsCatalogLoading(true);
+            try {
+                let url = new URL(`${API_BASE}/api/devices`);
+
+                url.searchParams.append('minPrice', priceRange[0].toString());
+                url.searchParams.append('maxPrice', priceRange[1].toString());
+
+                if (categories.length > 0) {
+                    categories.forEach((catName: string) => {
+                        const id = getCategoryIdByName(catName);
+                        if (id) url.searchParams.append('categoryIds', id.toString());
+                    });
+                }
+
+                if (brands.length > 0) {
+                    brands.forEach((brandName: string) => url.searchParams.append('brand', brandName));
+                }
+
+                if (protocols.length > 0) {
+                    protocols.forEach((protName: string) => {
+                        const formattedProt = protName.toUpperCase().replace('-', '');
+                        url.searchParams.append('protocols', formattedProt);
+                    });
+                }
+
+                // Ecosistem
+                if (ecosystem) {
+                    url.searchParams.append('ecosystem', ecosystem);
+                }
+
+                const response = await fetch(url.toString());
+                if (response.ok) {
+                    const data = await response.json();
+
+                    const mapped = data.map((d: any) => ({
+                        id: d.id.toString(),
+                        name: d.name,
+                        brand: d.brand,
+                        price: `${d.bestPrice || 0}€`,
+                        priceEUR: d.bestPrice || 0,
+                        type: getIconTypeForCategory(d.categoryId), // Aici folosim funcția ta!
+                        status: 'online'
+                    }));
+                    setFetchedDevices(mapped);
+                }
+            } catch (error) {
+                console.error("Eroare la aducerea produselor:", error);
+            } finally {
+                setIsCatalogLoading(false);
+            }
+        };
+
+        fetchCatalog();
+    }, [priceRange, categories, brands, protocols, ecosystem]);
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -659,38 +736,44 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                 }}
                             />
                         </div>
-                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '230px', overflowY: 'auto', padding: '2px'}}>
-                            {catalogDevices.map((d) => {
-                                const IconComponent = ICON_MAP[d.type] || ControllerIcon;
-                                const isSelected = selectedDevice?.id === d.id;
-                                return (
-                                    <div
-                                        key={d.id}
-                                        onClick={() => { setActiveTool(null); setSelectedDevice(isSelected ? null : d); }}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                            padding: '12px', borderRadius: '16px',
-                                            background: isSelected ? 'transparent' : colors.card,
-                                            border: isSelected
-                                                ? `2px solid ${isDarkMode ? '#00B4D8' : '#2C3E50'}`
-                                                : '2px solid transparent',
-                                            cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
-                                            transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                                            transition: 'all 0.15s'
-                                        }}
-                                    >
-                                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                                            <div style={{width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                                <IconComponent color={isDarkMode ? "white" : "#000000"}/>
-                                            </div>
-                                            <div>
-                                                <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain}}>{d.name}</div>
-                                                <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{d.price} · {d.brand}</div>
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', padding: '2px'}}>
+                            {isCatalogLoading ? (
+                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Se caută produse...</div>
+                            ) : fetchedDevices.length === 0 ? (
+                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Niciun produs găsit.</div>
+                            ) : (
+                                fetchedDevices.map((d) => {
+                                    const IconComponent = ICON_MAP[d.type] || ControllerIcon;
+                                    const isSelected = selectedDevice?.id === d.id;
+                                    return (
+                                        <div
+                                            key={d.id}
+                                            onClick={() => { setActiveTool(null); setSelectedDevice(isSelected ? null : d); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: '12px', borderRadius: '16px',
+                                                background: isSelected ? 'transparent' : colors.card,
+                                                border: isSelected
+                                                    ? `2px solid ${isDarkMode ? '#00B4D8' : '#2C3E50'}`
+                                                    : '2px solid transparent',
+                                                cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                                                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                                                transition: 'all 0.15s'
+                                            }}
+                                        >
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                                <div style={{width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                                    <IconComponent color={isDarkMode ? "white" : "#000000"}/>
+                                                </div>
+                                                <div>
+                                                    <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain}}>{d.name}</div>
+                                                    <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{d.price} · {d.brand}</div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 

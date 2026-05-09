@@ -9,26 +9,9 @@ import {
 import WizardSidebar from '../wizard/components/WizardSidebar';
 
 // --- INTERFACES ---
-interface Wall {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-}
-
-interface Window {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    distanceFromFloor: number;
-}
-
-interface Door {
-    x: number;
-    y: number;
-}
-
+interface Wall { x1: number; y1: number; x2: number; y2: number; }
+interface Window { x: number; y: number; width: number; height: number; distanceFromFloor: number; }
+interface Door { x: number; y: number; }
 interface Device {
     coordinates: { x: number; y: number };
     rotationAngle: number;
@@ -39,27 +22,12 @@ interface Device {
         communicationFrequency: string; width: number;
     }
 }
-
-interface Plug {
-    x: number;
-    y: number;
-}
-
+interface Plug { x: number; y: number; }
 interface Room {
-    id: string;
-    squareMeters: number;
-    wallType: string;
-    walls: Wall[];
-    doors: Door[];
-    windows: Window[];
-    plugs: Plug[];
+    id: string; squareMeters: number; wallType: string;
+    walls: Wall[]; doors: Door[]; windows: Window[]; plugs: Plug[];
 }
-
-interface HistorySnapshot {
-    lines: any[];
-    icons: any[];
-    furniture: any[];
-}
+interface HistorySnapshot { lines: any[]; icons: any[]; furniture: any[]; }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
 
@@ -89,21 +57,15 @@ const catalogDevices = [
     {id: '12', name: 'Hub', price: '300€', brand: 'Amazon', type: 'hub', status: 'online'}
 ];
 
-// PROPS
-interface LayoutCanvasProps {
-    isDarkMode: boolean;
-    onBack: () => void;
-}
+interface LayoutCanvasProps { isDarkMode: boolean; onBack: () => void; }
 
 const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const generateLayoutId = () => {
-        const randomSegment = () => Math.floor(1000 + Math.random() * 9000).toString();
-        return `layout-uuid-${randomSegment()}-${randomSegment()}`;
+        const r = () => Math.floor(1000 + Math.random() * 9000).toString();
+        return `layout-uuid-${r()}-${r()}`;
     };
 
     const [layoutId] = useState(generateLayoutId);
-
-    // --- STATE ---
     const [showFurnitureMenu, setShowFurnitureMenu] = useState(false);
     const [selectedDevice, setSelectedDevice] = useState<any | null>(null);
     const [hoveredIconIndex, setHoveredIconIndex] = useState<number | null>(null);
@@ -116,21 +78,25 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const [placedFurniture, setPlacedFurniture] = useState<any[]>([]);
     const [mouseGridPos, setMouseGridPos] = useState<{ col: number, row: number } | null>(null);
     const [layout, setLayout] = useState({offsetX: 0, offsetY: 0, dotSpacing: 0});
-
     const [undoStack, setUndoStack] = useState<HistorySnapshot[]>([]);
     const [redoStack, setRedoStack] = useState<HistorySnapshot[]>([]);
     const [exportData, setExportData] = useState<{ devices: Device[]; rooms: Room[]; }>({devices: [], rooms: []});
     const backendSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // --- THEME ---
-    const theme = {
-        panel: isDarkMode ? 'bg-[#2F2F41]' : 'bg-[#BDD3E7]',
-        card: isDarkMode ? 'bg-[#3A3A4E]' : 'bg-white',
-        textMain: isDarkMode ? 'text-white' : 'text-[#2C3E50]',
-        textMuted: isDarkMode ? 'text-[#9AA0BE]' : 'text-[#5A6080]',
-        btnSecondary: isDarkMode ? 'bg-[#3A3A4E] hover:bg-[#4A4A60]' : 'bg-[#A9C4DD] hover:bg-[#9AB5CE]',
-        canvasBorder: isDarkMode ? 'border-[#2D4E6C]' : 'border-[#C2C9CC]',
-        divider: isDarkMode ? 'border-[#3A3A4E]' : 'border-[#A9C4DD]',
+    // --- THEME (inline styles only, no Tailwind) ---
+    const colors = {
+        panel:        isDarkMode ? '#2F2F41' : '#BDD3E7',
+        card:         isDarkMode ? '#3A3A4E' : '#ffffff',
+        cardHover:    isDarkMode ? '#4A4A60' : '#f0f4f8',
+        textMain:     isDarkMode ? '#ffffff' : '#2C3E50',
+        textMuted:    isDarkMode ? '#9AA0BE' : '#5A6080',
+        btnSecondary: isDarkMode ? '#3A3A4E' : '#A9C4DD',
+        btnSecHover:  isDarkMode ? '#4A4A60' : '#9AB5CE',
+        canvasBg:     isDarkMode ? '#5293DE' : '#C2C9CC',
+        border:       isDarkMode ? '#3A3A4E' : '#C2C9CC',
+        zoomBg:       isDarkMode ? 'rgba(47,47,65,0.95)' : 'rgba(255,255,255,0.95)',
+        floatingBg:   isDarkMode ? 'rgba(47,47,65,0.92)' : 'rgba(255,255,255,0.92)',
+        furnitureMenuBg: isDarkMode ? '#3A3A4E' : '#ffffff',
     };
 
     // --- EFFECTS ---
@@ -156,10 +122,8 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                 if (selectedDevice) {
                     setPreviewTransform(p => ({...p, rotation: (p.rotation + 90) % 360}));
                 } else if (draggingItem?.type === 'icon') {
-                    setPlacedIcons(prev => prev.map(i => i.id === draggingItem.id ? {
-                        ...i,
-                        rotation: ((i.rotation || 0) + 90) % 360
-                    } : i));
+                    setPlacedIcons(prev => prev.map(i => i.id === draggingItem.id
+                        ? {...i, rotation: ((i.rotation || 0) + 90) % 360} : i));
                 }
             }
         };
@@ -175,10 +139,8 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                 if (selectedDevice) {
                     setPreviewTransform(p => ({...p, scale: Math.max(0.5, p.scale + zoomDelta)}));
                 } else if (draggingItem?.type === 'icon') {
-                    setPlacedIcons(prev => prev.map(i => i.id === draggingItem.id ? {
-                        ...i,
-                        scale: Math.max(0.5, (i.scale || 1) + zoomDelta)
-                    } : i));
+                    setPlacedIcons(prev => prev.map(i => i.id === draggingItem.id
+                        ? {...i, scale: Math.max(0.5, (i.scale || 1) + zoomDelta)} : i));
                 }
             }
         };
@@ -193,11 +155,8 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             if (!menu || !footer) return;
             const footerRect = footer.getBoundingClientRect();
             const windowHeight = window.innerHeight;
-            if (footerRect.top < windowHeight - 40) {
-                menu.style.bottom = `${windowHeight - footerRect.top + 60}px`;
-            } else {
-                menu.style.bottom = '40px';
-            }
+            menu.style.bottom = footerRect.top < windowHeight - 40
+                ? `${windowHeight - footerRect.top + 60}px` : '40px';
         };
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
@@ -206,9 +165,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     // --- LOGIC ---
     const saveHistory = () => {
         setUndoStack(prev => [{
-            lines: [...lines],
-            icons: [...placedIcons],
-            furniture: [...placedFurniture]
+            lines: [...lines], icons: [...placedIcons], furniture: [...placedFurniture]
         }, ...prev].slice(0, 30));
         setRedoStack([]);
     };
@@ -235,7 +192,9 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
 
     const checkUniversalCollision = (col: number, row: number, ignoreId?: string) => {
         if (placedIcons.some(i => i.id !== ignoreId && i.col === col && i.row === row)) return true;
-        if (placedFurniture.some(f => f.id !== ignoreId && col >= f.centerCol - f.widthCols / 2 && col <= f.centerCol + f.widthCols / 2 && row >= f.centerRow - f.heightCols / 2 && row <= f.centerRow + f.heightCols / 2)) return true;
+        if (placedFurniture.some(f => f.id !== ignoreId
+            && col >= f.centerCol - f.widthCols / 2 && col <= f.centerCol + f.widthCols / 2
+            && row >= f.centerRow - f.heightCols / 2 && row <= f.centerRow + f.heightCols / 2)) return true;
         return lines.some(line => {
             if (line.id === ignoreId) return false;
             const isVert = line.start.col === line.end.col;
@@ -251,25 +210,17 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         if (!checkUniversalCollision(col, row)) {
             saveHistory();
             setPlacedIcons([...placedIcons, {
-                col,
-                row,
-                id: Date.now().toString(),
-                type: selectedDevice.type,
-                name: selectedDevice.name,
-                brand: selectedDevice.brand,
-                status: selectedDevice.status,
+                col, row, id: Date.now().toString(),
+                type: selectedDevice.type, name: selectedDevice.name,
+                brand: selectedDevice.brand, status: selectedDevice.status,
                 priceEUR: parseInt(selectedDevice.price.replace('€', '')),
-                scale: previewTransform.scale,
-                rotation: previewTransform.rotation
+                scale: previewTransform.scale, rotation: previewTransform.rotation
             }]);
             setPreviewTransform({scale: 1, rotation: 0});
         }
     };
 
-    const handleLineComplete = (type: string, start: { col: number, row: number }, end: {
-        col: number,
-        row: number
-    }) => {
+    const handleLineComplete = (type: string, start: { col: number, row: number }, end: { col: number, row: number }) => {
         setLines(prev => [...prev, {id: Date.now().toString(), type, start, end}]);
     };
 
@@ -277,30 +228,22 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         const tool = toolName.toLowerCase();
         if (tool === 'furniture') {
             if (activeTool?.startsWith('furniture_') || showFurnitureMenu) {
-                setActiveTool(null);
-                setShowFurnitureMenu(false);
+                setActiveTool(null); setShowFurnitureMenu(false);
             } else {
-                setShowFurnitureMenu(true);
-                setSelectedDevice(null);
+                setShowFurnitureMenu(true); setSelectedDevice(null);
             }
             return;
         }
         if (activeTool === tool) setActiveTool(null);
-        else {
-            setActiveTool(tool);
-            setSelectedDevice(null);
-            setShowFurnitureMenu(false);
-        }
+        else { setActiveTool(tool); setSelectedDevice(null); setShowFurnitureMenu(false); }
     };
 
     // --- EXPORT LOGIC ---
     useEffect(() => {
         const scale = layout.dotSpacing || 1;
         const walls = lines.filter(l => l.type === 'wall').map(l => ({
-            x1: Math.trunc(l.start.col * scale),
-            y1: Math.trunc(l.start.row * scale),
-            x2: Math.trunc(l.end.col * scale),
-            y2: Math.trunc(l.end.row * scale)
+            x1: Math.trunc(l.start.col * scale), y1: Math.trunc(l.start.row * scale),
+            x2: Math.trunc(l.end.col * scale), y2: Math.trunc(l.end.row * scale)
         }));
         const windows = lines.filter(l => l.type === 'window').map(l => ({
             x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
@@ -314,44 +257,27 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             y: Math.trunc(Math.min(l.start.row, l.end.row) * scale)
         }));
         const plugs = placedIcons.filter(i => i.type === 'priza').map(i => ({
-            x: Math.trunc(i.col * scale),
-            y: Math.trunc(i.row * scale)
+            x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)
         }));
-
         const roomSquareMeters = (() => {
             if (!walls.length) return 10;
             const xs = walls.flatMap(w => [w.x1, w.x2]);
             const ys = walls.flatMap(w => [w.y1, w.y2]);
             return Math.max(1, Math.trunc(((Math.max(...xs) - Math.min(...xs)) / 100) * ((Math.max(...ys) - Math.min(...ys)) / 100)));
         })();
-
-        const rooms = [{
-            id: 'room-001',
-            squareMeters: roomSquareMeters,
-            wallType: 'concrete',
-            walls,
-            doors,
-            windows,
-            plugs
-        }];
+        const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
         const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
             coordinates: {x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)},
             rotationAngle: 0,
             device: {
-                id: i.id,
-                name: i.name,
-                price: i.priceEUR,
-                ecosystem: 'Apple HomeKit',
+                id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
                 protocol: i.type === 'router' ? 'WiFi' : 'Zigbee',
-                lumens: i.type === 'bec' ? 800 : 0,
-                requiresPlug: i.type !== 'bec',
-                rangeRadius: i.type === 'senzor' ? 10 : 0,
-                deviceType: i.type,
+                lumens: i.type === 'bec' ? 800 : 0, requiresPlug: i.type !== 'bec',
+                rangeRadius: i.type === 'senzor' ? 10 : 0, deviceType: i.type,
                 mountType: i.type === 'tv' ? 'wall' : 'table',
                 fieldOfView: i.type === 'interfon' ? 120 : 0,
                 powerConsumption: i.type === 'bec' ? 10 : 5,
-                communicationFrequency: i.type === 'router' ? '2.4GHz' : '868MHz',
-                width: 10
+                communicationFrequency: i.type === 'router' ? '2.4GHz' : '868MHz', width: 10
             }
         }));
         setExportData({devices, rooms});
@@ -365,31 +291,20 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             fetch(`${API_BASE}/api/team2/layouts/save`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    id: layoutId,
-                    scale: 'cm',
-                    maxBudget: 15000,
+                    id: layoutId, scale: 'cm', maxBudget: 15000,
                     targetEcosystem: 'Apple HomeKit',
-                    rooms: exportData.rooms,
-                    devices: exportData.devices
+                    rooms: exportData.rooms, devices: exportData.devices
                 }),
-            }).catch(() => {
-            });
+            }).catch(() => {});
         }, 450);
-        return () => {
-            if (backendSyncTimerRef.current) clearTimeout(backendSyncTimerRef.current);
-        };
+        return () => { if (backendSyncTimerRef.current) clearTimeout(backendSyncTimerRef.current); };
     }, [exportData, layoutId]);
 
     const exportToJSON = () => {
         const dataStr = JSON.stringify({
             house: {
-                id: layoutId,
-                name: "Smart House Setup",
-                scale: "cm",
-                maxBudget: 15000,
-                targetEcosystem: "Apple HomeKit",
-                rooms: exportData.rooms,
-                devices: exportData.devices
+                id: layoutId, name: "Smart House Setup", scale: "cm", maxBudget: 15000,
+                targetEcosystem: "Apple HomeKit", rooms: exportData.rooms, devices: exportData.devices
             }
         }, null, 2);
         const linkElement = document.createElement('a');
@@ -398,83 +313,147 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         linkElement.click();
     };
 
+    // ─── RENDER ────────────────────────────────────────────────────────────────
     return (
-        <main className="flex-1 flex flex-col px-8 py-4 max-w-[1700px] mx-auto w-full gap-6 pb-40">
+        <main style={{
+            display: 'flex', flexDirection: 'column', flex: 1,
+            padding: '16px 32px', maxWidth: '1700px', margin: '0 auto',
+            width: '100%', gap: '24px', paddingBottom: '160px',
+            boxSizing: 'border-box'
+        }}>
 
-            {/* Header Tools */}
-            <div className="flex flex-col xl:flex-row justify-between items-center gap-6">
-                <button onClick={onBack}
-                        className={`px-10 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain}`}>
-                    &larr; Back to Wizard
+            {/* ── Header row ── */}
+            <div style={{
+                display: 'flex', flexWrap: 'wrap', alignItems: 'center',
+                justifyContent: 'space-between', gap: '16px'
+            }}>
+                {/* Back button */}
+                <button
+                    onClick={onBack}
+                    style={{
+                        padding: '10px 32px', borderRadius: '999px', border: 'none',
+                        background: colors.btnSecondary, color: colors.textMain,
+                        fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap',
+                        fontFamily: 'inherit', transition: 'background 0.2s'
+                    }}
+                >
+                    ← Back to Wizard
                 </button>
 
-                <div
-                    className={`grid grid-cols-3 items-center px-6 py-4 rounded-3xl shadow-sm transition-colors duration-300 w-full max-w-2xl ${theme.panel}`}>
-                    <div className="text-center">
-                        <div className={`text-[11px] font-bold mb-1 ${theme.textMuted}`}>DEVICES</div>
-                        <div className="font-bold text-2xl">{placedIcons.length}</div>
+                {/* Stats panel */}
+                <div style={{
+                    display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+                    alignItems: 'center', padding: '16px 24px',
+                    borderRadius: '24px', background: colors.panel,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                    flex: '1 1 300px', maxWidth: '640px', gap: 0
+                }}>
+                    <div style={{textAlign: 'center'}}>
+                        <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '4px', letterSpacing: '0.05em'}}>DEVICES</div>
+                        <div style={{fontWeight: 700, fontSize: '24px', color: colors.textMain}}>{placedIcons.length}</div>
                     </div>
-                    <div className={`text-center border-l border-r px-4 ${theme.divider}`}>
-                        <div className={`text-[11px] font-bold mb-1 ${theme.textMuted}`}>ESTIMATED COST</div>
-                        <div className="font-bold text-2xl">0 EUR</div>
+                    <div style={{
+                        textAlign: 'center', borderLeft: `1px solid ${colors.border}`,
+                        borderRight: `1px solid ${colors.border}`, padding: '0 16px'
+                    }}>
+                        <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '4px', letterSpacing: '0.05em'}}>ESTIMATED COST</div>
+                        <div style={{fontWeight: 700, fontSize: '24px', color: colors.textMain}}>0 EUR</div>
                     </div>
-                    <div className="text-center">
-                        <div className={`text-[11px] font-bold mb-1 ${theme.textMuted}`}>PROTOCOLS</div>
-                        <div className="font-bold text-lg leading-tight mt-1">-</div>
+                    <div style={{textAlign: 'center'}}>
+                        <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '4px', letterSpacing: '0.05em'}}>PROTOCOLS</div>
+                        <div style={{fontWeight: 700, fontSize: '18px', color: colors.textMain}}>-</div>
                     </div>
                 </div>
 
-                <div className="flex gap-4">
-                    <button onClick={exportToJSON}
-                            className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain}`}>
-                        <span className="opacity-60">💾</span> Save
+                {/* Save / Post buttons */}
+                <div style={{display: 'flex', gap: '12px'}}>
+                    <button
+                        onClick={exportToJSON}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 28px', borderRadius: '999px', border: 'none',
+                            background: colors.btnSecondary, color: colors.textMain,
+                            fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap',
+                            fontFamily: 'inherit'
+                        }}
+                    >
+                        <span style={{opacity: 0.7}}>💾</span> Save
                     </button>
                     <button
-                        className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm shadow-sm transition-colors ${theme.btnSecondary} ${theme.textMain}`}>
-                        <span className="opacity-60">🚀</span> Post
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 28px', borderRadius: '999px', border: 'none',
+                            background: colors.btnSecondary, color: colors.textMain,
+                            fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap',
+                            fontFamily: 'inherit'
+                        }}
+                    >
+                        <span style={{opacity: 0.7}}>🚀</span> Post
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col lg:flex-row gap-6 mt-2 mb-10">
-                <div className="w-full lg:w-[280px] flex-shrink-0"><WizardSidebar/></div>
+            {/* ── Main content row ── */}
+            <div style={{display: 'flex', flex: 1, gap: '24px', flexWrap: 'wrap', marginBottom: '40px'}}>
 
-                <div className={`flex-1 relative min-h-[600px] rounded-3xl ${theme.canvasBorder}`}>
-                    <div
-                        className="absolute inset-0 rounded-3xl overflow-hidden shadow-inner border border-transparent">
+                {/* Left sidebar – WizardSidebar */}
+                <div style={{width: '280px', flexShrink: 0}}>
+                    <WizardSidebar/>
+                </div>
 
+                {/* Canvas area */}
+                <div style={{
+                    flex: 1, position: 'relative', minHeight: '600px',
+                    borderRadius: '24px', minWidth: '300px'
+                }}>
+                    <div style={{
+                        position: 'absolute', inset: 0, borderRadius: '24px',
+                        overflow: 'hidden', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)'
+                    }}>
                         {/* Zoom Controls */}
-                        <div
-                            className={`absolute top-4 right-8 z-40 flex items-center gap-3 px-4 py-2 rounded-2xl shadow-xl border transition-colors duration-300 ${isDarkMode ? 'bg-[#2F2F41]/95 border-[#3A3A4E]' : 'bg-white/95 border-[#C2C9CC]'}`}>
-                            <span className={`text-[9px] font-bold tracking-wider ${theme.textMuted}`}>ZOOM</span>
-                            <button onClick={() => setCanvasZoom(z => Math.max(0.4, z - 0.1))}
-                                    className={`font-bold text-lg leading-none transition-colors ${theme.textMain} hover:text-[#00B4D8]`}>-
-                            </button>
+                        <div style={{
+                            position: 'absolute', top: '16px', right: '32px', zIndex: 40,
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '8px 16px', borderRadius: '16px',
+                            background: colors.zoomBg, border: `1px solid ${colors.border}`,
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
+                        }}>
+                            <span style={{fontSize: '9px', fontWeight: 700, color: colors.textMuted, letterSpacing: '0.1em'}}>ZOOM</span>
+                            <button
+                                onClick={() => setCanvasZoom(z => Math.max(0.4, z - 0.1))}
+                                style={{background: 'none', border: 'none', fontWeight: 700, fontSize: '18px', color: colors.textMain, cursor: 'pointer', padding: '0 4px', lineHeight: 1}}
+                            >-</button>
                             <input type="range" min="0.4" max="4" step="0.05" value={canvasZoom}
-                                   onChange={(e) => setCanvasZoom(Number(e.target.value))}
-                                   className="w-24 accent-[#00B4D8] cursor-pointer"/>
-                            <button onClick={() => setCanvasZoom(z => Math.min(4, z + 0.1))}
-                                    className={`font-bold text-lg leading-none transition-colors ${theme.textMain} hover:text-[#00B4D8]`}>+
-                            </button>
-                            <span
-                                className={`text-[10px] font-bold w-9 text-right ${theme.textMain}`}>{Math.round(canvasZoom * 100)}%</span>
+                                onChange={(e) => setCanvasZoom(Number(e.target.value))}
+                                style={{width: '96px', cursor: 'pointer', accentColor: '#00B4D8'}}
+                            />
+                            <button
+                                onClick={() => setCanvasZoom(z => Math.min(4, z + 0.1))}
+                                style={{background: 'none', border: 'none', fontWeight: 700, fontSize: '18px', color: colors.textMain, cursor: 'pointer', padding: '0 4px', lineHeight: 1}}
+                            >+</button>
+                            <span style={{fontSize: '10px', fontWeight: 700, color: colors.textMain, minWidth: '36px', textAlign: 'right'}}>{Math.round(canvasZoom * 100)}%</span>
                         </div>
 
                         {/* Viewport */}
-                        <div id="canvas-viewport"
-                             className={`absolute inset-0 rounded-3xl overflow-auto custom-scrollbar flex transition-colors duration-300 ${isDarkMode ? 'bg-[#5293DE]' : 'bg-[#C2C9CC]'}`}>
+                        <div
+                            id="canvas-viewport"
+                            style={{
+                                position: 'absolute', inset: 0, borderRadius: '24px',
+                                overflow: 'auto', display: 'flex',
+                                background: colors.canvasBg, transition: 'background 0.3s'
+                            }}
+                        >
                             <div style={{
-                                width: `${canvasZoom * 100}%`,
-                                height: `${canvasZoom * 100}%`,
-                                minWidth: '100%',
-                                minHeight: '100%',
-                                margin: 'auto',
-                                position: 'relative',
-                                flexShrink: 0
+                                width: `${canvasZoom * 100}%`, height: `${canvasZoom * 100}%`,
+                                minWidth: '100%', minHeight: '100%',
+                                margin: 'auto', position: 'relative', flexShrink: 0
                             }}>
                                 <GridCanvas
-                                    isDarkMode={isDarkMode} placedIcons={placedIcons} placedFurniture={placedFurniture}
-                                    setPlacedFurniture={setPlacedFurniture}
+                                    isDarkMode={isDarkMode} placedIcons={placedIcons}
+                                    placedFurniture={placedFurniture} setPlacedFurniture={setPlacedFurniture}
                                     lines={lines} setLines={setLines} activeTool={activeTool}
                                     onCanvasClick={handleCanvasClick} onLineComplete={handleLineComplete}
                                     onUpdate={setLayout} onRedo={handleRedo} draggingItem={draggingItem}
@@ -486,19 +465,19 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                     redo={handleRedo} canUndo={undoStack.length > 0} canRedo={redoStack.length > 0}
                                 />
 
+                                {/* Placed icons */}
                                 {layout.dotSpacing > 0 && placedIcons.map((icon, index) => {
                                     const IconComponent = ICON_MAP[icon.type] || ControllerIcon;
                                     const isDraggingThis = draggingItem?.type === 'icon' && draggingItem.id === icon.id;
                                     const isHovered = hoveredIconIndex === index;
-
                                     return (
                                         <div
-                                            key={icon.id} onMouseEnter={() => setHoveredIconIndex(index)}
+                                            key={icon.id}
+                                            onMouseEnter={() => setHoveredIconIndex(index)}
                                             onMouseLeave={() => setHoveredIconIndex(null)}
                                             onMouseDown={(e) => {
                                                 if ((e.target as HTMLElement).closest('button') || activeTool) return;
-                                                e.preventDefault();
-                                                e.stopPropagation();
+                                                e.preventDefault(); e.stopPropagation();
                                                 setDraggingItem({type: 'icon', id: icon.id});
                                             }}
                                             style={{
@@ -508,9 +487,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                                 width: layout.dotSpacing * (icon.scale || 1),
                                                 height: layout.dotSpacing * (icon.scale || 1),
                                                 transform: `translate(-50%, -50%) rotate(${icon.rotation || 0}deg)`,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 zIndex: isDraggingThis ? 100 : 30,
                                                 cursor: isDraggingThis ? 'grabbing' : 'grab',
                                                 opacity: isDraggingThis ? 0.6 : 1,
@@ -518,27 +495,38 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                                 userSelect: 'none'
                                             }}
                                         >
-                                            <div
-                                                className="relative group flex items-center justify-center w-full h-full">
+                                            <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%'}}>
                                                 <IconComponent color={isDarkMode ? "white" : "#2C3E50"}/>
-                                                {isDraggingThis && (<div
-                                                    className={`absolute top-full mt-2 text-[9px] font-bold text-center whitespace-nowrap drop-shadow-md ${isDarkMode ? 'text-white' : 'text-[#2C3E50]'}`}>PRESS
-                                                    'R' TO ROTATE<br/>SCROLL TO SCALE</div>)}
+                                                {isDraggingThis && (
+                                                    <div style={{position: 'absolute', top: '100%', marginTop: '8px', fontSize: '9px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap', color: isDarkMode ? 'white' : '#2C3E50'}}>
+                                                        PRESS 'R' TO ROTATE<br/>SCROLL TO SCALE
+                                                    </div>
+                                                )}
                                                 {isHovered && !isDraggingThis && !activeTool && (
-                                                    <button onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        saveHistory();
-                                                        setPlacedIcons(placedIcons.filter((_, i) => i !== index));
-                                                        setHoveredIconIndex(null);
-                                                    }}
-                                                            className={`absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center rounded-full shadow-md z-[60] text-[10px] font-bold transition-all duration-200 border cursor-pointer ${isDarkMode ? 'bg-[#1A1A1E] text-red-500 border-red-500/30 hover:bg-red-500 hover:text-white' : 'bg-white text-red-600 border-red-200 hover:bg-red-600 hover:text-white'}`}>✕</button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault(); e.stopPropagation();
+                                                            saveHistory();
+                                                            setPlacedIcons(placedIcons.filter((_, i) => i !== index));
+                                                            setHoveredIconIndex(null);
+                                                        }}
+                                                        style={{
+                                                            position: 'absolute', top: '-8px', right: '-8px',
+                                                            width: '20px', height: '20px', borderRadius: '50%',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            background: isDarkMode ? '#1A1A1E' : '#ffffff',
+                                                            color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)',
+                                                            fontSize: '10px', fontWeight: 700, cursor: 'pointer',
+                                                            zIndex: 60, boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                                                        }}
+                                                    >✕</button>
                                                 )}
                                             </div>
                                         </div>
                                     );
                                 })}
 
+                                {/* Device placement preview */}
                                 {selectedDevice && mouseGridPos && !activeTool && (
                                     <div style={{
                                         position: 'absolute',
@@ -547,53 +535,94 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                         width: layout.dotSpacing * previewTransform.scale,
                                         height: layout.dotSpacing * previewTransform.scale,
                                         transform: `translate(-50%, -50%) rotate(${previewTransform.rotation}deg)`,
-                                        pointerEvents: 'none',
-                                        zIndex: 100,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
+                                        pointerEvents: 'none', zIndex: 100,
+                                        display: 'flex', flexDirection: 'column',
+                                        alignItems: 'center', justifyContent: 'center',
                                         transition: 'left 0.1s ease-out, top 0.1s ease-out'
                                     }}>
-                                        <div
-                                            className={`relative p-2 rounded-lg transition-colors duration-200 ${checkUniversalCollision(mouseGridPos.col, mouseGridPos.row) ? 'bg-red-500/40 ring-2 ring-red-600' : 'bg-green-500/40 ring-2 ring-green-600'}`}>
+                                        <div style={{
+                                            position: 'relative', padding: '8px', borderRadius: '8px',
+                                            background: checkUniversalCollision(mouseGridPos.col, mouseGridPos.row)
+                                                ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)',
+                                            outline: checkUniversalCollision(mouseGridPos.col, mouseGridPos.row)
+                                                ? '2px solid #dc2626' : '2px solid #16a34a'
+                                        }}>
                                             {React.createElement(ICON_MAP[selectedDevice.type] || ControllerIcon, {color: 'white'})}
                                         </div>
-                                        <div
-                                            className={`mt-2 text-[9px] font-bold text-center whitespace-nowrap drop-shadow-md ${isDarkMode ? 'text-white' : 'text-[#2C3E50]'}`}>PRESS
-                                            'R' TO ROTATE<br/>SCROLL TO SCALE
+                                        <div style={{marginTop: '8px', fontSize: '9px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap', color: isDarkMode ? 'white' : '#2C3E50'}}>
+                                            PRESS 'R' TO ROTATE<br/>SCROLL TO SCALE
                                         </div>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Floating Menu */}
-                        <div id="floating-menu"
-                             className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex gap-8 px-10 py-4 rounded-full shadow-2xl border transition-all duration-300 ${isDarkMode ? 'bg-[#2F2F41]/90 backdrop-blur-md border-[#3A3A4E]' : 'bg-white/90 backdrop-blur-md border-[#C2C9CC]'}`}>
+                        {/* ── Floating toolbar ── */}
+                        <div
+                            id="floating-menu"
+                            style={{
+                                position: 'fixed', bottom: '40px',
+                                left: '50%', transform: 'translateX(-50%)',
+                                zIndex: 50, display: 'flex', gap: '32px',
+                                padding: '16px 40px', borderRadius: '999px',
+                                background: colors.floatingBg,
+                                border: `1px solid ${colors.border}`,
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                                backdropFilter: 'blur(8px)',
+                                transition: 'all 0.3s'
+                            }}
+                        >
                             {['Wall', 'Window', 'Door', 'Line', 'Furniture'].map((tool) => {
                                 const isFurniture = tool === 'Furniture';
-                                const isSelected = isFurniture ? activeTool?.startsWith('furniture_') : activeTool === tool.toLowerCase();
+                                const isSelected = isFurniture
+                                    ? activeTool?.startsWith('furniture_')
+                                    : activeTool === tool.toLowerCase();
                                 const ToolIcon = TOOL_ICON_MAP[tool.toLowerCase()];
                                 return (
-                                    <div key={tool} className="relative group">
-                                        <button onClick={() => toggleTool(tool)}
-                                                className={`flex flex-col items-center gap-1 transition-all ${isSelected ? 'scale-110' : 'hover:scale-105'}`}>
-                                            <div className="w-10 h-8 flex items-center justify-center"><ToolIcon
-                                                color={isSelected ? '#00B4D8' : (isDarkMode ? 'white' : '#2C3E50')}/>
+                                    <div key={tool} style={{position: 'relative'}}>
+                                        <button
+                                            onClick={() => toggleTool(tool)}
+                                            style={{
+                                                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                                gap: '4px', background: 'none', border: 'none', cursor: 'pointer',
+                                                transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                                                transition: 'transform 0.15s', padding: '4px 8px'
+                                            }}
+                                        >
+                                            <div style={{width: '40px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                                <ToolIcon color={isSelected ? '#00B4D8' : (isDarkMode ? 'white' : '#2C3E50')}/>
                                             </div>
-                                            <span
-                                                className={`text-[9px] uppercase font-bold tracking-wider ${isSelected ? 'text-[#00B4D8]' : (isDarkMode ? 'text-white' : 'text-[#2C3E50]')}`}>{tool}</span>
+                                            <span style={{
+                                                fontSize: '9px', textTransform: 'uppercase', fontWeight: 700,
+                                                letterSpacing: '0.08em', fontFamily: 'inherit',
+                                                color: isSelected ? '#00B4D8' : (isDarkMode ? 'white' : '#2C3E50')
+                                            }}>{tool}</span>
                                         </button>
+
+                                        {/* Furniture submenu */}
                                         {isFurniture && showFurnitureMenu && (
-                                            <div
-                                                className={`absolute bottom-full mb-4 left-1/2 -translate-x-1/2 flex gap-4 p-3 rounded-2xl border shadow-2xl animate-in fade-in slide-in-from-bottom-2 ${isDarkMode ? 'bg-[#3A3A4E] border-[#4A4A60]' : 'bg-white border-[#C2C9CC]'}`}>
+                                            <div style={{
+                                                position: 'absolute', bottom: '100%', marginBottom: '16px',
+                                                left: '50%', transform: 'translateX(-50%)',
+                                                display: 'flex', gap: '8px', padding: '12px',
+                                                borderRadius: '16px', border: `1px solid ${colors.border}`,
+                                                background: colors.furnitureMenuBg,
+                                                boxShadow: '0 8px 24px rgba(0,0,0,0.18)'
+                                            }}>
                                                 {['Bed', 'Couch', 'Table'].map((item) => (
-                                                    <button key={item} onClick={() => {
-                                                        setActiveTool(`furniture_${item.toLowerCase()}`);
-                                                        setShowFurnitureMenu(false);
-                                                    }}
-                                                            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-colors ${activeTool === `furniture_${item.toLowerCase()}` ? 'bg-[#00B4D8] text-white' : (isDarkMode ? 'hover:bg-[#4A4A60] text-white' : 'hover:bg-gray-100 text-[#2C3E50]')}`}>{item}</button>
+                                                    <button
+                                                        key={item}
+                                                        onClick={() => { setActiveTool(`furniture_${item.toLowerCase()}`); setShowFurnitureMenu(false); }}
+                                                        style={{
+                                                            padding: '8px 16px', borderRadius: '12px', border: 'none',
+                                                            fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+                                                            cursor: 'pointer', fontFamily: 'inherit',
+                                                            background: activeTool === `furniture_${item.toLowerCase()}`
+                                                                ? '#00B4D8' : (isDarkMode ? '#4A4A60' : '#f3f4f6'),
+                                                            color: activeTool === `furniture_${item.toLowerCase()}`
+                                                                ? 'white' : (isDarkMode ? 'white' : '#2C3E50')
+                                                        }}
+                                                    >{item}</button>
                                                 ))}
                                             </div>
                                         )}
@@ -604,34 +633,59 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                     </div>
                 </div>
 
-                {/* Right Sidebar */}
-                <aside className="w-full lg:w-[320px] flex flex-col gap-6">
-                    <div
-                        className={`rounded-3xl p-6 shadow-sm flex flex-col transition-colors duration-300 ${theme.panel}`}>
-                        <h3 className="font-bold text-[13px] mb-4">Device Catalog</h3>
-                        <div className="relative mb-4">
-                            <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
-                            <input type="text" placeholder="Search devices..."
-                                   className={`w-full py-2.5 pl-8 pr-4 rounded-xl text-xs font-medium outline-none shadow-sm focus:border-[#00B4D8] border border-transparent transition-colors ${isDarkMode ? 'bg-[#3A3A4E] text-white placeholder-gray-400' : 'bg-white text-[#2C3E50]'}`}/>
+                {/* ── Right Sidebar ── */}
+                <div style={{width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '24px'}}>
+
+                    {/* Device Catalog */}
+                    <div style={{
+                        borderRadius: '24px', padding: '24px',
+                        background: colors.panel, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                        display: 'flex', flexDirection: 'column'
+                    }}>
+                        <p style={{fontWeight: 700, fontSize: '13px', marginBottom: '16px', color: colors.textMain, margin: '0 0 16px 0'}}>Device Catalog</p>
+                        <div style={{position: 'relative', marginBottom: '16px'}}>
+                            <span style={{position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '14px'}}>🔍</span>
+                            <input
+                                type="text"
+                                placeholder="Search devices..."
+                                style={{
+                                    width: '100%', padding: '10px 16px 10px 36px',
+                                    borderRadius: '12px', border: '1px solid transparent',
+                                    background: isDarkMode ? '#3A3A4E' : '#ffffff',
+                                    color: isDarkMode ? '#ffffff' : '#2C3E50',
+                                    fontSize: '12px', fontWeight: 500, outline: 'none',
+                                    boxSizing: 'border-box', fontFamily: 'inherit',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                                }}
+                            />
                         </div>
-                        <div className="flex flex-col gap-3 max-h-[230px] overflow-y-auto no-scrollbar px-1 py-1">
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '230px', overflowY: 'auto', padding: '2px'}}>
                             {catalogDevices.map((d) => {
                                 const IconComponent = ICON_MAP[d.type] || ControllerIcon;
+                                const isSelected = selectedDevice?.id === d.id;
                                 return (
-                                    <div key={d.id} onClick={() => {
-                                        setActiveTool(null);
-                                        setSelectedDevice(selectedDevice?.id === d.id ? null : d);
-                                    }}
-                                         className={`flex items-center justify-between p-3 rounded-2xl shadow-sm cursor-pointer border-2 transition-all ${selectedDevice?.id === d.id ? `scale-[1.02] z-10 ${isDarkMode ? 'border-[#00B4D8]' : 'border-[#2C3E50]'}` : `border-transparent ${theme.card}`}`}>
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                className="w-10 h-10 rounded-full flex items-center justify-center text-sm">
-                                                <IconComponent color={isDarkMode ? "white" : "#000000"}/></div>
+                                    <div
+                                        key={d.id}
+                                        onClick={() => { setActiveTool(null); setSelectedDevice(isSelected ? null : d); }}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            padding: '12px', borderRadius: '16px',
+                                            background: isSelected ? 'transparent' : colors.card,
+                                            border: isSelected
+                                                ? `2px solid ${isDarkMode ? '#00B4D8' : '#2C3E50'}`
+                                                : '2px solid transparent',
+                                            cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                                            transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                                            transition: 'all 0.15s'
+                                        }}
+                                    >
+                                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                            <div style={{width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                                <IconComponent color={isDarkMode ? "white" : "#000000"}/>
+                                            </div>
                                             <div>
-                                                <div
-                                                    className={`text-[11px] font-bold ${theme.textMain}`}>{d.name}</div>
-                                                <div
-                                                    className={`text-[9px] font-medium mt-0.5 ${theme.textMuted}`}>{d.price} · {d.brand}</div>
+                                                <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain}}>{d.name}</div>
+                                                <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{d.price} · {d.brand}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -640,31 +694,44 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                         </div>
                     </div>
 
-                    <div
-                        className={`rounded-3xl p-6 shadow-sm flex flex-col transition-all duration-300 ${theme.panel} h-[280px]`}>
-                        <h3 className={`font-bold text-[13px] mb-4 ${theme.textMain}`}>Installed Devices</h3>
-                        <div className="flex flex-col gap-3 overflow-y-auto no-scrollbar flex-1">
+                    {/* Installed Devices */}
+                    <div style={{
+                        borderRadius: '24px', padding: '24px',
+                        background: colors.panel, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                        display: 'flex', flexDirection: 'column', height: '280px'
+                    }}>
+                        <p style={{fontWeight: 700, fontSize: '13px', color: colors.textMain, margin: '0 0 16px 0'}}>Installed Devices</p>
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', flex: 1}}>
                             {placedIcons.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full opacity-50">
-                                    <div className="text-[20px] mb-2">🏠</div>
-                                    <div className={`text-[10px] font-medium ${theme.textMuted}`}>No devices active
-                                    </div>
+                                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.5}}>
+                                    <div style={{fontSize: '20px', marginBottom: '8px'}}>🏠</div>
+                                    <div style={{fontSize: '10px', fontWeight: 500, color: colors.textMuted}}>No devices active</div>
                                 </div>
                             ) : (
                                 placedIcons.map((device, index) => {
                                     const IconComponent = ICON_MAP[device.type] || ControllerIcon;
                                     return (
-                                        <div key={device.id || index}
-                                             className={`flex items-center justify-between p-3 rounded-2xl shadow-sm transition-all border border-transparent ${isDarkMode ? 'bg-[#3A3A4E]' : 'bg-white'} min-h-[70px]`}>
-                                            <div className="flex items-center gap-3">
-                                                <div
-                                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-[#3A3A4E]' : 'bg-[#F8FAFC]'}`}>
-                                                    <IconComponent color={isDarkMode ? "white" : "#2C3E50"}/></div>
+                                        <div
+                                            key={device.id || index}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: '12px', borderRadius: '16px', minHeight: '70px',
+                                                background: isDarkMode ? '#3A3A4E' : '#ffffff',
+                                                border: '1px solid transparent',
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.07)'
+                                            }}
+                                        >
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                                <div style={{
+                                                    width: '40px', height: '40px', borderRadius: '50%',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    background: isDarkMode ? '#3A3A4E' : '#F8FAFC'
+                                                }}>
+                                                    <IconComponent color={isDarkMode ? "white" : "#2C3E50"}/>
+                                                </div>
                                                 <div>
-                                                    <div
-                                                        className={`text-[11px] font-bold ${theme.textMain} truncate w-[100px]`}>{device.name}</div>
-                                                    <div
-                                                        className={`text-[9px] font-medium mt-0.5 ${theme.textMuted}`}>{device.brand}</div>
+                                                    <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain, maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{device.name}</div>
+                                                    <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{device.brand}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -673,7 +740,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                             )}
                         </div>
                     </div>
-                </aside>
+                </div>
             </div>
         </main>
     );

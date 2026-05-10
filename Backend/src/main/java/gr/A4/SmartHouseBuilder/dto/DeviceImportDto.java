@@ -8,6 +8,8 @@ public class DeviceImportDto {
     private String description;
     private String imageUrl;
     private String sourceStore;
+    private Integer categoryId;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -25,4 +27,7 @@ public class DeviceImportDto {
 
     public String getSourceStore() { return sourceStore; }
     public void setSourceStore(String sourceStore) { this.sourceStore = sourceStore; }
+
+    public Integer getCategoryId() { return categoryId; }
+    public void setCategoryId(Integer categoryId) { this.categoryId = categoryId; }
 }

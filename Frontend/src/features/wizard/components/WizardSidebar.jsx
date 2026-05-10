@@ -4,13 +4,32 @@ import "./WizardSidebar.css";
 
 const ECOSYSTEMS = ["Apple Home", "Alexa", "Google Home", "More"];
 const RECOMMENDED_BRANDS = ["Samsung", "Philips", "LG", "Bosch", "Sony", "Xiaomi", "Dyson", "Ring", "Nest"];
-const PROTOCOLS = ["Wi-Fi", "Zigbee", "Z-Wave", "Bluetooth", "Matter"];
+const PROTOCOLS = ["WiFi", "Zigbee", "Z-Wave", "Bluetooth", "Matter"];
 
-const CATEGORY_PAIRS = [
-    ["Smart locks", "Sound Systems"], ["Interfon video", "Aspirator robot"],
-    ["Prelungitor", "LightBulb/bec"], ["Router", "Plug/priza"],
-    ["Smart TV", "Hub"], ["Monitor", "Senzori"], ["Console gaming", null]
+const CATEGORIES = [
+    "Smart Cameras", "Smart Power Strips", "Gaming Consoles", "Smart Appliances",
+    "Smart Hubs", "Smart Monitors", "Smart Outlets", "Smart Sensors",
+    "Smart Audio", "Smart TVs", "Robot Vacuums", "Smart Routers"
 ];
+const CAT_MAP = {
+    "Smart Cameras": 1,
+    "Smart Power Strips": 2,
+    "Gaming Consoles": 3,
+    "Smart Appliances": 4,
+    "Smart Hubs": 5,
+    "Smart Monitors": 6,
+    "Smart Outlets": 7,
+    "Smart Sensors": 8,
+    "Smart Audio": 9,
+    "Smart TVs": 10,
+    "Robot Vacuums": 11,
+    "Smart Routers": 12
+};
+
+const CATEGORY_PAIRS = CATEGORIES.reduce((result, value, index, array) => {
+    if (index % 2 === 0) result.push(array.slice(index, index + 2));
+    return result;
+}, []);
 
 const CheckboxItem = ({ label, checked, onToggle }) => (
     <label className="checkbox-container">
@@ -31,8 +50,10 @@ const Sidebar = () => {
         ecosystem, setEcosystem, priceRange, setPriceRange,
         categories, toggleCategory, protocols, toggleProtocol,
         brands, brandInput, setBrandInput, addBrand, removeBrand,
-        darkMode, toggleDarkMode, resetFilters, hasNoFilters,
+        resetFilters, hasNoFilters,
     } = useFilterStore();
+
+    const categoryIds = categories.map(name => CAT_MAP[name]);
 
     const noFilters = hasNoFilters();
     const suggestions = RECOMMENDED_BRANDS.filter(b =>
@@ -44,12 +65,9 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className={`wizard-sidebar ${darkMode ? "dark-sidebar-active" : ""}`}>
+        <aside className={"wizard-sidebar"}>
             <div className="sb-header">
                 <h2 className="sb-title">Filters</h2>
-                <button onClick={toggleDarkMode} className="sb-mode-btn">
-                    {darkMode ? "🌙" : "☀️"}
-                </button>
             </div>
 
             <div className="sb-body-scroll">
@@ -63,18 +81,64 @@ const Sidebar = () => {
                 </div>
 
                 <span className="sb-label">Price Range</span>
-                <div className="sb-price-info">
-                    <span>$0</span><span>$500</span>
+                <div className="mt-3 px-1">
+                    <div className="d-flex justify-content-between mb-2" style={{ color: 'var(--text-main)' }} >
+                        <span className="sb-price-current">€{priceRange[0]}</span>
+                        <span className="sb-price-current">€{priceRange[1]}</span>
+                    </div>
+
+                    <div className="price-slider-wrapper">
+                        <div className="slider-track-base"></div>
+
+                        <div
+                            className="slider-range-highlight"
+                            style={{
+                                left: `${(priceRange[0] / 1000) * 100}%`,
+                                width: `${((priceRange[1] - priceRange[0]) / 1000) * 100}%`
+                            }}
+                        ></div>
+
+                        <input
+                            type="range"
+                            min="0"
+                            max="1000"
+                            className="thumb thumb-left"
+                            value={priceRange[0]}
+                            onChange={(e) => {
+                                const value = Math.min(Number(e.target.value), priceRange[1] - 50);
+                                setPriceRange([value, priceRange[1]]);
+                            }}
+                        />
+                        <input
+                            type="range"
+                            min="0"
+                            max="1000"
+                            className="thumb thumb-right"
+                            value={priceRange[1]}
+                            onChange={(e) => {
+                                const value = Math.max(Number(e.target.value), priceRange[0] + 50);
+                                setPriceRange([priceRange[0], value]);
+                            }}
+                        />
+                    </div>
                 </div>
-                <input type="range" min={0} max={500} value={priceRange[1]} className="range-input" onChange={(e) => setPriceRange([0, Number(e.target.value)])} />
-                <div className="sb-price-current">$0 - ${priceRange[1]}</div>
 
                 <span className="sb-label">Categories</span>
                 <div className="sb-cat-grid">
                     {CATEGORY_PAIRS.map(([left, right], i) => (
                         <React.Fragment key={i}>
-                            <CheckboxItem label={left} checked={categories.includes(left)} onToggle={() => toggleCategory(left)} />
-                            {right && <CheckboxItem label={right} checked={categories.includes(right)} onToggle={() => toggleCategory(right)} />}
+                            <CheckboxItem
+                                label={left}
+                                checked={categories.includes(left)}
+                                onToggle={() => toggleCategory(left)}
+                            />
+                            {right && (
+                                <CheckboxItem
+                                    label={right}
+                                    checked={categories.includes(right)}
+                                    onToggle={() => toggleCategory(right)}
+                                />
+                            )}
                         </React.Fragment>
                     ))}
                 </div>

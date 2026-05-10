@@ -111,10 +111,18 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
 
     const getCategoryIdByName = (name: string) => {
         const mapping: Record<string, number> = {
-            "Smart locks": 5, "Sound Systems": 9, "Interfon video": 1,
-            "Aspirator robot": 11, "Prelungitor": 2, "LightBulb/bec": 1,
-            "Router": 12, "Plug/priza": 7, "Smart TV": 10,
-            "Hub": 5, "Monitor": 6, "Senzori": 8, "Console gaming": 3
+            "Smart Cameras": 1,
+            "Smart Power Strips": 2,
+            "Gaming Consoles": 3,
+            "Smart Appliances": 4,
+            "Smart Hubs": 5,
+            "Smart Monitors": 6,
+            "Smart Outlets": 7,
+            "Smart Sensors": 8,
+            "Smart Audio": 9,
+            "Smart TVs": 10,
+            "Robot Vacuums": 11,
+            "Smart Routers": 12
         };
         return mapping[name];
     };
@@ -124,7 +132,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             setIsCatalogLoading(true);
             try {
                 let url = new URL(`${API_BASE}/api/devices`);
-
                 url.searchParams.append('minPrice', priceRange[0].toString());
                 url.searchParams.append('maxPrice', priceRange[1].toString());
 
@@ -141,8 +148,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
 
                 if (protocols.length > 0) {
                     protocols.forEach((protName: string) => {
-                        const formattedProt = protName.toUpperCase().replace('-', '');
-                        url.searchParams.append('protocols', formattedProt);
+                        url.searchParams.append('protocols', protName);
                     });
                 }
 
@@ -159,7 +165,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                         id: d.id.toString(),
                         name: d.name,
                         brand: d.brand,
-                        price: `${d.bestPrice || 0}€`,
+                        price: `€${d.bestPrice || 0}`,
                         priceEUR: d.bestPrice || 0,
                         type: getIconTypeForCategory(d.categoryId), // Aici folosim funcția ta!
                         status: 'online'

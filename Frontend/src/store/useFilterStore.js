@@ -7,7 +7,7 @@ import { create } from 'zustand';
 const useFilterStore = create((set, get) => ({
     // --- Stare ---
     ecosystem:  null,
-    priceRange: [0, 500],
+    priceRange: [0, 1000],
     categories: [],
     protocols:  [],
     brands:     [],
@@ -20,7 +20,7 @@ const useFilterStore = create((set, get) => ({
         return (
             s.ecosystem   === null     &&
             s.priceRange[0] === 0      &&
-            s.priceRange[1] === 500    &&
+            s.priceRange[1] === 1000    &&
             s.categories.length === 0  &&
             s.protocols.length  === 0  &&
             s.brands.length     === 0
@@ -68,7 +68,7 @@ const useFilterStore = create((set, get) => ({
     resetFilters: () =>
         set({
             ecosystem:  null,
-            priceRange: [0, 500],
+            priceRange: [0, 1000],
             categories: [],
             protocols:  [],
             brands:     [],

@@ -16,9 +16,11 @@ public class ArticleResponse {
     private Long id;
     private String title;
     private String content;
+    private String imageUrl;
     private String authorUsername;
     private Long authorId;
     private List<Long> deviceIds;
+    private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

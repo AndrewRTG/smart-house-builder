@@ -28,8 +28,14 @@ public class Article {
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(columnDefinition = "text")
     private String deviceIds;
+
+    @Column(columnDefinition = "text")
+    private String tags;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -14,6 +14,7 @@ import ProfilePage from "./pages/Profile/ProfilePage";
 import CommunityPage from "./pages/CommunityPage";
 import SetupDetailPage from "./pages/SetupDetailPage";
 import ArticleDetailPage from "./pages/ArticleDetailPage";
+import CreateArticlePage from "./pages/CreateArticlePage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage";
@@ -65,6 +66,7 @@ function AppContent({ darkMode, setDarkMode }) {
             <Route path="/profile" element={<ProfilePage darkMode={darkMode} />} />
             <Route path="/mfa/setup" element={<MfaSetupPage />} />
             <Route path="/mfa/settings" element={<MfaSettingsPage />} />
+            <Route path="/articles/create" element={<CreateArticlePage darkMode={darkMode} />} />
           </Route>
           <Route path="/setup/:setupId" element={<SetupDetailPage darkMode={darkMode} />} />
           <Route path="/setups/:setupId" element={<SetupDetailPage darkMode={darkMode} />} />

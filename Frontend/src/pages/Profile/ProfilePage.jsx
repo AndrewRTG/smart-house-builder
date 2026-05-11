@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { User, Bookmark, Settings, Activity } from "lucide-react";
+import { User, Bookmark, Settings, Activity, FileText } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { authFetch } from "../../utils/authFetch";
 import MySetups from "./MySetups";
 import Wishlist from "./Wishlist";
 import SettingsPage from "./Settings";
 import ActivityPage from "./Activity";
+import MyArticles from "./MyArticles";
 import "./ProfilePage.css";
 
 const initialSetups = [
@@ -94,6 +95,12 @@ export default function ProfilePage({ darkMode }) {
           <User size={18} /> My Setups
         </button>
         <button
+          className={`tab-btn ${page === "myarticles" ? "active" : ""}`}
+          onClick={() => setPage("myarticles")}
+        >
+          <FileText size={18} /> My Articles
+        </button>
+        <button
           className={`tab-btn ${page === "wishlist" ? "active" : ""}`}
           onClick={() => setPage("wishlist")}
         >
@@ -110,6 +117,7 @@ export default function ProfilePage({ darkMode }) {
       {/* CONTENT */}
       <main className="profile-content">
         {page === "mysetups" && <MySetups {...sharedProps} />}
+        {page === "myarticles" && <MyArticles isDark={darkMode} profile={user} />}
         {page === "wishlist" && <Wishlist {...sharedProps} />}
         {page === "activity" && <ActivityPage {...sharedProps} />}
         {page === "settings" && <SettingsPage profile={user} />}

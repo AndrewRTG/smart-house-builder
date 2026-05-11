@@ -53,4 +53,7 @@ public class User {
 
     @Column
     private LocalDateTime resetTokenExpiry;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
 }

@@ -311,6 +311,32 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.create-article-btn {
+  margin-left: auto;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background-color: #5092ce;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.05s;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.create-article-btn:hover {
+  background-color: #4080bd;
+}
+
+.create-article-btn:active {
+  transform: translateY(1px);
+}
+
+.dark-mode .create-article-btn {
+  background-color: #5092ce;
+}
+
 /* CONTENT SLIDER */
 .content-slider {
   position: relative;
@@ -969,4 +995,132 @@
   padding: 20px;
   overflow-y: auto;
   flex: 1;
+}
+
+/* === Tag filter bar (Articles tab) === */
+.tag-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+}
+
+.tag-filter-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+  margin-right: 0.5rem;
+}
+
+.tag-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
+  color: #555;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tag-filter-chip:hover {
+  border-color: #0066cc;
+  color: #0066cc;
+}
+
+.tag-filter-chip.active {
+  background: #0066cc;
+  border-color: #0066cc;
+  color: #fff;
+}
+
+/* === Tags shown on each article card === */
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.5rem 0;
+}
+
+.article-tag {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid #d6e4f5;
+  border-radius: 999px;
+  background: #f0f6fc;
+  color: #0052a3;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.article-tag:hover {
+  background: #d6e4f5;
+}
+
+.article-tag.active {
+  background: #0066cc;
+  border-color: #0066cc;
+  color: #fff;
+}
+
+.empty-clear-filter {
+  border: none;
+  background: transparent;
+  color: #0066cc;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  margin-left: 0.25rem;
+}
+
+.empty-clear-filter:hover {
+  color: #0052a3;
+}
+
+/* Dark mode for tag filter and article tags */
+.dark-mode .tag-filter-label {
+  color: #aaa;
+}
+
+.dark-mode .tag-filter-chip {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #ccc;
+}
+
+.dark-mode .tag-filter-chip:hover {
+  border-color: #4a9eff;
+  color: #4a9eff;
+}
+
+.dark-mode .tag-filter-chip.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: #fff;
+}
+
+.dark-mode .article-tag {
+  background: rgba(74, 158, 255, 0.12);
+  border-color: rgba(74, 158, 255, 0.3);
+  color: #4a9eff;
+}
+
+.dark-mode .article-tag:hover {
+  background: rgba(74, 158, 255, 0.25);
+}
+
+.dark-mode .article-tag.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: #fff;
+}
+
+.dark-mode .empty-clear-filter {
+  color: #4a9eff;
 }

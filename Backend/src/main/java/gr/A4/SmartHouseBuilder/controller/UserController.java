@@ -1,7 +1,9 @@
 package gr.A4.SmartHouseBuilder.controller;
 
+import gr.A4.SmartHouseBuilder.dto.UpdateAvatarRequest;
 import gr.A4.SmartHouseBuilder.dto.UserProfileResponse;
 import gr.A4.SmartHouseBuilder.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -49,5 +51,15 @@ public class UserController {
     @PostMapping("/mfa/toggle")
     public ResponseEntity<UserProfileResponse> toggleMfa(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(authService.toggleMfa(userDetails.getUsername()));
+    }
+
+    @PutMapping("/avatar")
+    public ResponseEntity<UserProfileResponse> updateAvatar(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody UpdateAvatarRequest request) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(authService.updateAvatar(userDetails.getUsername(), request.getAvatarUrl()));
     }
 }

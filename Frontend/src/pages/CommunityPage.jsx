@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Bookmark, Copy, MessageCircle, BookOpen, Settings, Heart } from 'lucide-react';
+import { Bookmark, Copy, MessageCircle, FileText, Settings, Heart, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CopySetupModal from '../components/CopySetupModal';
+import NewPostModal from '../components/NewPostModal';
 import { useError } from '../context/ErrorContext';
 import { getCurrentUser } from '../utils/currentUser';
 import { fuzzyFilter } from '../utils/fuzzySearch';
@@ -28,6 +29,8 @@ export default function CommunityPage({ darkMode }) {
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [selectedSetupToCopy, setSelectedSetupToCopy] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [newPostModalOpen, setNewPostModalOpen] = useState(false);
+  const [activeTagFilter, setActiveTagFilter] = useState(null);
 
 
   const API_BASE = 'http://localhost:20025/api/v1';
@@ -44,12 +47,23 @@ export default function CommunityPage({ darkMode }) {
     ]),
     [setups, searchQuery]
   );
-  const filteredArticles = useMemo(
-    () => fuzzyFilter(articles, searchQuery, (a) => [
+  const filteredArticles = useMemo(() => {
+    const byTag = activeTagFilter
+      ? articles.filter((a) =>
+          (a.tags || []).some((t) => t.toLowerCase() === activeTagFilter.toLowerCase())
+        )
+      : articles;
+    return fuzzyFilter(byTag, searchQuery, (a) => [
       a.title, a.content, a.authorUsername,
-    ]),
-    [articles, searchQuery]
-  );
+    ]);
+  }, [articles, searchQuery, activeTagFilter]);
+
+  // Collect distinct tags from current articles for the filter chip row.
+  const availableTags = useMemo(() => {
+    const set = new Set();
+    articles.forEach((a) => (a.tags || []).forEach((t) => set.add(t)));
+    return Array.from(set).sort();
+  }, [articles]);
 
   // Restore scroll position and tab on mount
   useEffect(() => {
@@ -367,14 +381,14 @@ export default function CommunityPage({ darkMode }) {
           </div>
         </div>
 
-        <button className="sidebar-btn add-new">+ Postare noua</button>
+        <button className="sidebar-btn add-new" onClick={() => setNewPostModalOpen(true)}>+ Postare noua</button>
 
         <div className="sidebar-links">
           <button className="sidebar-link" onClick={() => navigate('/profile?tab=wishlist')}>
             <Bookmark size={16} /> Wishlist
           </button>
-          <button className="sidebar-link">
-            <BookOpen size={16} /> Guides
+          <button className="sidebar-link" onClick={() => navigate('/profile?tab=myarticles')}>
+            <FileText size={16} /> My Articles
           </button>
           <button className="sidebar-link" onClick={() => navigate('/profile?tab=mysetups')}>
             <Settings size={16} /> My Setups
@@ -566,6 +580,29 @@ export default function CommunityPage({ darkMode }) {
           </div>
 
           <div className={`content-pane ${activeTab === 'articles' ? 'active' : ''}`}>
+            {/* Tag filter chips — only render when there are tags to filter by */}
+            {availableTags.length > 0 && (
+              <div className="tag-filter-bar">
+                <span className="tag-filter-label">Filter by tag:</span>
+                <button
+                  className={`tag-filter-chip ${activeTagFilter === null ? 'active' : ''}`}
+                  onClick={() => setActiveTagFilter(null)}
+                >
+                  All
+                </button>
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag}
+                    className={`tag-filter-chip ${activeTagFilter === tag ? 'active' : ''}`}
+                    onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)}
+                  >
+                    {tag}
+                    {activeTagFilter === tag && <X size={12} style={{ marginLeft: 4 }} />}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {loading ? (
               <div className="loading">Loading articles...</div>
             ) : filteredArticles.length > 0 ? (
@@ -597,6 +634,23 @@ export default function CommunityPage({ darkMode }) {
                     <h3 className="article-title">{article.title}</h3>
                     <p className="article-content">{article.content}</p>
 
+                    {article.tags && article.tags.length > 0 && (
+                      <div className="article-tags">
+                        {article.tags.map((tag) => (
+                          <button
+                            key={tag}
+                            className={`article-tag ${activeTagFilter === tag ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTagFilter(activeTagFilter === tag ? null : tag);
+                            }}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="article-footer">
                       <div className="footer-actions">
                         <button
@@ -621,7 +675,19 @@ export default function CommunityPage({ darkMode }) {
                 ))}
               </div>
             ) : (
-              <div className="empty-state">No articles found</div>
+              <div className="empty-state">
+                {activeTagFilter
+                  ? `No articles tagged "${activeTagFilter}". `
+                  : 'No articles found. '}
+                {activeTagFilter && (
+                  <button
+                    className="empty-clear-filter"
+                    onClick={() => setActiveTagFilter(null)}
+                  >
+                    Clear filter
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -652,14 +718,14 @@ export default function CommunityPage({ darkMode }) {
                 </div>
               </div>
 
-              <button className="sidebar-btn">+ Postare noua</button>
+              <button className="sidebar-btn" onClick={() => { setDrawerOpen(false); setNewPostModalOpen(true); }}>+ Postare noua</button>
 
               <div className="sidebar-links">
                 <button className="sidebar-link" onClick={() => { navigate('/profile?tab=wishlist'); setDrawerOpen(false); }}>
                   <Bookmark size={16} /> Wishlist
                 </button>
-                <button className="sidebar-link">
-                  <BookOpen size={16} /> Guides
+                <button className="sidebar-link" onClick={() => { navigate('/profile?tab=myarticles'); setDrawerOpen(false); }}>
+                  <FileText size={16} /> My Articles
                 </button>
                 <button className="sidebar-link" onClick={() => { navigate('/profile?tab=mysetups'); setDrawerOpen(false); }}>
                   <Settings size={16} /> My Setups
@@ -714,6 +780,29 @@ export default function CommunityPage({ darkMode }) {
         onSuccess={() => {
           // Modal already shows success toast and closes
           // Optionally refetch setups here if needed
+        }}
+      />
+
+      {/* NEW POST MODAL — asks Setup vs Article */}
+      <NewPostModal
+        isOpen={newPostModalOpen}
+        darkMode={darkMode}
+        onClose={() => setNewPostModalOpen(false)}
+        onChooseSetup={() => {
+          setNewPostModalOpen(false);
+          if (!user) {
+            navigate('/login', { state: { from: '/builder', message: 'Please sign in to create a setup.' } });
+            return;
+          }
+          navigate('/builder');
+        }}
+        onChooseArticle={() => {
+          setNewPostModalOpen(false);
+          if (!user) {
+            navigate('/login', { state: { from: '/articles/create', message: 'Please sign in to write an article.' } });
+            return;
+          }
+          navigate('/articles/create');
         }}
       />
     </div>

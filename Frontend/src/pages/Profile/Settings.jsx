@@ -7,23 +7,31 @@ import "./Settings.css";
 
 const API_BASE = "http://localhost:20025/api/v1";
 
+// Mock upload until Florentina's POST /api/v1/images/upload is live.
+// When her endpoint exists: flip to false and the real authFetch path runs.
+const MOCK_UPLOAD = true;
+
 export default function Settings({ profile }) {
   const navigate = useNavigate();
   const { showError, showSuccess } = useError();
   const [username, setUsername] = useState(profile?.username || "");
   const [email, setEmail] = useState(profile?.email || "");
   const [mfaEnabled, setMfaEnabled] = useState(profile?.mfaEnabled || false);
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || "");
   // Re-sync local state when the profile prop arrives (it's null on first
   // render while ProfilePage is fetching /auth/me).
   useEffect(() => { if (profile?.username) setUsername(profile.username); }, [profile?.username]);
   useEffect(() => { if (profile?.email) setEmail(profile.email); }, [profile?.email]);
   useEffect(() => { setMfaEnabled(!!profile?.mfaEnabled); }, [profile?.mfaEnabled]);
+  useEffect(() => { setAvatarUrl(profile?.avatarUrl || ""); }, [profile?.avatarUrl]);
   const [editingUsername, setEditingUsername] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const usernameCheckTimeout = useRef(null);
+  const avatarInputRef = useRef(null);
 
   const token = localStorage.getItem("accessToken");
 
@@ -247,6 +255,80 @@ export default function Settings({ profile }) {
   };
 
   /**
+   * Avatar upload — two-step:
+   *   1) POST file to Florentina's /api/v1/images/upload, get { url, key }
+   *   2) PUT that url to /api/v1/users/avatar so it persists on the User row
+   *
+   * Until step 1 exists we mock the upload by reading the file as a data URL.
+   * That keeps the UI testable end-to-end (preview + persistence to DB) but
+   * data URLs are huge and would balloon the DB, so we deliberately do NOT
+   * persist them — when MOCK_UPLOAD is true we save a placeholder URL on the
+   * backend and only use the local data URL for the in-page preview. As soon
+   * as MOCK_UPLOAD is flipped to false, the real S3 URL gets stored.
+   */
+  const handleAvatarSelect = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showError("Please select an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError("Avatar must be smaller than 5MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      let urlForBackend;
+      let urlForPreview;
+
+      if (MOCK_UPLOAD) {
+        // Show real preview, persist a placeholder so we don't bloat the DB.
+        urlForPreview = await readAsDataUrl(file);
+        urlForBackend = "https://via.placeholder.com/150?text=Avatar";
+      } else {
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadRes = await authFetch(`${API_BASE}/images/upload`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error("Image upload failed");
+        const data = await uploadRes.json();
+        urlForBackend = data.url;
+        urlForPreview = data.url;
+      }
+
+      const saveRes = await authFetch(`${API_BASE}/users/avatar`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: urlForBackend }),
+      });
+      if (!saveRes.ok) {
+        const data = await saveRes.json().catch(() => ({}));
+        throw new Error(data.message || data.error || "Failed to save avatar");
+      }
+
+      setAvatarUrl(urlForPreview);
+      window.dispatchEvent(new Event("auth-change"));
+      showSuccess("Profile photo updated.");
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const readAsDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Could not read file"));
+      reader.readAsDataURL(file);
+    });
+
+  /**
    * Delete account — the backend has no DELETE /users/me endpoint yet, so
    * this UI tells the truth: the request was queued (or, more honestly,
    * isn't implemented yet) and asks the user to email support. We do NOT
@@ -269,12 +351,38 @@ export default function Settings({ profile }) {
         <h2 className="section-title">Profile photo</h2>
         <div className="profile-photo-area">
           <div className="avatar-large">
-            {username?.charAt(0)?.toUpperCase() || "U"}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="avatar-image"
+              />
+            ) : (
+              username?.charAt(0)?.toUpperCase() || "U"
+            )}
           </div>
-          <button className="upload-btn" disabled title="Custom avatars are coming soon">
-            <Upload size={16} />
-            Change Photo
-          </button>
+          <div className="avatar-actions">
+            <button
+              className="upload-btn"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar || loading}
+            >
+              <Upload size={16} />
+              {uploadingAvatar ? "Uploading..." : "Change Photo"}
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
+              hidden
+            />
+            {MOCK_UPLOAD && (
+              <p className="avatar-mock-note">
+                Preview only — real upload pending S3 endpoint.
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

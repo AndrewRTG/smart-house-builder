@@ -84,9 +84,11 @@ public class ArticleController {
                 .id(article.getId())
                 .title(article.getTitle())
                 .content(article.getContent())
+                .imageUrl(article.getImageUrl())
                 .authorUsername(article.getUser().getUsername())
                 .authorId(article.getUser().getId())
                 .deviceIds(deserializeDeviceIds(article.getDeviceIds()))
+                .tags(deserializeTags(article.getTags()))
                 .createdAt(article.getCreatedAt())
                 .updatedAt(article.getUpdatedAt())
                 .likeCount(likes)
@@ -95,6 +97,15 @@ public class ArticleController {
     }
 
     private List<Long> deserializeDeviceIds(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private List<String> deserializeTags(String json) {
+        if (json == null || json.isBlank()) return List.of();
         try {
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {

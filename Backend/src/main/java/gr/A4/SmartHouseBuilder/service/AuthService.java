@@ -254,6 +254,7 @@ public class AuthService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
                 .mfaEnabled(user.isMfaEnabled())
                 .verified(user.isVerified())
                 .build();
@@ -279,6 +280,7 @@ public class AuthService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
                 .mfaEnabled(user.isMfaEnabled())
                 .verified(user.isVerified())
                 .build();
@@ -304,6 +306,7 @@ public class AuthService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
                 .mfaEnabled(user.isMfaEnabled())
                 .verified(user.isVerified())
                 .build();
@@ -324,6 +327,7 @@ public class AuthService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
                 .mfaEnabled(user.isMfaEnabled())
                 .verified(user.isVerified())
                 .build();
@@ -331,5 +335,24 @@ public class AuthService {
 
     public boolean usernameExists(String username) {
         return userRepository.existsByUsername(username);
+    }
+
+    @Transactional
+    public UserProfileResponse updateAvatar(String email, String avatarUrl) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+
+        user.setAvatarUrl(avatarUrl);
+        userRepository.save(user);
+        log.info("Avatar updated for user: {}", email);
+
+        return UserProfileResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
+                .mfaEnabled(user.isMfaEnabled())
+                .verified(user.isVerified())
+                .build();
     }
 }

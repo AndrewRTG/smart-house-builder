@@ -13,6 +13,7 @@ public class UserProfileResponse {
     private Long id;
     private String username;
     private String email;
+    private String avatarUrl;
     private Boolean mfaEnabled;
     private Boolean verified;
 }

@@ -40,7 +40,9 @@ public class ArticleService {
                 .user(user)
                 .title(request.getTitle())
                 .content(request.getContent())
+                .imageUrl(emptyToNull(request.getImageUrl()))
                 .deviceIds(serializeDeviceIds(request.getDeviceIds()))
+                .tags(serializeTags(request.getTags()))
                 .build();
 
         Article saved = articleRepository.save(article);
@@ -61,7 +63,9 @@ public class ArticleService {
 
         article.setTitle(request.getTitle());
         article.setContent(request.getContent());
+        article.setImageUrl(emptyToNull(request.getImageUrl()));
         article.setDeviceIds(serializeDeviceIds(request.getDeviceIds()));
+        article.setTags(serializeTags(request.getTags()));
 
         Article updated = articleRepository.save(article);
         log.info("Article updated: {} by user: {}", id, email);
@@ -95,11 +99,26 @@ public class ArticleService {
         return articleRepository.findAll(pageable);
     }
 
+    // Treat blank/empty as "no image" so the DB column stays NULL rather
+    // than holding a "" string the frontend would render as a broken <img>.
+    private String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
+    }
+
     private String serializeDeviceIds(List<Long> deviceIds) {
         try {
             return objectMapper.writeValueAsString(deviceIds);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize device IDs", e);
+        }
+    }
+
+    private String serializeTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(tags);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize tags", e);
         }
     }
 

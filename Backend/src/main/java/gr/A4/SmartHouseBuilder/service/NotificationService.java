@@ -2,43 +2,44 @@ package gr.A4.SmartHouseBuilder.service;
 
 import gr.A4.SmartHouseBuilder.entity.Notification;
 import gr.A4.SmartHouseBuilder.repository.NotificationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
 
-    @Autowired
-    public NotificationService(NotificationRepository notificationRepository) {
-        this.notificationRepository = notificationRepository;
-    }
-
-
-    public Notification triggerNotification(String username, String message) {
+    public void triggerNotification(String username, String message) {
         Notification notification = new Notification(username, message);
-        return notificationRepository.save(notification);
+        notificationRepository.save(notification);
     }
 
 
-    public List<Notification> getAllUserNotifications(String username) {
-        return notificationRepository.findByUsernameOrderByCreatedAtDesc(username);
+    public Page<Notification> getUserNotifications(String username, Pageable pageable) {
+        return notificationRepository.findByUsernameOrderByCreatedAtDesc(username, pageable);
     }
 
-    public List<Notification> getUnreadUserNotifications(String username) {
-        return notificationRepository.findByUsernameAndIsReadFalseOrderByCreatedAtDesc(username);
-    }
 
-    public void markAsRead(Long notificationId) {
-        Optional<Notification> notifOpt = notificationRepository.findById(notificationId);
-        if (notifOpt.isPresent()) {
-            Notification notif = notifOpt.get();
-            notif.setRead(true);
-            notificationRepository.save(notif);
+    @Transactional
+    public void markAsReadIfOwner(Long id, String loggedInUsername) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notificarea nu a fost găsită"));
+
+        if (!notification.getUsername().equals(loggedInUsername)) {
+            throw new RuntimeException("Acces interzis: Nu poți modifica notificările altui user!");
         }
+
+        notification.setRead(true);
+        notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public void markAllAsRead(String username) {
+        notificationRepository.markAllAsReadByUsername(username);
     }
 }

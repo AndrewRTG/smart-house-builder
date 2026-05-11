@@ -23,6 +23,18 @@
 
 	<dependencyManagement>
 		<dependencies>
+		
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>bom</artifactId>
+    <version>2.26.12</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+
+
+
+
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-bom</artifactId>
@@ -34,6 +46,10 @@
 	</dependencyManagement>
 
 	<dependencies>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-openai</artifactId>
@@ -118,6 +134,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.5.0</version>
@@ -137,6 +158,14 @@
 							<artifactId>lombok</artifactId>
 						</path>
 					</annotationProcessorPaths>
+				</configuration>
+
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-Dnet.bytebuddy.experimental=true</argLine>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -162,13 +191,16 @@
 	</build>
 
 	<repositories>
-		<repository>
-			<id>spring-milestones</id>
-			<url>https://repo.spring.io/milestone</url>
-		</repository>
-		<repository>
-			<id>central</id>
-			<url>https://repo.maven.apache.org/maven2</url>
-		</repository>
-	</repositories>
+			<repository>
+				<id>central</id>
+				<url>https://repo.maven.apache.org/maven2</url>
+				<releases><enabled>true</enabled></releases>
+				<snapshots><enabled>false</enabled></snapshots>
+			</repository>
+			<repository>
+				<id>spring-milestones</id>
+				<url>https://repo.spring.io/milestone</url>
+				<snapshots><enabled>false</enabled></snapshots>
+			</repository>
+		</repositories>
 </project>

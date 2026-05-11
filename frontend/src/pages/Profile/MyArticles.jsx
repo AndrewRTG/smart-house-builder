@@ -4,6 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../../utils/authFetch';
 import './MyArticles.css';
 
+function parseDate(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const [y, m, d, h = 0, min = 0] = value;
+    return new Date(y, m - 1, d, h, min);
+  }
+  return new Date(value);
+}
+
+function formatDate(value) {
+  const d = parseDate(value);
+  if (!d || isNaN(d.getTime())) return 'Dată necunoscută';
+  return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function MyArticles({ isDark, profile }) {
   const navigate = useNavigate();
   const [articles, setArticles] = useState([]);
@@ -82,9 +97,19 @@ export default function MyArticles({ isDark, profile }) {
         <div className="articles-list">
           {articles.map(article => (
             <div key={article.id} className="article-card">
+              {article.imageUrl && (
+                <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', maxHeight: '200px' }}>
+                  <img
+                    src={article.imageUrl}
+                    alt={article.title}
+                    style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block' }}
+                    onError={e => e.target.style.display = 'none'}
+                  />
+                </div>
+              )}
               <div className="article-content">
-                <h3 className="article-title">{article.title}</h3>
-                <p className="article-preview">{article.content.substring(0, 150)}...</p>
+                <h3 className="article-title" style={{ color: isDark ? '#fff' : '#111' }}>{article.title}</h3>
+                <p className="article-preview" style={{ color: isDark ? '#ccc' : '#444' }}>{article.content.substring(0, 150)}...</p>
                 {article.tags && article.tags.length > 0 && (
                   <div className="my-article-tags">
                     {article.tags.map((tag) => (
@@ -92,7 +117,7 @@ export default function MyArticles({ isDark, profile }) {
                     ))}
                   </div>
                 )}
-                <div className="article-meta">
+                <div className="article-meta" style={{ color: isDark ? '#aaa' : '#555' }}>
                   <span className="meta-item">
                     <span className="label">Likes:</span> {article.likeCount || 0}
                   </span>
@@ -100,7 +125,7 @@ export default function MyArticles({ isDark, profile }) {
                     <span className="label">Comments:</span> {article.commentCount || 0}
                   </span>
                   <span className="meta-item created-at">
-                    {new Date(article.createdAt).toLocaleDateString()}
+                    {formatDate(article.createdAt)}
                   </span>
                 </div>
               </div>

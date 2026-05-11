@@ -31,29 +31,35 @@ const ARTICLE_TOPIC_MAP = [
   { label: 'Automatizare', keywords: ['automatizare', 'automatizat', 'scenariu', 'routine', 'automation'] },
 ];
 
-function formatDate(dateString, options = {}) {
-  if (!dateString) return 'Nespecificat';
-  return new Date(dateString).toLocaleDateString('ro-RO', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    ...options,
+function parseDate(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const [y, m, d, h = 0, min = 0] = value;
+    return new Date(y, m - 1, d, h, min);
+  }
+  return new Date(value);
+}
+
+function formatDate(dateValue, options = {}) {
+  if (!dateValue) return 'Nespecificat';
+  const d = parseDate(dateValue);
+  if (!d || isNaN(d.getTime())) return 'Nespecificat';
+  return d.toLocaleDateString('ro-RO', {
+    day: 'numeric', month: 'long', year: 'numeric', ...options,
   });
 }
 
-function formatRelativeDate(dateString) {
-  if (!dateString) return 'recent';
-
-  const date = new Date(dateString);
+function formatRelativeDate(dateValue) {
+  if (!dateValue) return 'recent';
+  const date = parseDate(dateValue);
+  if (!date || isNaN(date.getTime())) return 'recent';
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
   if (seconds < 60) return 'acum cateva secunde';
   if (seconds < 3600) return `acum ${Math.floor(seconds / 60)} min`;
   if (seconds < 86400) return `acum ${Math.floor(seconds / 3600)} h`;
   if (seconds < 604800) return `acum ${Math.floor(seconds / 86400)} zile`;
-
-  return formatDate(dateString, { month: 'short' });
+  return formatDate(dateValue, { month: 'short' });
 }
 
 function extractPriceLabel(text = '') {
@@ -207,7 +213,7 @@ export default function ArticleDetailPage({ darkMode }) {
     const hasEdits = Boolean(
       article.updatedAt
       && article.createdAt
-      && Math.abs(new Date(article.updatedAt).getTime() - new Date(article.createdAt).getTime()) > 60 * 1000
+      && Math.abs(parseDate(article.updatedAt).getTime() - parseDate(article.createdAt).getTime()) > 60 * 1000
     );
 
     const displayTags = Array.from(new Set([
@@ -249,7 +255,15 @@ export default function ArticleDetailPage({ darkMode }) {
           <article className="article-detail-card">
             <div className="article-detail-header">
               <div className="user-info-compact">
-                <div className="avatar-small">{article.authorUsername?.charAt(0)?.toUpperCase() || 'U'}</div>
+                <div className="avatar-small" style={{ overflow: 'hidden', padding: 0 }}>
+                  {article.authorAvatarUrl ? (
+                    <img src={article.authorAvatarUrl} alt={article.authorUsername}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                      onError={e => e.target.style.display = 'none'} />
+                  ) : (
+                    article.authorUsername?.charAt(0)?.toUpperCase() || 'U'
+                  )}
+                </div>
                 <div>
                   <div className="setup-author">{article.authorUsername || 'User'}</div>
                   <div className="setup-date">
@@ -267,6 +281,24 @@ export default function ArticleDetailPage({ darkMode }) {
             <div className="article-detail-body">
               <span className="article-overline">Community post</span>
               <h1 className="article-card-title">{article.title}</h1>
+
+              {article.imageUrl ? (
+                <div className="article-cover-image">
+                  <img
+                    src={article.imageUrl}
+                    alt={article.title}
+                    style={{
+                      width: '100%',
+                      maxHeight: '400px',
+                      objectFit: 'cover',
+                      borderRadius: '12px',
+                      marginBottom: '16px',
+                      display: 'block',
+                    }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+              ) : null}
 
               {articleInsights?.excerpt ? (
                 <p className="article-detail-excerpt">{articleInsights.excerpt}</p>

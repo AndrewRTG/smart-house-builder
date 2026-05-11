@@ -114,6 +114,9 @@ function Navbar({ darkMode, setDarkMode }) {
 
   const avatarText = user?.username?.charAt(0)?.toUpperCase() || "U";
   const userAvatar = user?.avatarUrl || user?.profileImageUrl || user?.imageUrl || null;
+  const [avatarError, setAvatarError] = useState(false);
+  // Reset error flag when URL changes (după un nou upload)
+  useEffect(() => { setAvatarError(false); }, [userAvatar]);
 
   return (
     <nav className={`builder-navbar ${darkMode ? "dark-mode" : ""}`}>
@@ -152,8 +155,13 @@ function Navbar({ darkMode, setDarkMode }) {
         {isLoggedIn ? (
           <>
             <button className="builder-navbar-avatar-btn" type="button" onClick={() => navigate("/profile")}>
-              {userAvatar ? (
-                <img src={userAvatar} alt="Profile" className="builder-navbar-avatar-img" />
+              {userAvatar && !avatarError ? (
+                <img
+                  src={userAvatar}
+                  alt="Profile"
+                  className="builder-navbar-avatar-img"
+                  onError={() => setAvatarError(true)}
+                />
               ) : (
                 <span className="builder-navbar-avatar-fallback">{avatarText}</span>
               )}

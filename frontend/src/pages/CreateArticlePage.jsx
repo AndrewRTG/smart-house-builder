@@ -1,10 +1,8 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, X, Image as ImageIcon, Tag } from "lucide-react";
+import { Upload, X, Tag } from "lucide-react";
 import { authFetch } from "../utils/authFetch";
 import "../styles/CreateArticlePage.css";
-
-const MOCK_UPLOAD = true;
 
 const SUGGESTED_TAGS = [
   "Confort",
@@ -39,32 +37,39 @@ export default function CreateArticlePage({ darkMode }) {
       setError("Please select an image file (PNG, JPG, GIF).");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Image must be smaller than 10MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be smaller than 5MB.");
       return;
     }
 
     setError(null);
     setUploading(true);
 
+    // Arată preview local imediat
+    const localPreview = URL.createObjectURL(file);
+    setImageUrl(localPreview);
+
     try {
-      if (MOCK_UPLOAD) {
-        const localUrl = URL.createObjectURL(file);
-        await new Promise((r) => setTimeout(r, 300));
-        setImageUrl(localUrl);
-      } else {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await authFetch("/api/v1/images/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) throw new Error("Image upload failed");
-        const data = await res.json();
-        setImageUrl(data.url);
+      const formData = new FormData();
+      formData.append("file", file);
+      // Nu seta Content-Type — browser-ul îl setează automat cu boundary
+      const res = await authFetch("http://localhost:20025/api/v1/images/articles", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || `Upload eșuat (${res.status || "network error"})`);
       }
+      const data = await res.json();
+      // Înlocuiește blob URL cu URL-ul real S3
+      URL.revokeObjectURL(localPreview);
+      setImageUrl(data.url);
     } catch (e) {
-      setError(e.message || "Could not upload image.");
+      // Upload eșuat — ștergem preview-ul și blocăm Publish
+      URL.revokeObjectURL(localPreview);
+      setImageUrl("");
+      setError("Upload imagine eșuat: " + (e.message || "verifică că backend-ul rulează"));
     } finally {
       setUploading(false);
     }
@@ -128,8 +133,7 @@ export default function CreateArticlePage({ darkMode }) {
     setSubmitting(true);
 
     try {
-      const safeImageUrl =
-        MOCK_UPLOAD && imageUrl.startsWith("blob:") ? "" : imageUrl;
+      const safeImageUrl = imageUrl.startsWith("blob:") ? "" : imageUrl;
 
       const res = await authFetch("/api/v1/articles", {
         method: "POST",
@@ -320,12 +324,6 @@ export default function CreateArticlePage({ darkMode }) {
           </button>
         </div>
 
-        {MOCK_UPLOAD && (
-          <p className="mock-banner">
-            <ImageIcon size={14} /> Image upload is in mock mode — preview only,
-            real S3 upload pending Florentina's endpoint.
-          </p>
-        )}
       </div>
     </div>
   );

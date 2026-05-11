@@ -26,10 +26,10 @@ public class ArticleService {
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
-    // Needed only by deleteArticle, to wipe child rows before deleting the
-    // article itself. Comments and likes have non-nullable FKs to article_id.
     private final CommentService commentService;
     private final LikeRepository likeRepository;
+    // ── S3 ──────────────────────────────────────────────────────────────────
+    private final S3Service s3Service;
 
     @Transactional
     public Article createArticle(String email, ArticleRequest request) {
@@ -61,9 +61,16 @@ public class ArticleService {
         Article article = articleRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Article not found or not owned by you"));
 
+        // If the cover image was replaced, remove the old one from S3.
+        String oldImage = article.getImageUrl();
+        String newImage = emptyToNull(request.getImageUrl());
+        if (oldImage != null && !oldImage.equals(newImage)) {
+            s3Service.deleteByUrl(oldImage);
+        }
+
         article.setTitle(request.getTitle());
         article.setContent(request.getContent());
-        article.setImageUrl(emptyToNull(request.getImageUrl()));
+        article.setImageUrl(newImage);
         article.setDeviceIds(serializeDeviceIds(request.getDeviceIds()));
         article.setTags(serializeTags(request.getTags()));
 
@@ -78,14 +85,11 @@ public class ArticleService {
         Article article = articleRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Article not found or not owned by you"));
 
-        // Articles have non-nullable FKs from comments.article_id and
-        // likes.article_id. Before this refactor an article with even one
-        // comment threw at flush time — the implicit JPA cascade we used to
-        // have on Comment.replies wasn't doing anything for the
-        // article_id FK. Now we always explicitly clean up children.
+        // Remove the cover image from S3 before deleting the DB row.
+        s3Service.deleteByUrl(article.getImageUrl());
+
         commentService.deleteCommentTreeForArticle(id);
         likeRepository.deleteAllByArticleId(id);
-
         articleRepository.delete(article);
         log.info("Article deleted: {} by user: {}", id, email);
     }
@@ -99,8 +103,8 @@ public class ArticleService {
         return articleRepository.findAll(pageable);
     }
 
-    // Treat blank/empty as "no image" so the DB column stays NULL rather
-    // than holding a "" string the frontend would render as a broken <img>.
+    // ── helpers ──────────────────────────────────────────────────────────────
+
     private String emptyToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
     }

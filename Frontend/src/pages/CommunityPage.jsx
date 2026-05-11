@@ -9,6 +9,21 @@ import { fuzzyFilter } from '../utils/fuzzySearch';
 import { getStoredLikedItems, setStoredLike } from '../utils/likedItemsStorage';
 import '../styles/CommunityPage.css';
 
+function parseDate(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const [y, m, d, h = 0, min = 0] = value;
+    return new Date(y, m - 1, d, h, min);
+  }
+  return new Date(value);
+}
+
+function formatDate(value) {
+  const d = parseDate(value);
+  if (!d || isNaN(d.getTime())) return 'Dată necunoscută';
+  return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function CommunityPage({ darkMode }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -371,7 +386,13 @@ export default function CommunityPage({ darkMode }) {
       {/* SIDEBAR */}
       <div className="community-sidebar">
         <div className="sidebar-section user-profile" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
-          <div className="user-avatar">{user?.username?.charAt(0)?.toUpperCase() || 'U'}</div>
+          <div className="user-avatar" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
+            ) : (
+              user?.username?.charAt(0)?.toUpperCase() || 'U'
+            )}
+          </div>
           <div className="user-info">
             <div className="user-name">{user?.username || 'User'}</div>
             <div className="user-stats">
@@ -516,13 +537,21 @@ export default function CommunityPage({ darkMode }) {
                   >
                     <div className="setup-header">
                       <div className="user-info-compact">
-                        <div className="avatar-small">{setup.user?.email?.[0]?.toUpperCase() || 'U'}</div>
+                        <div className="avatar-small" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {setup.user?.avatarUrl ? (
+                            <img src={setup.user.avatarUrl} alt={setup.user?.username}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                              onError={e => e.target.style.display = 'none'} />
+                          ) : (
+                            setup.user?.username?.[0]?.toUpperCase() || 'U'
+                          )}
+                        </div>
                         <div>
                           <div className="setup-author">
                             {setup.user?.username || 'User'}
                           </div>
                           <div className="setup-date">
-                            {new Date(setup.createdAt).toLocaleDateString()}
+                            {formatDate(setup.createdAt)}
                           </div>
                         </div>
                       </div>
@@ -619,19 +648,39 @@ export default function CommunityPage({ darkMode }) {
                   >
                     <div className="article-header">
                       <div className="user-info-compact">
-                        <div className="avatar-small">{article.authorUsername?.[0]?.toUpperCase() || 'U'}</div>
+                        <div className="avatar-small" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {article.authorAvatarUrl ? (
+                            <img src={article.authorAvatarUrl} alt={article.authorUsername}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                              onError={e => e.target.style.display = 'none'} />
+                          ) : (
+                            article.authorUsername?.[0]?.toUpperCase() || 'U'
+                          )}
+                        </div>
                         <div>
                           <div className="setup-author">
                             {article.authorUsername || 'User'}
                           </div>
                           <div className="setup-date">
-                            {new Date(article.createdAt).toLocaleDateString()}
+                            {formatDate(article.createdAt)}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     <h3 className="article-title">{article.title}</h3>
+
+                    {article.imageUrl && (
+                      <div style={{ margin: '8px 0', borderRadius: '8px', overflow: 'hidden', maxHeight: '180px' }}>
+                        <img
+                          src={article.imageUrl}
+                          alt={article.title}
+                          style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
+                          onError={e => e.target.style.display = 'none'}
+                        />
+                      </div>
+                    )}
+
                     <p className="article-content">{article.content}</p>
 
                     {article.tags && article.tags.length > 0 && (
@@ -708,7 +757,13 @@ export default function CommunityPage({ darkMode }) {
               <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
 
               <div className="sidebar-section user-profile" onClick={() => { navigate('/profile'); setDrawerOpen(false); }}>
-                <div className="user-avatar">{user?.username?.charAt(0)?.toUpperCase() || 'U'}</div>
+                <div className="user-avatar" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {user?.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
+                  ) : (
+                    user?.username?.charAt(0)?.toUpperCase() || 'U'
+                  )}
+                </div>
                 <div className="user-info">
                   <div className="user-name">{user?.username || 'User'}</div>
                   <div className="user-stats">

@@ -19,12 +19,11 @@ public class ArticleResponse {
     private String imageUrl;
     private String authorUsername;
     private Long authorId;
+    private String authorAvatarUrl;
     private List<Long> deviceIds;
     private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    // Inline counters (2026-04-27, same fix as SetupResponse).
     @lombok.Builder.Default private Long likeCount = 0L;
     @lombok.Builder.Default private Long commentCount = 0L;
 }

@@ -73,7 +73,17 @@ export default function ProfilePage({ darkMode }) {
         <div className="header-content">
           <div className="user-intro">
             <div className="user-avatar-large">
-              {user?.username?.charAt(0)?.toUpperCase() || "U"}
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt="Profile"
+                  className="user-avatar-img"
+                  onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+                />
+              ) : null}
+              <span className="user-avatar-fallback" style={user?.avatarUrl ? { display: "none" } : {}}>
+                {user?.username?.charAt(0)?.toUpperCase() || "U"}
+              </span>
             </div>
             <div className="user-info-section">
               <h1 className="user-name">{user?.username || "Loading…"}</h1>

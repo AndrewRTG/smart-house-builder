@@ -5,7 +5,55 @@ import './CommentsSection.css';
 
 const API_BASE = 'http://localhost:20025/api/v1';
 
-// Recursive comment node component
+function parseDate(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const [y, m, d, h = 0, min = 0] = value;
+    return new Date(y, m - 1, d, h, min);
+  }
+  return new Date(value);
+}
+
+function formatRelativeDate(value) {
+  const date = parseDate(value);
+  if (!date || isNaN(date.getTime())) return 'recent';
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function CommentAvatar({ comment }) {
+  const isDeleted = comment.deleted;
+  const initial = isDeleted ? 'U' : (comment.username?.charAt(0)?.toUpperCase() || 'U');
+
+  return (
+    <div className={`comment-avatar ${isDeleted ? 'deleted' : ''}`}
+      style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {!isDeleted && comment.avatarUrl ? (
+        <img
+          src={comment.avatarUrl}
+          alt={comment.username}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+          onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+        />
+      ) : null}
+      <span style={{
+        display: (!isDeleted && comment.avatarUrl) ? 'none' : 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+      }}>
+        {initial}
+      </span>
+    </div>
+  );
+}
+
 function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete, onReplySubmit }) {
   const { showError } = useError();
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -53,19 +101,6 @@ function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete,
     }
   };
 
-  const formatRelativeDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-
-    return date.toLocaleDateString();
-  };
-
   return (
     <div
       className={`comment-node ${depth > 0 ? 'reply-node' : 'root-node'}`}
@@ -79,20 +114,12 @@ function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete,
       >
         <div className="comment-header">
           <div className="comment-user">
-            <div className={`comment-avatar ${comment.deleted ? 'deleted' : ''}`}>
-              {/* For a [deleted] stub the server sends username="User", so
-                  charAt(0) produces "U" — exactly the "U in a grey circle"
-                  the design calls for. No special-case in the JSX. */}
-              {comment.username?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
+            <CommentAvatar comment={comment} />
             <div className="comment-info">
               <div className="comment-username">{comment.username}</div>
               <div className="comment-date">{formatRelativeDate(comment.createdAt)}</div>
             </div>
           </div>
-          {/* Red trash icon, hover-only visibility via CSS. Only shown for
-              the author's own live comments — the server already refuses to
-              return isOwner=true for deleted stubs. */}
           {comment.isOwner && !comment.deleted && (
             <button
               className="delete-btn"
@@ -107,8 +134,6 @@ function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete,
 
         <p className={`comment-content ${comment.deleted ? 'deleted' : ''}`}>{comment.content}</p>
 
-        {/* Replying to a [deleted] stub is still allowed — standard forum
-            behavior — because the thread underneath might still be active. */}
         <button
           className="reply-btn"
           onClick={() => setShowReplyForm(!showReplyForm)}
@@ -148,7 +173,6 @@ function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete,
         )}
       </div>
 
-      {/* Render replies recursively */}
       {comment.replies && comment.replies.length > 0 && (
         <div className="comment-replies">
           {comment.replies.map((reply) => (
@@ -180,18 +204,6 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
     fetchComments();
   }, [targetId, targetType, page]);
 
-  /**
-   * Deep-link handler: when the Activity page sends the user here with
-   * ?comment=<id>, scroll to that comment and flash the highlight class for
-   * a few seconds so they can see which one they came for.
-   *
-   * We run this after `comments` changes — that's the moment the DOM nodes
-   * with id="comment-<id>" actually exist. We also defer inside a rAF so the
-   * browser has laid out the tree before we measure/scroll.
-   *
-   * The highlight class is removed after 3s (matches the keyframe duration
-   * in CommentsSection.css) so re-focusing the tab doesn't re-animate.
-   */
   useEffect(() => {
     if (!highlightCommentId || comments.length === 0) return;
 
@@ -200,14 +212,9 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
       if (!el) return;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('comment-highlight');
-      // Strip the class after the animation finishes; otherwise a later
-      // re-render won't re-trigger it (CSS animations only run on class add).
       const timeout = setTimeout(() => {
         el.classList.remove('comment-highlight');
       }, 3200);
-      // Return a cleanup that the outer effect can't really use (since we're
-      // inside rAF), but stash it so hot-reload doesn't leave dangling
-      // timeouts.
       el.dataset.highlightTimeout = String(timeout);
     });
 
@@ -276,27 +283,16 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
 
     try {
       const token = localStorage.getItem('accessToken');
-      // CommentController exposes a top-level DELETE /api/v1/comments/{id}
-      // (verified against CommentController.java line 64). It does NOT
-      // expose /setups/{id}/comments/{cid} — that route doesn't exist.
-      // I previously swapped to the nested form based on a stale spec;
-      // that's what was making delete silently fail. Reverted.
       const response = await fetch(`${API_BASE}/comments/${commentId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
 
       if (response.ok) {
         fetchComments();
       } else {
-        // Surface the server's actual error so the next debugging round
-        // doesn't have to read the network tab to find out what went wrong.
         const data = await response.json().catch(() => null);
-        const msg = data?.message
-          || data?.error
-          || `Failed to delete comment (HTTP ${response.status})`;
+        const msg = data?.message || data?.error || `Failed to delete comment (HTTP ${response.status})`;
         showError(msg);
       }
     } catch (error) {
@@ -306,9 +302,8 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
   };
 
   const commentCount = comments.reduce((count, comment) => {
-    const countReplies = (replies) => {
-      return replies.reduce((acc, reply) => acc + 1 + countReplies(reply.replies || []), 0);
-    };
+    const countReplies = (replies) =>
+      replies.reduce((acc, reply) => acc + 1 + countReplies(reply.replies || []), 0);
     return count + 1 + countReplies(comment.replies || []);
   }, 0);
 
@@ -316,7 +311,6 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
     <div className="comments-section">
       <h3 className="comments-title">Comments ({commentCount})</h3>
 
-      {/* Top-level Comment Form */}
       {user ? (
         <form onSubmit={handleAddComment} className="comment-form">
           <textarea
@@ -336,7 +330,6 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
         </div>
       )}
 
-      {/* Comments Tree */}
       <div className="comments-list">
         {loading ? (
           <p className="no-comments">Loading comments...</p>

@@ -26,8 +26,6 @@ import java.util.List;
 public class ArticleController {
     private final ArticleService articleService;
     private final ObjectMapper objectMapper;
-    // Same inline-counter pattern as SetupController. See SetupController.toResponse
-    // for the rationale (kills the CommunityPage N+1 fanout).
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
 
@@ -87,6 +85,7 @@ public class ArticleController {
                 .imageUrl(article.getImageUrl())
                 .authorUsername(article.getUser().getUsername())
                 .authorId(article.getUser().getId())
+                .authorAvatarUrl(article.getUser().getAvatarUrl())
                 .deviceIds(deserializeDeviceIds(article.getDeviceIds()))
                 .tags(deserializeTags(article.getTags()))
                 .createdAt(article.getCreatedAt())

@@ -30,6 +30,7 @@ public class AuthService {
     private final VerificationTokenService verificationTokenService;
     private final EmailService emailService;
     private final MfaService mfaService;
+    private final S3Service s3Service;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -341,6 +342,9 @@ public class AuthService {
     public UserProfileResponse updateAvatar(String email, String avatarUrl) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
+
+        // Dacă userul înlocuiește avatarul, șterge imaginea veche din S3.
+        s3Service.deleteByUrl(user.getAvatarUrl());
 
         user.setAvatarUrl(avatarUrl);
         userRepository.save(user);

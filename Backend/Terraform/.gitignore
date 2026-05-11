@@ -1,0 +1,12 @@
+# State Terraform — conține credențiale, nu se commitează niciodată
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
+# Variabile locale cu valori reale
+terraform.tfvars
+
+# Fișiere temporare
+*.tfplan
+crash.log

@@ -111,9 +111,6 @@ public class CommentService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
 
-        // If the comment is already a [deleted] stub, its user reference is
-        // conceptually null — nobody should be "re-deleting" it. Also reject
-        // if the caller isn't the author.
         if (comment.isDeleted()) {
             throw new RuntimeException("Comment already deleted");
         }
@@ -121,25 +118,6 @@ public class CommentService {
             throw new RuntimeException("Only comment author can delete");
         }
 
-        // Applies to both setup AND article comments — the Comment entity is
-        // shared, so one code path covers every commentable target.
-        //
-        // Branching rule (per design decision):
-        //   - Comment HAS replies -> soft-delete as "[deleted]" stub so the
-        //     thread structure under it stays intact. Content is wiped for
-        //     privacy, user ref is cleared so we emit a generic "User".
-        //   - Comment has NO replies -> hard-delete. A leaf "[deleted]"
-        //     gravestone would just be noise. Also, after removing this
-        //     leaf, if its parent is itself a [deleted] stub whose last
-        //     child we just removed, we can clean the parent up too, and
-        //     keep walking up the chain until we hit a real comment or run
-        //     out of ancestors.
-        //
-        // We count children with a fresh DB query rather than reading
-        // comment.getReplies() because we removed CascadeType.ALL from the
-        // entity (see Comment.java) and the in-memory list is now lazy and
-        // sometimes stale within a transaction. The repository's
-        // countByParentCommentId is the source of truth.
         boolean hasReplies = commentRepository.countByParentCommentId(commentId) > 0;
 
         if (hasReplies) {
@@ -156,19 +134,6 @@ public class CommentService {
         }
     }
 
-    /**
-     * Walk up the thread from a just-deleted comment. If the parent is itself
-     * a "[deleted]" stub AND its last remaining child was the one we just
-     * removed, the stub has nothing left to preserve — we can hard-delete it
-     * too, then repeat with its grandparent.
-     *
-     * The loop terminates when we hit a non-deleted comment, a deleted stub
-     * that still has other children, or the root (parent == null).
-     *
-     * We count children via a fresh query instead of the in-memory collection
-     * because after deleting a child, Hibernate's parent.replies list may
-     * still contain the removed entity in this transaction's context.
-     */
     private void cleanupDeletedAncestors(Comment ancestor) {
         while (ancestor != null && ancestor.isDeleted()) {
             long remainingChildren = commentRepository.countByParentCommentId(ancestor.getId());
@@ -181,44 +146,19 @@ public class CommentService {
         }
     }
 
-    /**
-     * Hard-delete every comment attached to a setup, regardless of soft-deleted
-     * state. Used by SetupService.deleteSetup as a replacement for the
-     * implicit JPA cascade we removed from Comment.replies (see Comment.java
-     * for the rationale).
-     *
-     * Algorithm: post-order DFS from each root. We delete leaves first, then
-     * their parents, so the self-FK parent_comment_id never points at a
-     * non-existent row mid-transaction. A bulk JPQL delete won't work for the
-     * same reason — Postgres evaluates FKs row by row.
-     */
     @Transactional
     public void deleteCommentTreeForSetup(Long setupId) {
         commentRepository.findBySetupIdAndParentCommentIsNull(setupId)
                 .forEach(this::deleteSubtree);
     }
 
-    /**
-     * Twin of deleteCommentTreeForSetup but for an article.
-     * ArticleService used to leave comments dangling on article delete (the
-     * row's FK to articles is non-nullable, so an article delete would 500
-     * once the article had even one comment); calling this from
-     * ArticleService.deleteArticle fixes that.
-     */
     @Transactional
     public void deleteCommentTreeForArticle(Long articleId) {
         commentRepository.findByArticleIdAndParentCommentIsNull(articleId)
                 .forEach(this::deleteSubtree);
     }
 
-    /**
-     * Post-order recursive delete. Reads child rows from the DB (not the
-     * possibly-stale in-memory replies collection, which we no longer
-     * cascade-fetch).
-     */
     private void deleteSubtree(Comment node) {
-        // Snapshot children before we start deleting, otherwise iterating a
-        // collection that's mutating under us is undefined behaviour.
         List<Comment> children = new ArrayList<>(
                 commentRepository.findByParentCommentId(node.getId()));
         for (Comment child : children) {
@@ -231,12 +171,9 @@ public class CommentService {
     public Page<CommentResponse> getSetupComments(Long setupId, Pageable pageable, String email) {
         try {
             Long userId = email != null ? getUserIdOrNull(email) : null;
-            final Long finalUserId = userId;
-
             return commentRepository.findBySetupIdAndParentCommentIsNull(setupId, pageable)
-                    .map(comment -> toResponseTree(comment, finalUserId));
+                    .map(comment -> toResponseTree(comment, userId));
         } catch (Exception e) {
-            // Surface the real cause in the backend log instead of a silent 500.
             log.error("getSetupComments failed for setupId={}, email={}: {}", setupId, email, e.toString(), e);
             throw e;
         }
@@ -246,10 +183,8 @@ public class CommentService {
     public Page<CommentResponse> getArticleComments(Long articleId, Pageable pageable, String email) {
         try {
             Long userId = email != null ? getUserIdOrNull(email) : null;
-            final Long finalUserId = userId;
-
             return commentRepository.findByArticleIdAndParentCommentIsNull(articleId, pageable)
-                    .map(comment -> toResponseTree(comment, finalUserId));
+                    .map(comment -> toResponseTree(comment, userId));
         } catch (Exception e) {
             log.error("getArticleComments failed for articleId={}, email={}: {}", articleId, email, e.toString(), e);
             throw e;
@@ -272,15 +207,12 @@ public class CommentService {
                     .collect(Collectors.toList());
         }
 
-        // Soft-deleted stub: emit generic "User" placeholder data so no frontend
-        // logic has to know what "deleted" means at the rendering layer. The
-        // avatar comes out as a grey "U" because username="User" -> first char
-        // is "U", which the existing CommentsSection avatar code already does.
         if (comment.isDeleted()) {
             return CommentResponse.builder()
                     .id(comment.getId())
                     .userId(null)
                     .username("User")
+                    .avatarUrl(null)
                     .content("[deleted]")
                     .createdAt(comment.getCreatedAt())
                     .isOwner(false)
@@ -290,17 +222,16 @@ public class CommentService {
                     .build();
         }
 
-        // Defensive null-safety: if a comment somehow has a null user without
-        // being marked deleted (orphaned FK, bad seed data), we still surface
-        // a placeholder instead of NPE-ing into a 500.
         User author = comment.getUser();
         Long authorId = author != null ? author.getId() : null;
         String authorName = author != null ? author.getUsername() : "User";
+        String authorAvatar = author != null ? author.getAvatarUrl() : null;
 
         return CommentResponse.builder()
                 .id(comment.getId())
                 .userId(authorId)
                 .username(authorName)
+                .avatarUrl(authorAvatar)
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())
                 .isOwner(currentUserId != null && authorId != null && currentUserId.equals(authorId))
@@ -316,11 +247,6 @@ public class CommentService {
                 .getId();
     }
 
-    /**
-     * Like getUserId but returns null when the email doesn't map to a user (e.g. the
-     * JWT filter authenticated a token whose user was since deleted). Lets the
-     * "fetch comments" flow keep working for everyone else even when that happens.
-     */
     private Long getUserIdOrNull(String email) {
         return userRepository.findByEmail(email).map(User::getId).orElse(null);
     }

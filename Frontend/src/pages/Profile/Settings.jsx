@@ -7,9 +7,7 @@ import "./Settings.css";
 
 const API_BASE = "http://localhost:20025/api/v1";
 
-// Mock upload until Florentina's POST /api/v1/images/upload is live.
-// When her endpoint exists: flip to false and the real authFetch path runs.
-const MOCK_UPLOAD = true;
+const MOCK_UPLOAD = false;
 
 export default function Settings({ profile }) {
   const navigate = useNavigate();
@@ -289,7 +287,7 @@ export default function Settings({ profile }) {
       } else {
         const formData = new FormData();
         formData.append("file", file);
-        const uploadRes = await authFetch(`${API_BASE}/images/upload`, {
+        const uploadRes = await authFetch(`${API_BASE}/images/avatars`, {
           method: "POST",
           body: formData,
         });
@@ -377,11 +375,6 @@ export default function Settings({ profile }) {
               onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
               hidden
             />
-            {MOCK_UPLOAD && (
-              <p className="avatar-mock-note">
-                Preview only — real upload pending S3 endpoint.
-              </p>
-            )}
           </div>
         </div>
       </div>

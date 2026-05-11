@@ -2,40 +2,51 @@ package gr.A4.SmartHouseBuilder.controller;
 
 import gr.A4.SmartHouseBuilder.entity.Notification;
 import gr.A4.SmartHouseBuilder.service.NotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
-@CrossOrigin(origins = "*") // Permite frontend-ului să acceseze API-ul
+@RequiredArgsConstructor
+
 public class NotificationController {
 
     private final NotificationService notificationService;
 
-    @Autowired
-    public NotificationController(NotificationService notificationService) {
-        this.notificationService = notificationService;
+
+    @GetMapping
+    public ResponseEntity<Page<Notification>> getMyNotifications(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+
+        String username = userDetails.getUsername();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        return ResponseEntity.ok(notificationService.getUserNotifications(username, pageable));
     }
-
-
-    @GetMapping("/{username}")
-    public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable String username) {
-        return ResponseEntity.ok(notificationService.getAllUserNotifications(username));
-    }
-
-
-    @GetMapping("/{username}/unread")
-    public ResponseEntity<List<Notification>> getUnreadNotifications(@PathVariable String username) {
-        return ResponseEntity.ok(notificationService.getUnreadUserNotifications(username));
-    }
-
 
     @PatchMapping("/{id}/read")
-    public ResponseEntity<Void> markNotificationAsRead(@PathVariable Long id) {
-        notificationService.markAsRead(id);
+    public ResponseEntity<Void> markAsRead(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+
+        notificationService.markAsReadIfOwner(id, userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markAllAsRead(@AuthenticationPrincipal UserDetails userDetails) {
+        notificationService.markAllAsRead(userDetails.getUsername());
         return ResponseEntity.ok().build();
     }
 }

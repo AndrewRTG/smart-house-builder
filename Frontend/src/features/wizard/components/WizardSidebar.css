@@ -11,7 +11,7 @@
     --sh-t: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dark-sidebar-active {
+.dark-mode .wizard-sidebar {
     --sh-bg: #1e2535;
     --sh-text: #E8EEFA;
     --sh-accent: #507ADC;
@@ -31,8 +31,8 @@
     color: var(--sh-text);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     margin: 15px;
-    max-height: calc(100vh - 30px); /* Îl limitează la înălțimea ecranului minus margini */
-    transition: all var(--sh-t);
+    max-height: calc(100vh - 30px);
+    transition: background-color var(--sh-t), color var(--sh-t), box-shadow var(--sh-t);
 }
 
 .sb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -120,4 +120,78 @@
     font-size: 0.75rem; width: 100%; display: flex;
     align-items: center; justify-content: center; gap: 8px; cursor: pointer;
     margin-top: 10px;
+}
+
+.wizard-sidebar .price-slider-wrapper {
+    position: relative;
+    width: 100%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.wizard-sidebar .slider-track-base {
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    background-color: var(--divider-color);
+    border-radius: 2px;
+    z-index: 1;
+}
+
+.wizard-sidebar .slider-range-highlight {
+    position: absolute;
+    height: 4px;
+    background-color: var(--btn-text);
+    border-radius: 2px;
+    z-index: 2;
+}
+
+.wizard-sidebar .thumb {
+    position: absolute;
+    width: 100%;
+    background: none;
+    pointer-events: none;
+    appearance: none;
+    -webkit-appearance: none;
+    height: 0;
+    z-index: 3;
+    outline: none;
+}
+
+.wizard-sidebar .thumb::-webkit-slider-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 6px;
+    background: var(--btn-text);
+    cursor: pointer;
+    pointer-events: auto;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 2px solid var(--bg-main);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.wizard-sidebar .thumb::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 6px;
+    background: var(--btn-text);
+    cursor: pointer;
+    pointer-events: auto;
+    border: 2px solid var(--bg-main);
+}
+
+.wizard-sidebar .thumb::-webkit-slider-runnable-track {
+    background: transparent;
+    border: none;
+}
+.wizard-sidebar .thumb::-moz-range-track {
+    background: transparent;
+    border: none;
+}
+
+.wizard-sidebar .thumb-left {
+    z-index: 4;
 }

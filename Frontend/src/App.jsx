@@ -20,6 +20,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProductsPage from "./pages/CatalogPage";
+import './App.css';
 
 const BuilderPage = lazy(() => import("./pages/BuilderPage"));
 

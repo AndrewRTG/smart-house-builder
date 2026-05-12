@@ -218,7 +218,6 @@ public class DeviceSuggestionAlgorithmService {
 
                     HardwareDevice candidate = queue.peek();
                     assert candidate != null;
-                    assert candidate != null;
                     double price = candidate.getPrice() != null ? candidate.getPrice() : 0.0;
 
                     if (price <= 0) {

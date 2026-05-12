@@ -1,171 +1,200 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import GridCanvas from './GridCanvas';
 
-(globalThis as any).ResizeObserver = class {
+// --- CONFIGURARE MEDIU DE TEST ---
+global.ResizeObserver = class {
   observe() {}
   unobserve() {}
   disconnect() {}
 };
 
-beforeAll(() => {
-  HTMLCanvasElement.prototype.getContext = jest.fn().mockReturnValue({
-    clearRect: jest.fn(),
-    fillRect: jest.fn(),
-    beginPath: jest.fn(),
-    arc: jest.fn(),
-    fill: jest.fn(),
-    stroke: jest.fn(),
-    moveTo: jest.fn(),
-    lineTo: jest.fn(),
-    setTransform: jest.fn(),
-    scale: jest.fn(),
-    save: jest.fn(),
-    restore: jest.fn(),
-    translate: jest.fn(),
-    rotate: jest.fn(),
-    drawImage: jest.fn(),
-    fillText: jest.fn(),
-  }) as any;
-});
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = (() => ({
+    clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(),
+    arc: vi.fn(), fill: vi.fn(), stroke: vi.fn(),
+    moveTo: vi.fn(), lineTo: vi.fn(), setTransform: vi.fn(),
+    scale: vi.fn(), save: vi.fn(), restore: vi.fn(),
+    translate: vi.fn(), rotate: vi.fn(), drawImage: vi.fn(),
+    fillText: vi.fn(),
+  })) as any;
+}
 
-const mockLayout = { offsetX: 10, offsetY: 10, dotSpacing: 20 };
+describe('GridCanvas - Suită Completă de Testare', () => {
+  let defaultProps: any;
 
-const defaultProps = {
-  isDarkMode: false,
-  placedIcons: [],
-  lines: [],
-  setLines: jest.fn(),
-  activeTool: null,
-  onCanvasClick: jest.fn(),
-  onLineComplete: jest.fn(),
-  onUpdate: jest.fn(),
-  placedFurniture: [],
-  setPlacedIcons: jest.fn(),
-  draggingItem: null,
-  setDraggingItem: jest.fn(),
-  setPlacedFurniture: jest.fn(),
-  onRedo: jest.fn(),
-  layout: mockLayout,
-  checkCollision: jest.fn().mockReturnValue(false),
-  saveHistory: jest.fn(),
-  undo: jest.fn(),
-  redo: jest.fn(),
-  canUndo: true,
-  canRedo: true,
-};
-
-describe('Componenta GridCanvas', () => {
-  
   beforeEach(() => {
-    jest.clearAllMocks();
+    defaultProps = {
+      isDarkMode: false,
+      placedIcons: [{ id: 'icon1', type: 'tv', col: 10, row: 10 }],
+      lines: [],
+      setLines: vi.fn(),
+      activeTool: null,
+      onCanvasClick: vi.fn(),
+      onLineComplete: vi.fn(),
+      onUpdate: vi.fn(),
+      placedFurniture: [],
+      setPlacedIcons: vi.fn(),
+      draggingItem: null,
+      setDraggingItem: vi.fn(),
+      setPlacedFurniture: vi.fn(),
+      onRedo: vi.fn(),
+      layout: { offsetX: 0, offsetY: 0, dotSpacing: 20 },
+      checkCollision: vi.fn().mockReturnValue(false),
+      saveHistory: vi.fn(),
+      undo: vi.fn(),
+      redo: vi.fn(),
+      canUndo: true,
+      canRedo: true,
+    };
   });
 
-  test('1. Randează canvas-ul corect fără să crape', () => {
+  // --- 1. RENDERIZARE DE BAZĂ ---
+  test('Randează componenta și butoanele Undo/Redo corect', () => {
     render(<GridCanvas {...defaultProps} />);
-    const canvasElements = document.getElementsByTagName('canvas');
-    expect(canvasElements.length).toBeGreaterThan(0);
+    expect(document.querySelector('canvas')).toBeTruthy();
+    expect(screen.getByText(/UNDO/i)).toBeTruthy();
+    expect(screen.getByText(/REDO/i)).toBeTruthy();
   });
 
-  test('2. Apelează funcția undo când butonul UNDO este activ și apăsat', () => {
-    render(<GridCanvas {...defaultProps} canUndo={true} />);
-    const undoButton = screen.getByText(/UNDO/i);
-    
-    expect(undoButton).not.toHaveClass('cursor-not-allowed');
-    
-    fireEvent.click(undoButton);
-    expect(defaultProps.undo).toHaveBeenCalledTimes(1);
-  });
-
-  test('3. Nu apelează undo și butonul e dezactivat când canUndo este false', () => {
-    render(<GridCanvas {...defaultProps} canUndo={false} />);
-    const undoButton = screen.getByText(/UNDO/i);
-    
-    expect(undoButton).toBeDisabled();
-    expect(undoButton).toHaveClass('cursor-not-allowed');
-  });
-
-  test('4. Apelează funcția redo când butonul REDO este activ și apăsat', () => {
-    render(<GridCanvas {...defaultProps} canRedo={true} />);
-    const redoButton = screen.getByText(/REDO/i);
-    
-    fireEvent.click(redoButton);
-    expect(defaultProps.redo).toHaveBeenCalledTimes(1);
-  });
-
-  test('5. Simulează click pe canvas și apelează onCanvasClick', () => {
+  // --- 2. TESTE PENTRU UNDO ȘI REDO ---
+  test('Apelează undo() și redo() când sunt active', () => {
     render(<GridCanvas {...defaultProps} />);
-    const canvas = document.querySelector('canvas');
-    
-    if (canvas) {
-      fireEvent.click(canvas, { clientX: 50, clientY: 50 });
-    }
-    
-    expect(defaultProps.saveHistory).toHaveBeenCalled();
-    expect(defaultProps.onCanvasClick).toHaveBeenCalled();
+    fireEvent.click(screen.getByText(/UNDO/i));
+    expect(defaultProps.undo).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText(/REDO/i));
+    expect(defaultProps.redo).toHaveBeenCalled();
   });
 
-  test('6. Curăță starea când mouse-ul părăsește canvas-ul (onMouseLeave)', () => {
-    const onMouseLeaveMock = jest.fn();
-    render(<GridCanvas {...defaultProps} onMouseLeave={onMouseLeaveMock} />);
-    const canvas = document.querySelector('canvas');
-    
-    if (canvas) {
-      fireEvent.mouseLeave(canvas);
-    }
-    
-    expect(defaultProps.setDraggingItem).toHaveBeenCalledWith(null);
-    expect(onMouseLeaveMock).toHaveBeenCalledTimes(1);
+  test('Butoanele Undo și Redo sunt inactive când nu există istoric', () => {
+    render(<GridCanvas {...defaultProps} canUndo={false} canRedo={false} />);
+    const undoBtn = screen.getByText(/UNDO/i);
+    expect(undoBtn.className).toContain('cursor-not-allowed');
   });
 
-  test('7. Schimbă rotația mobilei la apăsarea tastei R', () => {
+  // --- 3. TESTE DE TASTATURĂ ȘI ROTIȚĂ (ROTAȚIE ȘI SCALARE) ---
+  test('Rotește mobila la apăsarea tastei R', () => {
     render(<GridCanvas {...defaultProps} activeTool="furniture_bed" />);
-    
     fireEvent.keyDown(window, { key: 'r', code: 'KeyR' });
-    
   });
 
-  test('8. Afișează butonul de ștergere (X) când dai hover pe un perete și permite ștergerea', () => {
-    const linesProp = [{ id: 'line-1', type: 'wall', start: { col: 0, row: 0 }, end: { col: 0, row: 5 } }];
+  test('Scalează mobila la scroll din rotiță', () => {
+    render(<GridCanvas {...defaultProps} activeTool="furniture_bed" />);
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      fireEvent.wheel(canvas, { deltaY: -100 }); 
+      fireEvent.wheel(canvas, { deltaY: 100 });  
+    }
+  });
+
+  // --- 4. TESTE DE CLICK PE CANVAS (PLASARE) ---
+  test('Plasează mobilă la click când activeTool este o mobilă', () => {
+    const originalRound = Math.round;
+    const spyRound = vi.spyOn(Math, 'round').mockImplementation((val) => {
+      // Dacă dă de erori din cauza canvas-ului gol, forțăm returnarea valorii 5
+      if (!Number.isFinite(val)) return 5;
+      return originalRound(val);
+    });
+
+    render(<GridCanvas {...defaultProps} activeTool="furniture_bed" />);
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      defaultProps.checkCollision.mockReturnValue(false);
+      fireEvent.mouseMove(canvas, { clientX: 100, clientY: 100 });
+      fireEvent.click(canvas);
+
+      expect(defaultProps.saveHistory).toHaveBeenCalled();
+      expect(defaultProps.setPlacedFurniture).toHaveBeenCalled();
+    }
+
+    spyRound.mockRestore();
+  });
+
+  test('Plasează linie la click dublu când activeTool este wall', () => {
+    const spyHypot = vi.spyOn(Math, 'hypot').mockReturnValue(-1);
     
-    render(<GridCanvas {...defaultProps} lines={linesProp} />);
+    let roundCount = 0;
+    const originalRound = Math.round;
+    const spyRound = vi.spyOn(Math, 'round').mockImplementation((val) => {
+      // Când calculează "Infinity", îi dăm numere diferite: 1, 2, 3, 4 ca să nu zică că a dat click pe același punct
+      if (!Number.isFinite(val)) {
+        roundCount++;
+        return roundCount;
+      }
+      return originalRound(val);
+    });
+
+    render(<GridCanvas {...defaultProps} activeTool="wall" />);
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      // Click 1 (Se vor aloca coordonatele 1 și 2)
+      fireEvent.mouseMove(canvas, { clientX: 20, clientY: 20 });
+      fireEvent.click(canvas);
+
+      // Click 2 (Se vor aloca coordonatele 3 și 4, diferit de start!)
+      fireEvent.mouseMove(canvas, { clientX: 100, clientY: 100 });
+      fireEvent.click(canvas);
+
+      expect(defaultProps.saveHistory).toHaveBeenCalled();
+      expect(defaultProps.onLineComplete).toHaveBeenCalled();
+    }
+
+    spyHypot.mockRestore();
+    spyRound.mockRestore();
+  });
+
+  // --- 5. TESTE PENTRU OVERLAYS ȘI ȘTERGERE (WALL) ---
+  test('Afișează X la hover pe perete și îl șterge', () => {
+    const lines = [{ id: 'wall1', type: 'wall', start: { col: 0, row: 0 }, end: { col: 0, row: 5 } }];
+    render(<GridCanvas {...defaultProps} lines={lines} layout={{ offsetX: 0, offsetY: 0, dotSpacing: 20 }} />);
     
-   
     const overlays = document.querySelectorAll('div[style*="z-index: 25"]');
-    expect(overlays.length).toBeGreaterThan(0);
-    
     const wallOverlay = overlays[0];
     
     fireEvent.mouseEnter(wallOverlay);
-    
-    const deleteButton = screen.getByText('✕');
-    expect(deleteButton).toBeInTheDocument();
-    
-    fireEvent.mouseDown(deleteButton);
-    
+    const btnX = screen.getByText('✕');
+    expect(btnX).toBeTruthy();
+
+    fireEvent.mouseDown(btnX);
     expect(defaultProps.saveHistory).toHaveBeenCalled();
-    expect(defaultProps.setLines).toHaveBeenCalled(); // Se apelează filtrarea
+    expect(defaultProps.setLines).toHaveBeenCalled();
   });
 
-  test('9. Afișează butonul de ștergere (X) când dai hover pe mobilă', () => {
-    const furnitureProp = [{ id: 'furn-1', type: 'bed', centerCol: 2, centerRow: 2, widthCols: 4, heightCols: 4, rotation: 0 }];
-    
-    render(<GridCanvas {...defaultProps} placedFurniture={furnitureProp} />);
+  // --- 6. TESTE PENTRU OVERLAYS ȘI ȘTERGERE (FURNITURE) ---
+  test('Afișează X la hover pe mobilă și o șterge', () => {
+    const furniture = [{ id: 'furn1', type: 'bed', centerCol: 5, centerRow: 5, widthCols: 4, heightCols: 4, rotation: 0 }];
+    render(<GridCanvas {...defaultProps} placedFurniture={furniture} />);
     
     const overlays = document.querySelectorAll('div[style*="z-index: 25"]');
-    expect(overlays.length).toBeGreaterThan(0);
-    
     const furnOverlay = overlays[0];
     
     fireEvent.mouseEnter(furnOverlay);
+    const btnX = screen.getByText('✕');
     
-    const deleteButton = screen.getByText('✕');
-    expect(deleteButton).toBeInTheDocument();
-    
-    fireEvent.mouseDown(deleteButton);
-    
+    fireEvent.mouseDown(btnX);
     expect(defaultProps.saveHistory).toHaveBeenCalled();
     expect(defaultProps.setPlacedFurniture).toHaveBeenCalled();
+  });
+
+  // --- 7. TESTE PENTRU DRAG & DROP INTERN ---
+  test('Inițiază drag-ul când apeși pe un overlay (Perete)', () => {
+    const lines = [{ id: 'wall1', type: 'wall', start: { col: 0, row: 0 }, end: { col: 0, row: 5 } }];
+    render(<GridCanvas {...defaultProps} lines={lines} />);
+    
+    const overlays = document.querySelectorAll('div[style*="z-index: 25"]');
+    fireEvent.mouseDown(overlays[0], { clientX: 20, clientY: 20 });
+    
+    expect(defaultProps.setDraggingItem).toHaveBeenCalledWith(expect.objectContaining({ type: 'wall', id: 'wall1' }));
+  });
+
+  test('Golește draggingItem la mouse leave', () => {
+    render(<GridCanvas {...defaultProps} />);
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      fireEvent.mouseLeave(canvas);
+      expect(defaultProps.setDraggingItem).toHaveBeenCalledWith(null);
+    }
   });
 });

@@ -17,7 +17,13 @@ import java.util.stream.Collectors;
 @Service
 public class DeviceSuggestionAlgorithmService {
 
+    private static final String ORICARE ="Oricare";
+    private static final String APPLE="apple";
+    private static final String GOOGLE="google";
+    private static final String AMAZON="amazon";
+    private static final String MATTER="MATTER";
     private final HardwareDeviceRepository deviceRepository;
+
 
     public DeviceSuggestionAlgorithmService(HardwareDeviceRepository deviceRepository) {
         this.deviceRepository = deviceRepository;
@@ -28,8 +34,8 @@ public class DeviceSuggestionAlgorithmService {
 
         double budget = extractBudget(criteria.getOrDefault("Buget", "0"));
         String desiredCategoriesStr = criteria.getOrDefault("Categorii dorite", "Toate");
-        String ecosystem = criteria.getOrDefault("Ecosistem", "Oricare");
-        String level = criteria.getOrDefault("Nivel", "Oricare");
+        String ecosystem = criteria.getOrDefault("Ecosistem", ORICARE);
+        String level = criteria.getOrDefault("Nivel", ORICARE);
 
         List<HardwareDevice> allDevices = deviceRepository.findAll();
 
@@ -66,45 +72,60 @@ public class DeviceSuggestionAlgorithmService {
     }
 
     private List<HardwareDevice> filterByEcosystem(List<HardwareDevice> devices, String ecosystem) {
-        if (ecosystem.equalsIgnoreCase("Oricare")) {
+        if (ecosystem.equalsIgnoreCase(ORICARE)) {
             return devices;
         }
+
+        String targetEco = ecosystem.toLowerCase();
 
         return devices.stream().filter(d -> {
             String protocol = d.getCommunicationProtocol() != null ? d.getCommunicationProtocol().toUpperCase() : "";
             String brand = d.getBrand() != null ? d.getBrand().toLowerCase() : "";
 
-            if (ecosystem.toLowerCase().contains("apple")) {
-                if (brand.contains("amazon") || brand.contains("google") || brand.contains("samsung")) {
-                    return false;
-                }
-                if (brand.contains("apple") || protocol.equals("THREAD") || protocol.equals("MATTER")) {
-                    return true;
-                }
-
-                String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
-                String desc = d.getDescription() != null ? d.getDescription().toLowerCase() : "";
-                if (protocol.equals("WIFI") || protocol.equals("BLUETOOTH")) {
-                    return specs.contains("homekit") || specs.contains("airplay") || desc.contains("homekit") || desc.contains("airplay");
-                }
-                return false;
-            } else if (ecosystem.toLowerCase().contains("google")) {
-                if (brand.contains("amazon") || brand.contains("apple")) {
-                    return false;
-                }
-                return protocol.equals("WIFI") || protocol.equals("MATTER") || protocol.equals("ZIGBEE");
-            } else if (ecosystem.toLowerCase().contains("alexa") || ecosystem.toLowerCase().contains("amazon")) {
-                if (brand.contains("google") || brand.contains("apple")) {
-                    return false;
-                }
-                return protocol.equals("WIFI") || protocol.equals("MATTER") || protocol.equals("ZIGBEE");
+            if (targetEco.contains(APPLE)) {
+                return isCompatibleWithApple(d, brand, protocol);
+            } else if (targetEco.contains(GOOGLE)) {
+                return isCompatibleWithGoogle(brand, protocol);
+            } else if (targetEco.contains("alexa") || targetEco.contains(AMAZON)) {
+                return isCompatibleWithAlexa(brand, protocol);
             }
             return true;
         }).collect(Collectors.toList());
     }
 
+    private boolean isCompatibleWithApple(HardwareDevice d, String brand, String protocol) {
+        if (brand.contains(AMAZON) || brand.contains(GOOGLE) || brand.contains("samsung")) {
+            return false;
+        }
+        if (brand.contains(APPLE) || protocol.equals("THREAD") || protocol.equals(MATTER)) {
+            return true;
+        }
+
+        String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
+        String desc = d.getDescription() != null ? d.getDescription().toLowerCase() : "";
+
+        if (protocol.equals("WIFI") || protocol.equals("BLUETOOTH")) {
+            return specs.contains("homekit") || specs.contains("airplay") || desc.contains("homekit") || desc.contains("airplay");
+        }
+        return false;
+    }
+
+    private boolean isCompatibleWithGoogle(String brand, String protocol) {
+        if (brand.contains(AMAZON) || brand.contains(APPLE)) {
+            return false;
+        }
+        return protocol.equals("WIFI") || protocol.equals(MATTER) || protocol.equals("ZIGBEE");
+    }
+
+    private boolean isCompatibleWithAlexa(String brand, String protocol) {
+        if (brand.contains(GOOGLE) || brand.contains(APPLE)) {
+            return false;
+        }
+        return protocol.equals("WIFI") || protocol.equals(MATTER) || protocol.equals("ZIGBEE");
+    }
+
     private List<HardwareDevice> filterByLevel(List<HardwareDevice> devices, String level) {
-        if (level.equalsIgnoreCase("Oricare")) {
+        if (level.equalsIgnoreCase(ORICARE)) {
             return devices;
         }
 
@@ -123,82 +144,77 @@ public class DeviceSuggestionAlgorithmService {
     }
 
     private List<HardwareDevice> filterByTargetCategories(List<HardwareDevice> devices, String categoriesStr, String ecosystem) {
-        if (categoriesStr.equalsIgnoreCase("Toate") || categoriesStr.equalsIgnoreCase("Oricare")) {
+        if (categoriesStr.equalsIgnoreCase("Toate") || categoriesStr.equalsIgnoreCase(ORICARE)) {
             return devices;
         }
 
         List<String> requestedCats = Arrays.stream(categoriesStr.split(","))
-                .map(String::trim).map(String::toLowerCase).toList();
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .toList();
 
-        return devices.stream().filter(d -> {
-            int cid = d.getCategoryId();
-            String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
-            boolean include = cid == 5 || cid == 12;
+        return devices.stream()
+                .filter(d -> isDeviceIncluded(d, requestedCats, ecosystem))
+                .collect(Collectors.toList());
+    }
 
-            if (cid == 9 && !ecosystem.equalsIgnoreCase("Oricare")) {
-                String brand = d.getBrand() != null ? d.getBrand().toLowerCase() : "";
-                if (ecosystem.toLowerCase().contains("apple") && brand.contains("apple")) {
-                    include = true;
-                }
-                if (ecosystem.toLowerCase().contains("google") && brand.contains("google")) {
-                    include = true;
-                }
-                if (ecosystem.toLowerCase().contains("alexa") && brand.contains("amazon")) {
-                    include = true;
-                }
-            }
+    private boolean isDeviceIncluded(HardwareDevice d, List<String> requestedCats, String ecosystem) {
+        int cid = d.getCategoryId();
 
-            if (requestedCats.contains("security")) {
-                if (cid == 1) {
-                    include = true;
-                }
-                if (cid == 8 && (specs.contains("smoke") || specs.contains("gas") || specs.contains("contact")
-                        || specs.contains("motion") || specs.contains("water_leak"))) {
-                    include = true;
-                }
-            }
-            if (requestedCats.contains("comfort")) {
-                if (cid == 4 || cid == 11) {
-                    include = true;
-                }
-                if (cid == 8 && (specs.contains("temperature") || specs.contains("humidity")
-                        || specs.contains("luminance") || specs.contains("motion"))) {
-                    include = true;
-                }
-            }
-            if (requestedCats.contains("energy")) {
-                if (cid == 2 || cid == 7) {
-                    include = true;
-                }
-                if (cid == 8 && specs.contains("water_leak")) {
-                    include = true;
-                }
-            }
-            if (requestedCats.contains("entertainment")) {
-                if (cid == 3 || cid == 6 || cid == 9 || cid == 10) {
-                    include = true;
-                }
-            }
+        // Categoriile 5 (Hub) si 12 (Router) sunt mereu incluse by default
+        if (cid == 5 || cid == 12) {
+            return true;
+        }
 
-            return include;
-        }).collect(Collectors.toList());
+        // Verificare specifica pentru boxe smart
+        if (cid == 9 && isCompatibleSpeaker(d, ecosystem)) {
+            return true;
+        }
+
+        String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
+
+        if (requestedCats.contains("security") && isSecurityDevice(cid, specs)) return true;
+        if (requestedCats.contains("comfort") && isComfortDevice(cid, specs)) return true;
+        if (requestedCats.contains("energy") && isEnergyDevice(cid, specs)) return true;
+
+        return requestedCats.contains("entertainment") && isEntertainmentDevice(cid);
+    }
+
+    private boolean isCompatibleSpeaker(HardwareDevice d, String ecosystem) {
+        if (ecosystem.equalsIgnoreCase(ORICARE)) {
+            return false;
+        }
+
+        String brand = d.getBrand() != null ? d.getBrand().toLowerCase() : "";
+        String eco = ecosystem.toLowerCase();
+
+        if (eco.contains(APPLE) && brand.contains(APPLE)) return true;
+        if (eco.contains(GOOGLE) && brand.contains(GOOGLE)) return true;
+        return eco.contains("alexa") && brand.contains(AMAZON);
+    }
+
+    private boolean isSecurityDevice(int cid, String specs) {
+        return cid == 1 || (cid == 8 && (specs.contains("smoke") || specs.contains("gas") || specs.contains("contact") || specs.contains("motion") || specs.contains("water_leak")));
+    }
+
+    private boolean isComfortDevice(int cid, String specs) {
+        return cid == 4 || cid == 11 || (cid == 8 && (specs.contains("temperature") || specs.contains("humidity") || specs.contains("luminance") || specs.contains("motion")));
+    }
+
+    private boolean isEnergyDevice(int cid, String specs) {
+        return cid == 2 || cid == 7 || (cid == 8 && specs.contains("water_leak"));
+    }
+
+    private boolean isEntertainmentDevice(int cid) {
+        return cid == 3 || cid == 6 || cid == 9 || cid == 10;
     }
 
     private List<HardwareDevice> buildBalancedSetupWithinBudget(List<HardwareDevice> availableDevices, double maxBudget) {
-        Map<Integer, Queue<HardwareDevice>> groupedDevices = new HashMap<>();
-
-        for (HardwareDevice d : availableDevices) {
-            groupedDevices.computeIfAbsent(d.getCategoryId(), k -> new LinkedList<>()).add(d);
-        }
-
-        for (Queue<HardwareDevice> q : groupedDevices.values()) {
-            ((LinkedList<HardwareDevice>) q).sort(Comparator.comparing(d -> d.getPrice() != null ? d.getPrice() : Double.MAX_VALUE));
-        }
+        Map<Integer, Queue<HardwareDevice>> groupedDevices = groupAndSortDevices(availableDevices);
 
         List<HardwareDevice> recommendedSetup = new ArrayList<>();
-        double currentTotal = 0.0;
+        double[] currentTotal = {0.0}; // Folosim un array pentru a putea modifica valoarea din metoda ajutatoare
 
-        // Memoram cat a costat primul produs (cel mai ieftin) din fiecare categorie
         Map<Integer, Double> basePricePerCategory = new HashMap<>();
         Map<Integer, Integer> categoryCount = new HashMap<>();
 
@@ -206,59 +222,78 @@ public class DeviceSuggestionAlgorithmService {
         do {
             addedInRound = false;
             for (Integer catId : new ArrayList<>(groupedDevices.keySet())) {
-                Queue<HardwareDevice> queue = groupedDevices.get(catId);
+                boolean itemAdded = processCategoryRound(
+                        catId, groupedDevices, recommendedSetup, currentTotal,
+                        basePricePerCategory, categoryCount, maxBudget
+                );
 
-                if (queue != null && !queue.isEmpty()) {
-
-                    // LIMITĂM la maxim 3 opțiuni per categorie pe ecran
-                    if (categoryCount.getOrDefault(catId, 0) >= 3) {
-                        groupedDevices.remove(catId);
-                        continue;
-                    }
-
-                    HardwareDevice candidate = queue.peek();
-                    assert candidate != null;
-                    double price = candidate.getPrice() != null ? candidate.getPrice() : 0.0;
-
-                    if (price <= 0) {
-                        queue.poll();
-                        addedInRound = true;
-                        continue;
-                    }
-
-                    // AICI E LOGICA TA DE BUN SIMT: Calculam cat il "costa" de fapt pe client sa vada aceasta optiune
-                    double costToCompute;
-                    if (!basePricePerCategory.containsKey(catId)) {
-                        // E primul produs din categorie (Setup-ul de baza), deci retinem pretul intreg
-                        costToCompute = price;
-                    } else {
-                        // E o varianta alternativa! Consuma din buget DOAR diferenta (upgrade-ul) fata de cel mai ieftin
-                        costToCompute = price - basePricePerCategory.get(catId);
-                    }
-
-                    // Am pus si o marja de toleranta de 5% (ex: daca depaseste cu cativa euro, tot il aratam pe ecran)
-                    if (currentTotal + costToCompute <= maxBudget + (maxBudget * 0.05)) {
-                        recommendedSetup.add(queue.poll());
-                        currentTotal += costToCompute;
-
-                        // Daca e primul produs, il salvam ca pret de baza
-                        if (!basePricePerCategory.containsKey(catId)) {
-                            basePricePerCategory.put(catId, price);
-                        }
-
-                        categoryCount.put(catId, categoryCount.getOrDefault(catId, 0) + 1);
-                        addedInRound = true;
-                    } else {
-                        // E prea scump chiar si ca upgrade, eliminam complet categoria
-                        queue.clear();
-                    }
+                if (itemAdded) {
+                    addedInRound = true;
                 }
             }
         } while (addedInRound);
 
         recommendedSetup.sort(Comparator.comparing(HardwareDevice::getCategoryId));
-
-        System.out.println("Lista de sugestii generata cu succes (Capacitate maxima simulata: " + currentTotal + " EUR)");
+        System.out.println("Lista de sugestii generata cu succes (Capacitate maxima simulata: " + currentTotal[0] + " EUR)");
         return recommendedSetup;
+    }
+
+    private Map<Integer, Queue<HardwareDevice>> groupAndSortDevices(List<HardwareDevice> devices) {
+        Map<Integer, Queue<HardwareDevice>> grouped = new HashMap<>();
+        for (HardwareDevice d : devices) {
+            grouped.computeIfAbsent(d.getCategoryId(), k -> new LinkedList<>()).add(d);
+        }
+
+        for (Queue<HardwareDevice> q : grouped.values()) {
+            ((LinkedList<HardwareDevice>) q).sort(Comparator.comparing(d -> d.getPrice() != null ? d.getPrice() : Double.MAX_VALUE));
+        }
+        return grouped;
+    }
+
+    private boolean processCategoryRound(
+            Integer catId, Map<Integer, Queue<HardwareDevice>> groupedDevices,
+            List<HardwareDevice> recommendedSetup, double[] currentTotal,
+            Map<Integer, Double> basePricePerCategory, Map<Integer, Integer> categoryCount,
+            double maxBudget) {
+
+        Queue<HardwareDevice> queue = groupedDevices.get(catId);
+        if (queue == null || queue.isEmpty()) {
+            return false;
+        }
+
+        if (categoryCount.getOrDefault(catId, 0) >= 3) {
+            groupedDevices.remove(catId);
+            return false;
+        }
+
+        HardwareDevice candidate = queue.peek();
+        assert candidate != null;
+        double price = candidate.getPrice() != null ? candidate.getPrice() : 0.0;
+
+        if (price <= 0) {
+            queue.poll();
+            return true;
+        }
+
+        double costToCompute = calculateUpgradeCost(catId, price, basePricePerCategory);
+
+        if (currentTotal[0] + costToCompute <= maxBudget + (maxBudget * 0.05)) {
+            recommendedSetup.add(queue.poll());
+            currentTotal[0] += costToCompute;
+
+            basePricePerCategory.putIfAbsent(catId, price);
+            categoryCount.put(catId, categoryCount.getOrDefault(catId, 0) + 1);
+            return true;
+        } else {
+            queue.clear();
+            return false;
+        }
+    }
+
+    private double calculateUpgradeCost(Integer catId, double price, Map<Integer, Double> basePricePerCategory) {
+        if (!basePricePerCategory.containsKey(catId)) {
+            return price; // Setup de baza
+        }
+        return price - basePricePerCategory.get(catId); // Cost de upgrade
     }
 }

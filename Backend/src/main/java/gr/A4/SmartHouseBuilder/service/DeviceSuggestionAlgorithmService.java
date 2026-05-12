@@ -112,11 +112,8 @@ public class DeviceSuggestionAlgorithmService {
             String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
 
             if (level.equalsIgnoreCase("Plug & Play") || level.toLowerCase().contains("beginner")) {
-                if (specs.contains("\"power_source\":\"poe\"") || specs.contains("\"power_source\":\"wired\"")
-                        || specs.contains("\"storage_type\":\"nvr\"") || specs.contains("in_wall") || specs.contains("relay")) {
-                    return false;
-                }
-                return true;
+                return !specs.contains("\"power_source\":\"poe\"") && !specs.contains("\"power_source\":\"wired\"")
+                        && !specs.contains("\"storage_type\":\"nvr\"") && !specs.contains("in_wall") && !specs.contains("relay");
             } else if (level.equalsIgnoreCase("Intermediate")) {
                 return !specs.contains("\"power_source\":\"poe\"");
             } else {
@@ -136,11 +133,7 @@ public class DeviceSuggestionAlgorithmService {
         return devices.stream().filter(d -> {
             int cid = d.getCategoryId();
             String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
-            boolean include = false;
-
-            if (cid == 5 || cid == 12) {
-                include = true;
-            }
+            boolean include = cid == 5 || cid == 12;
 
             if (cid == 9 && !ecosystem.equalsIgnoreCase("Oricare")) {
                 String brand = d.getBrand() != null ? d.getBrand().toLowerCase() : "";
@@ -224,6 +217,8 @@ public class DeviceSuggestionAlgorithmService {
                     }
 
                     HardwareDevice candidate = queue.peek();
+                    assert candidate != null;
+                    assert candidate != null;
                     double price = candidate.getPrice() != null ? candidate.getPrice() : 0.0;
 
                     if (price <= 0) {

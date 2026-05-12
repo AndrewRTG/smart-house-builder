@@ -4,14 +4,28 @@ Acest ghid explică pas cu pas tot ce trebuie făcut pentru a configura stocarea
 
 > **Cerință:** Cont AWS activ în organizație, autentificare cu email + parolă, acces la IAM Console.
 
+---
 
-## 1. Ce face acest modul Terraform
+## ⚠️ Citește mai întâi — Cum funcționează în organizație
+
+Deoarece lucrați cu un **cont AWS partajat în organizație**, infrastructura se creează **o singură dată**, de către **un singur membru al echipei** (de obicei lead-ul sau devops-ul).
+
+| Rol | Ce face |
+|-----|---------|
+| **Persoana care rulează Terraform** (o singură dată) | Parcurge pașii 1–6: instalează AWS CLI + Terraform, creează bucket-ul și IAM user-ul, obține credențialele |
+| **Restul echipei** | Primesc direct cele 4 variabile de mediu și încep de la pasul 7 |
+
+> Dacă cineva din echipă **a rulat deja Terraform**, sari direct la **[Pasul 7 — Configurare backend](#7-configurare-backend-spring-boot)** și cere-i colegului credențialele.
+
+---
+
+## Ce creează acest modul Terraform
 
 Terraform creează automat toată infrastructura AWS necesară:
 
 | Resursă | Descriere |
 |---|---|
-| S3 Bucket | Spațiu de stocare pentru imagini |
+| S3 Bucket | Spațiu de stocare pentru imagini (unul singur, partajat de toată echipa) |
 | Bucket Policy | Permite citire publică a imaginilor (pentru afișare în browser) |
 | CORS | Permite request-uri din frontend |
 | IAM User | Utilizator dedicat pentru backend cu permisiuni minime |
@@ -27,257 +41,40 @@ Terraform creează automat toată infrastructura AWS necesară:
 
 ---
 
-## 2. Generare Access Key din AWS Console
 
-Terraform rulează local și are nevoie de credențiale AWS pentru a putea crea resursele.
 
-###  Generează Access Key pentru userul tău existent
+## 6. Configurare backend Spring Boot
 
-Folosește această variantă dacă userul tău din organizație are permisiuni suficiente (AdministratorAccess sau permisiuni de S3 + IAM).
+> ✅ **Toți membrii echipei parcurg acest pas** (cu credențialele primite de la colegul care a rulat Terraform).
 
-1. Loghează-te la **https://console.aws.amazon.com** cu email + parolă
-2. Click pe **numele tău** (dreapta sus) → **Security credentials**
-3. Scroll la secțiunea **Access keys**
-4. Click **Create access key**
-5. La **Use case** alege **Command Line Interface (CLI)**
-6. Bifează confirmarea de jos → **Next** → **Create access key**
+### Creează fișierul `.env`
 
-> ⚠️ Secretul se vede **o singură dată**. Copiază-l acum sau descarcă CSV-ul.
+Creează un fișier `.env` în folderul `Backend/` (în afara proiectului Java și a folderului Terraform, lângă `docker-compose.yml`):
 
-```
-Access key ID:      AKIA...............
-Secret access key:  wJalr...............
-```
-
-
-## 3. Instalare AWS CLI
-
-### Windows
-
-1. Descarcă: **https://awscli.amazonaws.com/AWSCLIV2.msi**
-2. Rulează installerul (Next → Next → Install)
-3. Verifică în PowerShell sau Command Prompt:
-
-```powershell
-aws --version
-# aws-cli/2.x.x ...
-```
-
-### Mac
-
-```bash
-curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
-sudo installer -pkg AWSCLIV2.pkg -target /
-aws --version
-```
-
-### Linux (Ubuntu/Debian)
-
-```bash
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-aws --version
-```
-
----
-
-## 4. Configurare AWS CLI
-
-Deschide **PowerShell** / **Command Prompt** / **Terminal** și rulează:
-
-```bash
-aws configure
-```
-
-Completează cu valorile de la pasul 2:
-
-```
-AWS Access Key ID [None]:     AKIA...............
-AWS Secret Access Key [None]: wJalr...............
-Default region name [None]:   eu-north-1
-Default output format [None]: json
-```
-
-**Verificare că funcționează:**
-
-```bash
-aws sts get-caller-identity
-```
-
-Ar trebui să returneze ceva de genul:
-```json
-{
-    "UserId": "AIDA...",
-    "Account": "123456789012",
-    "Arn": "arn:aws:iam::123456789012:user/terraform-admin"
-}
-```
-
-Dacă apare eroare `InvalidClientTokenId` — access key-ul e greșit, repetă pasul 2.
-
----
-
-## 5. Instalare Terraform
-
-### Windows
-
-**Cu Chocolatey** (dacă e instalat):
-```powershell
-choco install terraform
-```
-
-**Manual:**
-1. Mergi la **https://developer.hashicorp.com/terraform/downloads**
-2. Alege **Windows** → **AMD64** → descarcă `.zip`
-3. Dezarhivează — vei obține `terraform.exe`
-4. Mută `terraform.exe` în `C:\Windows\System32\`
-5. Verifică:
-
-```powershell
-terraform --version
-# Terraform v1.x.x
-```
-
-### Mac
-
-```bash
-brew tap hashicorp/tap
-brew install hashicorp/tap/terraform
-terraform --version
-```
-
-### Linux (Ubuntu/Debian)
-
-```bash
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install terraform
-terraform --version
-```
-
----
-
-## 6. Rulare Terraform
-
-### Pasul 1 — Intră în folderul Terraform
-
-```bash
-cd Backend/Terraform
-```
-
-### Pasul 2 — Creează fișierul de configurare
-
-```bash
-# Mac/Linux
-cp terraform.tfvars.example terraform.tfvars
-
-# Windows
-copy terraform.tfvars.example terraform.tfvars
-```
-
-Deschide `terraform.tfvars` și modifică valorile:
-
-```hcl
-aws_region        = "eu-north-1"               # regiunea contului vostru
-bucket_name       = "smart-house-images-dev"   # TREBUIE să fie unic global în toată AWS
-environment       = "dev"
-enable_versioning = false
-
-allowed_origins = [
-  "http://localhost:5173",
-]
-```
-
-> ⚠️ Dacă primești eroare că bucket-ul există deja, înseamnă că altcineva din lume are un bucket cu același nume. Adaugă un sufix unic, ex: `smart-house-images-grupA4-2026`.
-
-### Pasul 3 — Inițializare
-
-```bash
-terraform init
-```
-
-Terraform descarcă provider-ul AWS. Ar trebui să apară:
-```
-Terraform has been successfully initialized!
-```
-
-### Pasul 4 — Previzualizare
-
-```bash
-terraform plan
-```
-
-Verifică că arată:
-```
-Plan: 7 to add, 0 to change, 0 to destroy.
-```
-
-### Pasul 5 — Aplicare
-
-```bash
-terraform apply
-```
-
-Tastează `yes` când te întreabă. Durează ~30 secunde.
-
-La final vei vedea:
-
-```
-Outputs:
-
-aws_access_key_id      = "AKIAZXOTZD5R..."
-aws_secret_access_key  = <sensitive>
-bucket_arn             = "arn:aws:s3:::smart-house-images-dev"
-bucket_name            = "smart-house-images-dev"
-bucket_regional_domain = "smart-house-images-dev.s3.eu-north-1.amazonaws.com"
-iam_user_name          = "smart-house-images-dev-app-user"
-```
-
-### Pasul 6 — Obține credențialele pentru backend
-
-```bash
-terraform output aws_access_key_id
-terraform output aws_secret_access_key
-```
----
-
-## 7. Configurare backend Spring Boot
-
-### IntelliJ IDEA (recomandat)
-1. Creeaza .env(in Backend in afar proiectului java si Terraform(e langa ala cu docker))
-
-### .env
-
-```cmd
+```env
 AWS_ACCESS_KEY=AKIA...
 AWS_SECRET_KEY=...
 AWS_REGION=eu-north-1
- AWS_S3_BUCKET=smart-house-images-dev
+AWS_S3_BUCKET=smart-house-images-dev
 ```
 
-2. Click pe meniul dropdown de lângă butonul Run ▶ → **Edit Configurations...**
-3. La **Environment variables** click pe iconița de folder 📁
-3. Adaugă fisierul .env de mai sus:
+### Configurare în IntelliJ IDEA
 
-| Variabilă | Valoare |
-|-----------|---------|
-| `AWS_ACCESS_KEY` | valoarea din `terraform output aws_access_key_id` |
-| `AWS_SECRET_KEY` | valoarea din `terraform output aws_secret_access_key` |
-| `AWS_REGION` | `eu-north-1` (sau regiunea ta) |
-| `AWS_S3_BUCKET` | `smart-house-images-dev` |
-
+1. Click pe meniul dropdown de lângă butonul Run ▶ → **Edit Configurations...**
+2. La **Environment variables** click pe iconița de folder 📁
+3. Adaugă fișierul `.env` de mai sus
 4. Click **OK** → **Apply** → repornește backend-ul
 
+---
 
-## 8. Verificare că totul funcționează
+## 7. Verificare că totul funcționează
 
 1. Pornește backend-ul și frontend-ul (`npm run dev`)
 2. Loghează-te în aplicație
 3. Mergi la **Profile → Settings → Change Photo**
 4. Selectează o imagine (max 5 MB, jpeg/png/webp/gif)
 5. Dacă funcționează, avatarul apare imediat în navbar și profil
-6. În **AWS Console → S3 → bucket-ul tău → avatars/** apare fișierul urcat
+6. În **AWS Console → S3 → bucket-ul vostru → avatars/** apare fișierul urcat
 
 **Endpoint-uri disponibile:**
 
@@ -290,15 +87,13 @@ Ambele acceptă `multipart/form-data` cu câmpul `file` și necesită JWT în he
 
 ---
 
----
-
-## 10. Troubleshooting
+## 8. Troubleshooting
 
 **`Error: InvalidClientTokenId`**
-Credențialele din `aws configure` sunt greșite sau expirate. Regenerează access key-ul (pasul 2) și reconfigurează CLI (pasul 4).
+Credențialele din `aws configure` sunt greșite sau expirate. Regenerează access key-ul (pasul 1) și reconfigurează CLI (pasul 3).
 
 **`Error: BucketAlreadyExists`**
-Schimbă `bucket_name` în `terraform.tfvars` cu un nume mai unic.
+Bucket-ul a fost deja creat de un coleg. Nu trebuie să îl recreezi — cere-i credențialele și sari la pasul 6.
 
 **`Error: AccessDenied` la terraform apply**
 Userul tău AWS nu are permisiuni suficiente. Verifică că are `AdministratorAccess` atașat în IAM.

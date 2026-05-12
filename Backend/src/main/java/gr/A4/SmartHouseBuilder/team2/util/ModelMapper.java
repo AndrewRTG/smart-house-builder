@@ -3,7 +3,7 @@ package gr.A4.SmartHouseBuilder.team2.util;
 import gr.A4.SmartHouseBuilder.model.Device;
 import gr.A4.SmartHouseBuilder.model.PlacedDevice;
 import gr.A4.SmartHouseBuilder.model.SetupBuild;
-import gr.A4.SmartHouseBuilder.team2.dto.PlacedDeviceDTO;
+import gr.A4.SmartHouseBuilder.team2.dto.PlacedDeviceRichDTO;
 import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import org.springframework.stereotype.Component;
 
@@ -29,18 +29,22 @@ public class ModelMapper {
         return model;
     }
 
-    private PlacedDevice mapDevice(PlacedDeviceDTO dto) {
+    private PlacedDevice mapDevice(PlacedDeviceRichDTO dto) {
         PlacedDevice pd = new PlacedDevice();
         Device d = new Device();
 
-        d.setName(dto.getName());
-        d.setDeviceType(dto.getCategory());
-        d.setEcosystem(dto.getEcosystem());
-        d.setProtocol(dto.getProtocol());
+        if (dto != null && dto.getDevice() != null) {
+            d.setName(dto.getDevice().getName());
+            d.setDeviceType(dto.getDevice().getDeviceType());
+            d.setEcosystem(dto.getDevice().getEcosystem());
+            d.setProtocol(dto.getDevice().getProtocol());
+        }
 
         pd.setDevice(d);
-        pd.setX(dto.getX());
-        pd.setY(dto.getY());
+        if (dto != null && dto.getCoordinates() != null) {
+            pd.setX(dto.getCoordinates().getX());
+            pd.setY(dto.getCoordinates().getY());
+        }
         return pd;
     }
 }

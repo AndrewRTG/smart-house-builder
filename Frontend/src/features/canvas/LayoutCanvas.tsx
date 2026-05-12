@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
 import GridCanvas from './GridCanvas';
 import {
     WallIcon, DoorIcon, LineIcon, WindowIcon, FurnitureIcon,
@@ -7,7 +7,9 @@ import {
     PrizaIcon, AspiratorIcon, HubIcon
 } from './Icons';
 import WizardSidebar from '../wizard/components/WizardSidebar';
-import useFilterStore from '../../store/useFilterStore';
+import {authFetch} from '../../utils/authFetch';
+import {captureLayoutThumbnailRoot} from './captureLayoutThumbnail';
+
 // --- INTERFACES ---
 interface Wall { x1: number; y1: number; x2: number; y2: number; }
 interface Window { x: number; y: number; width: number; height: number; distanceFromFloor: number; }
@@ -42,7 +44,28 @@ const TOOL_ICON_MAP: Record<string, React.FC<{ color: string }>> = {
     wall: WallIcon, window: WindowIcon, door: DoorIcon, line: LineIcon, furniture: FurnitureIcon
 };
 
+const catalogDevices = [
+    {id: '1', name: 'Philips Hue E27', price: '49€', brand: 'Philips', type: 'bec', status: 'online'},
+    {id: '2', name: 'Nest Thermostat', price: '279€', brand: 'Google', type: 'senzor', status: 'online'},
+    {id: '3', name: 'Lock', price: '30€', brand: 'Amazon', type: 'lock', status: 'online'},
+    {id: '4', name: 'Router', price: '200€', brand: 'Amazon', type: 'router', status: 'online'},
+    {id: '5', name: 'Ps5', price: '400€', brand: 'Sony', type: 'controller', status: 'online'},
+    {id: '6', name: 'Smart Tv', price: '638€', brand: 'Samsung', type: 'tv', status: 'online'},
+    {id: '7', name: 'Door Camera', price: '64€', brand: 'Amazon', type: 'interfon', status: 'online'},
+    {id: '8', name: 'Extension Cord', price: '15€', brand: 'Amazon', type: 'prelungitor', status: 'online'},
+    {id: '9', name: 'Sound system', price: '148€', brand: 'Amazon', type: 'soundsystem', status: 'online'},
+    {id: '10', name: 'Plug', price: '5€', brand: 'Amazon', type: 'priza', status: 'online'},
+    {id: '11', name: 'Smart vacum', price: '250€', brand: 'Amazon', type: 'aspirator', status: 'online'},
+    {id: '12', name: 'Hub', price: '300€', brand: 'Amazon', type: 'hub', status: 'online'}
+];
 
+function formatEur(n: number): string {
+    return new Intl.NumberFormat('ro-RO', {
+        style: 'currency',
+        currency: 'EUR',
+        maximumFractionDigits: 0,
+    }).format(Math.round(n));
+}
 
 interface LayoutCanvasProps { isDarkMode: boolean; onBack: () => void; }
 
@@ -68,7 +91,27 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const [undoStack, setUndoStack] = useState<HistorySnapshot[]>([]);
     const [redoStack, setRedoStack] = useState<HistorySnapshot[]>([]);
     const [exportData, setExportData] = useState<{ devices: Device[]; rooms: Room[]; }>({devices: [], rooms: []});
-    const backendSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const exportDataRef = useRef(exportData);
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    const [validationInfos, setValidationInfos] = useState<string[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [lastSavedId, setLastSavedId] = useState<number | null>(null);
+
+    const linesRef = useRef(lines);
+    const placedIconsRef = useRef(placedIcons);
+    linesRef.current = lines;
+    placedIconsRef.current = placedIcons;
+
+    const estimatedTotalEur = useMemo(() => {
+        const fromIcons = placedIcons.reduce((sum, i) => sum + (Number(i.priceEUR) || 0), 0);
+        const fromFurniture = placedFurniture.reduce((sum, f) => {
+            const explicit = Number(f?.priceEUR);
+            if (!Number.isNaN(explicit) && explicit > 0) return sum + explicit;
+            return sum;
+        }, 0);
+        return fromIcons + fromFurniture;
+    }, [placedIcons, placedFurniture]);
 
     // --- THEME (inline styles only, no Tailwind) ---
     const colors = {
@@ -85,102 +128,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         floatingBg:   isDarkMode ? 'rgba(47,47,65,0.92)' : 'rgba(255,255,255,0.92)',
         furnitureMenuBg: isDarkMode ? '#3A3A4E' : '#ffffff',
     };
-
-    const [fetchedDevices, setFetchedDevices] = useState<any[]>([]);
-    const [isCatalogLoading, setIsCatalogLoading] = useState(true);
-
-    const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
-
-    const getIconTypeForCategory = (categoryId: number) => {
-        const iconMapping: Record<number, string> = {
-            1: 'interfon',
-            2: 'prelungitor',
-            3: 'controller',
-            4: 'hub',
-            5: 'hub',
-            6: 'tv',
-            7: 'priza',
-            8: 'senzor',
-            9: 'soundsystem',
-            10: 'tv',
-            11: 'aspirator',
-            12: 'router'
-        };
-        return iconMapping[categoryId] || 'bec';
-    };
-
-    const getCategoryIdByName = (name: string) => {
-        const mapping: Record<string, number> = {
-            "Smart Cameras": 1,
-            "Smart Power Strips": 2,
-            "Gaming Consoles": 3,
-            "Smart Appliances": 4,
-            "Smart Hubs": 5,
-            "Smart Monitors": 6,
-            "Smart Outlets": 7,
-            "Smart Sensors": 8,
-            "Smart Audio": 9,
-            "Smart TVs": 10,
-            "Robot Vacuums": 11,
-            "Smart Routers": 12
-        };
-        return mapping[name];
-    };
-
-    useEffect(() => {
-        const fetchCatalog = async () => {
-            setIsCatalogLoading(true);
-            try {
-                let url = new URL(`${API_BASE}/api/devices`);
-                url.searchParams.append('minPrice', priceRange[0].toString());
-                url.searchParams.append('maxPrice', priceRange[1].toString());
-
-                if (categories.length > 0) {
-                    categories.forEach((catName: string) => {
-                        const id = getCategoryIdByName(catName);
-                        if (id) url.searchParams.append('categoryIds', id.toString());
-                    });
-                }
-
-                if (brands.length > 0) {
-                    brands.forEach((brandName: string) => url.searchParams.append('brand', brandName));
-                }
-
-                if (protocols.length > 0) {
-                    protocols.forEach((protName: string) => {
-                        url.searchParams.append('protocols', protName);
-                    });
-                }
-
-                // Ecosistem
-                if (ecosystem) {
-                    url.searchParams.append('ecosystem', ecosystem);
-                }
-
-                const response = await fetch(url.toString());
-                if (response.ok) {
-                    const data = await response.json();
-
-                    const mapped = data.map((d: any) => ({
-                        id: d.id.toString(),
-                        name: d.name,
-                        brand: d.brand,
-                        price: `€${d.bestPrice || 0}`,
-                        priceEUR: d.bestPrice || 0,
-                        type: getIconTypeForCategory(d.categoryId), // Aici folosim funcția ta!
-                        status: 'online'
-                    }));
-                    setFetchedDevices(mapped);
-                }
-            } catch (error) {
-                console.error("Eroare la aducerea produselor:", error);
-            } finally {
-                setIsCatalogLoading(false);
-            }
-        };
-
-        fetchCatalog();
-    }, [priceRange, categories, brands, protocols, ecosystem]);
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -367,21 +314,116 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     }, [placedIcons, lines, layout.dotSpacing]);
 
     useEffect(() => {
-        if (!placedIcons.length && !lines.length) return;
-        if (backendSyncTimerRef.current) clearTimeout(backendSyncTimerRef.current);
-        backendSyncTimerRef.current = setTimeout(() => {
-            backendSyncTimerRef.current = null;
-            fetch(`${API_BASE}/api/team2/layouts/save`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    id: layoutId, scale: 'cm', maxBudget: 15000,
-                    targetEcosystem: 'Apple HomeKit',
-                    rooms: exportData.rooms, devices: exportData.devices
-                }),
-            }).catch(() => {});
-        }, 450);
-        return () => { if (backendSyncTimerRef.current) clearTimeout(backendSyncTimerRef.current); };
-    }, [exportData, layoutId]);
+        exportDataRef.current = exportData;
+    }, [exportData]);
+
+    const requestValidation = () => {
+        if (validateTimerRef.current) return;
+        validateTimerRef.current = setTimeout(() => {
+            validateTimerRef.current = null;
+
+            if (!placedIconsRef.current.length && !linesRef.current.length) {
+                setValidationErrors([]);
+                setValidationInfos([]);
+                return;
+            }
+
+            const data = exportDataRef.current;
+            const payload = {
+                id: layoutId,
+                scale: 'cm',
+                maxBudget: 15000,
+                targetEcosystem: 'Apple HomeKit',
+                rooms: data.rooms,
+                devices: data.devices
+            };
+
+            authFetch(`${API_BASE}/api/team2/layouts/validate`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload),
+            })
+                .then(async (r) => {
+                    const json = await r.json().catch(() => ({}));
+                    if (!r.ok) {
+                        setValidationErrors(['Eroare la validare']);
+                        setValidationInfos([]);
+                        return;
+                    }
+                    const errs = Array.isArray(json?.errors) ? json.errors : [];
+                    const infos = errs
+                        .filter((e: any) => (e?.level ?? '').toUpperCase() === 'INFO')
+                        .map((e: any) => e?.message)
+                        .filter(Boolean);
+                    const blocking = errs
+                        .filter((e: any) => {
+                            const lvl = (e?.level ?? '').toUpperCase();
+                            return lvl === 'ERROR' || lvl === 'WARN' || lvl === 'WARNING';
+                        })
+                        .map((e: any) => e?.message)
+                        .filter(Boolean);
+                    setValidationInfos(infos);
+                    setValidationErrors(blocking);
+                })
+                .catch(() => {
+                    setValidationErrors(['Eroare la validare']);
+                    setValidationInfos([]);
+                });
+        }, 0);
+    };
+
+    const handleSaveToDb = async () => {
+        if (isSaving) return;
+        if (validationErrors.length > 0) return;
+        setIsSaving(true);
+        try {
+            const data = exportDataRef.current;
+            let thumbnailPngBase64: string | null = null;
+            try {
+                const snapRoot = document.getElementById('layout-capture-root');
+                thumbnailPngBase64 = await captureLayoutThumbnailRoot(snapRoot);
+            } catch {
+                thumbnailPngBase64 = null;
+            }
+            const payload: Record<string, unknown> = {
+                id: layoutId,
+                scale: 'cm',
+                maxBudget: 15000,
+                targetEcosystem: 'Apple HomeKit',
+                rooms: data.rooms,
+                devices: data.devices
+            };
+            if (thumbnailPngBase64) payload.thumbnailPngBase64 = thumbnailPngBase64;
+            const res = await authFetch(`${API_BASE}/api/team2/layouts/save`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok || json?.saved !== true) {
+                const errs = Array.isArray(json?.errors) ? json.errors : [];
+                if (errs.length) {
+                    const blocking = errs
+                        .filter((e: any) => {
+                            const lvl = (e?.level ?? '').toUpperCase();
+                            return lvl === 'ERROR' || lvl === 'WARN' || lvl === 'WARNING';
+                        })
+                        .map((e: any) => e?.message)
+                        .filter(Boolean);
+                    setValidationErrors(blocking.length ? blocking : ['Eroare la salvare']);
+                } else {
+                    setValidationErrors(['Eroare la salvare']);
+                }
+                setLastSavedId(null);
+                return;
+            }
+            setLastSavedId(json.id ?? null);
+        } catch {
+            setLastSavedId(null);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const exportToJSON = () => {
         const dataStr = JSON.stringify({
@@ -441,7 +483,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                         borderRight: `1px solid ${colors.border}`, padding: '0 16px'
                     }}>
                         <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '4px', letterSpacing: '0.05em'}}>ESTIMATED COST</div>
-                        <div style={{fontWeight: 700, fontSize: '24px', color: colors.textMain}}>0 EUR</div>
+                        <div style={{fontWeight: 700, fontSize: '24px', color: colors.textMain}}>{formatEur(estimatedTotalEur)}</div>
                     </div>
                     <div style={{textAlign: 'center'}}>
                         <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMuted, marginBottom: '4px', letterSpacing: '0.05em'}}>PROTOCOLS</div>
@@ -450,20 +492,28 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                 </div>
 
                 {/* Save / Post buttons */}
-                <div style={{display: 'flex', gap: '12px'}}>
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
                     <button
-                        onClick={exportToJSON}
+                        onClick={handleSaveToDb}
+                        disabled={isSaving || validationErrors.length > 0}
                         style={{
                             display: 'flex', alignItems: 'center', gap: '8px',
                             padding: '10px 28px', borderRadius: '999px', border: 'none',
                             background: colors.btnSecondary, color: colors.textMain,
-                            fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                            fontWeight: 600, fontSize: '14px',
+                            cursor: (isSaving || validationErrors.length > 0) ? 'not-allowed' : 'pointer',
+                            opacity: (isSaving || validationErrors.length > 0) ? 0.6 : 1,
                             boxShadow: '0 1px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap',
                             fontFamily: 'inherit'
                         }}
                     >
                         <span style={{opacity: 0.7}}>💾</span> Save
                     </button>
+                    {lastSavedId != null && (
+                        <div style={{fontSize: '12px', fontWeight: 700, color: colors.textMain}}>
+                            Saved (id: {lastSavedId})
+                        </div>
+                    )}
                     <button
                         style={{
                             display: 'flex', alignItems: 'center', gap: '8px',
@@ -478,6 +528,34 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                     </button>
                 </div>
             </div>
+
+            {validationErrors.length > 0 && (
+                <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '16px',
+                    background: 'rgba(239,68,68,0.12)',
+                    border: '1px solid rgba(239,68,68,0.25)',
+                    color: colors.textMain,
+                    fontSize: '13px',
+                    fontWeight: 600
+                }}>
+                    {validationErrors.join(' | ')}
+                </div>
+            )}
+
+            {validationErrors.length === 0 && validationInfos.length > 0 && (
+                <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '16px',
+                    background: 'rgba(34,197,94,0.12)',
+                    border: '1px solid rgba(34,197,94,0.25)',
+                    color: colors.textMain,
+                    fontSize: '13px',
+                    fontWeight: 600
+                }}>
+                    {validationInfos.join(' | ')}
+                </div>
+            )}
 
             {/* ── Main content row ── */}
             <div style={{display: 'flex', flex: 1, gap: '24px', flexWrap: 'wrap', marginBottom: '40px'}}>
@@ -510,8 +588,8 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                 style={{background: 'none', border: 'none', fontWeight: 700, fontSize: '18px', color: colors.textMain, cursor: 'pointer', padding: '0 4px', lineHeight: 1}}
                             >-</button>
                             <input type="range" min="0.4" max="4" step="0.05" value={canvasZoom}
-                                onChange={(e) => setCanvasZoom(Number(e.target.value))}
-                                style={{width: '96px', cursor: 'pointer', accentColor: '#00B4D8'}}
+                                   onChange={(e) => setCanvasZoom(Number(e.target.value))}
+                                   style={{width: '96px', cursor: 'pointer', accentColor: '#00B4D8'}}
                             />
                             <button
                                 onClick={() => setCanvasZoom(z => Math.min(4, z + 0.1))}
@@ -529,11 +607,13 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                 background: colors.canvasBg, transition: 'background 0.3s'
                             }}
                         >
-                            <div style={{
-                                width: `${canvasZoom * 100}%`, height: `${canvasZoom * 100}%`,
-                                minWidth: '100%', minHeight: '100%',
-                                margin: 'auto', position: 'relative', flexShrink: 0
-                            }}>
+                            <div
+                                id="layout-capture-root"
+                                style={{
+                                    width: `${canvasZoom * 100}%`, height: `${canvasZoom * 100}%`,
+                                    minWidth: '100%', minHeight: '100%',
+                                    margin: 'auto', position: 'relative', flexShrink: 0
+                                }}>
                                 <GridCanvas
                                     isDarkMode={isDarkMode} placedIcons={placedIcons}
                                     placedFurniture={placedFurniture} setPlacedFurniture={setPlacedFurniture}
@@ -546,6 +626,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                     setPlacedIcons={setPlacedIcons} checkCollision={checkUniversalCollision}
                                     saveHistory={saveHistory} undo={handleUndo}
                                     redo={handleRedo} canUndo={undoStack.length > 0} canRedo={redoStack.length > 0}
+                                    onCommitValidate={requestValidation}
                                 />
 
                                 {/* Placed icons */}
@@ -592,6 +673,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                                             saveHistory();
                                                             setPlacedIcons(placedIcons.filter((_, i) => i !== index));
                                                             setHoveredIconIndex(null);
+                                                            requestValidation();
                                                         }}
                                                         style={{
                                                             position: 'absolute', top: '-8px', right: '-8px',
@@ -742,44 +824,38 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                 }}
                             />
                         </div>
-                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', padding: '2px'}}>
-                            {isCatalogLoading ? (
-                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Se caută produse...</div>
-                            ) : fetchedDevices.length === 0 ? (
-                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Niciun produs găsit.</div>
-                            ) : (
-                                fetchedDevices.map((d) => {
-                                    const IconComponent = ICON_MAP[d.type] || ControllerIcon;
-                                    const isSelected = selectedDevice?.id === d.id;
-                                    return (
-                                        <div
-                                            key={d.id}
-                                            onClick={() => { setActiveTool(null); setSelectedDevice(isSelected ? null : d); }}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                padding: '12px', borderRadius: '16px',
-                                                background: isSelected ? 'transparent' : colors.card,
-                                                border: isSelected
-                                                    ? `2px solid ${isDarkMode ? '#00B4D8' : '#2C3E50'}`
-                                                    : '2px solid transparent',
-                                                cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
-                                                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                                                transition: 'all 0.15s'
-                                            }}
-                                        >
-                                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                                                <div style={{width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                                    <IconComponent color={isDarkMode ? "white" : "#000000"}/>
-                                                </div>
-                                                <div>
-                                                    <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain}}>{d.name}</div>
-                                                    <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{d.price} · {d.brand}</div>
-                                                </div>
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '230px', overflowY: 'auto', padding: '2px'}}>
+                            {catalogDevices.map((d) => {
+                                const IconComponent = ICON_MAP[d.type] || ControllerIcon;
+                                const isSelected = selectedDevice?.id === d.id;
+                                return (
+                                    <div
+                                        key={d.id}
+                                        onClick={() => { setActiveTool(null); setSelectedDevice(isSelected ? null : d); }}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            padding: '12px', borderRadius: '16px',
+                                            background: isSelected ? 'transparent' : colors.card,
+                                            border: isSelected
+                                                ? `2px solid ${isDarkMode ? '#00B4D8' : '#2C3E50'}`
+                                                : '2px solid transparent',
+                                            cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                                            transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                                            transition: 'all 0.15s'
+                                        }}
+                                    >
+                                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                            <div style={{width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                                <IconComponent color={isDarkMode ? "white" : "#000000"}/>
+                                            </div>
+                                            <div>
+                                                <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain}}>{d.name}</div>
+                                                <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{d.price} · {d.brand}</div>
                                             </div>
                                         </div>
-                                    );
-                                })
-                            )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 

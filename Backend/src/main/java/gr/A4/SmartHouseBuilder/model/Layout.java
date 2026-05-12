@@ -35,5 +35,9 @@ public class Layout {
     @Column(columnDefinition = "jsonb")
     private String drawing;
 
+    @JdbcTypeCode(SqlTypes.VARBINARY)
+    @Column(name = "thumbnail_png", columnDefinition = "bytea")
+    private byte[] thumbnailPng;
+
     private Integer rating;
 }

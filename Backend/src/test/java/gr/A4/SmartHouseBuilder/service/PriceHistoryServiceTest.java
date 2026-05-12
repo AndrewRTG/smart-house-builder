@@ -37,10 +37,9 @@ class PriceHistoryServiceTest {
     @Test
     void addPrice_usesCheapestRecordToUpdateDevice() {
         Device device = Device.builder().id(3).name("Sensor").build();
-        PriceHistory cheapest = PriceHistory.builder()
-                .price(149.99)
-                .productUrl("https://cheap.example")
-                .build();
+        PriceHistory cheapest = new PriceHistory();
+        cheapest.setPrice(149.99);
+        cheapest.setProductUrl("https://cheap.example");
         LocalDateTime scrapedAt = LocalDateTime.now();
         when(deviceRepository.findById(3)).thenReturn(Optional.of(device));
         when(priceHistoryRepository.findCheapestCurrentRecord(3)).thenReturn(Optional.of(cheapest));

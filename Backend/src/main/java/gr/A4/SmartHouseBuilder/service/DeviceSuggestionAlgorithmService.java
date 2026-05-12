@@ -112,11 +112,8 @@ public class DeviceSuggestionAlgorithmService {
             String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
 
             if (level.equalsIgnoreCase("Plug & Play") || level.toLowerCase().contains("beginner")) {
-                if (specs.contains("\"power_source\":\"poe\"") || specs.contains("\"power_source\":\"wired\"")
-                        || specs.contains("\"storage_type\":\"nvr\"") || specs.contains("in_wall") || specs.contains("relay")) {
-                    return false;
-                }
-                return true;
+                return !specs.contains("\"power_source\":\"poe\"") && !specs.contains("\"power_source\":\"wired\"")
+                        && !specs.contains("\"storage_type\":\"nvr\"") && !specs.contains("in_wall") && !specs.contains("relay");
             } else if (level.equalsIgnoreCase("Intermediate")) {
                 return !specs.contains("\"power_source\":\"poe\"");
             } else {
@@ -136,11 +133,7 @@ public class DeviceSuggestionAlgorithmService {
         return devices.stream().filter(d -> {
             int cid = d.getCategoryId();
             String specs = d.getSpecifications() != null ? d.getSpecifications().toLowerCase() : "";
-            boolean include = false;
-
-            if (cid == 5 || cid == 12) {
-                include = true;
-            }
+            boolean include = cid == 5 || cid == 12;
 
             if (cid == 9 && !ecosystem.equalsIgnoreCase("Oricare")) {
                 String brand = d.getBrand() != null ? d.getBrand().toLowerCase() : "";
@@ -205,7 +198,8 @@ public class DeviceSuggestionAlgorithmService {
         List<HardwareDevice> recommendedSetup = new ArrayList<>();
         double currentTotal = 0.0;
 
-        List<Integer> singleItemCategories = Arrays.asList(5, 11, 12);
+        // Memoram cat a costat primul produs (cel mai ieftin) din fiecare categorie
+        Map<Integer, Double> basePricePerCategory = new HashMap<>();
         Map<Integer, Integer> categoryCount = new HashMap<>();
 
         boolean addedInRound;
@@ -215,30 +209,56 @@ public class DeviceSuggestionAlgorithmService {
                 Queue<HardwareDevice> queue = groupedDevices.get(catId);
 
                 if (queue != null && !queue.isEmpty()) {
-                    if (singleItemCategories.contains(catId) && categoryCount.getOrDefault(catId, 0) >= 1) {
+
+                    // LIMITĂM la maxim 3 opțiuni per categorie pe ecran
+                    if (categoryCount.getOrDefault(catId, 0) >= 3) {
                         groupedDevices.remove(catId);
                         continue;
                     }
 
                     HardwareDevice candidate = queue.peek();
+                    assert candidate != null;
                     double price = candidate.getPrice() != null ? candidate.getPrice() : 0.0;
 
-                    if (price > 0 && currentTotal + price <= maxBudget) {
-                        recommendedSetup.add(queue.poll());
-                        currentTotal += price;
-                        categoryCount.put(catId, categoryCount.getOrDefault(catId, 0) + 1);
-                        addedInRound = true;
-                    } else if (price == 0) {
+                    if (price <= 0) {
                         queue.poll();
                         addedInRound = true;
+                        continue;
+                    }
+
+                    // AICI E LOGICA TA DE BUN SIMT: Calculam cat il "costa" de fapt pe client sa vada aceasta optiune
+                    double costToCompute;
+                    if (!basePricePerCategory.containsKey(catId)) {
+                        // E primul produs din categorie (Setup-ul de baza), deci retinem pretul intreg
+                        costToCompute = price;
                     } else {
+                        // E o varianta alternativa! Consuma din buget DOAR diferenta (upgrade-ul) fata de cel mai ieftin
+                        costToCompute = price - basePricePerCategory.get(catId);
+                    }
+
+                    // Am pus si o marja de toleranta de 5% (ex: daca depaseste cu cativa euro, tot il aratam pe ecran)
+                    if (currentTotal + costToCompute <= maxBudget + (maxBudget * 0.05)) {
+                        recommendedSetup.add(queue.poll());
+                        currentTotal += costToCompute;
+
+                        // Daca e primul produs, il salvam ca pret de baza
+                        if (!basePricePerCategory.containsKey(catId)) {
+                            basePricePerCategory.put(catId, price);
+                        }
+
+                        categoryCount.put(catId, categoryCount.getOrDefault(catId, 0) + 1);
+                        addedInRound = true;
+                    } else {
+                        // E prea scump chiar si ca upgrade, eliminam complet categoria
                         queue.clear();
                     }
                 }
             }
         } while (addedInRound);
 
-        System.out.println("Suma totala a setup-ului smart diversificat: " + currentTotal + " EUR");
+        recommendedSetup.sort(Comparator.comparing(HardwareDevice::getCategoryId));
+
+        System.out.println("Lista de sugestii generata cu succes (Capacitate maxima simulata: " + currentTotal + " EUR)");
         return recommendedSetup;
     }
 }

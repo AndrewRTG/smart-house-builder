@@ -34,7 +34,7 @@ body {
   --toggle-text: #ffffff;
   --input-bg: #ffffff;
   --input-text: #111827;
-  --divider-color: rgba(255, 255, 255, 0.45);
+  --divider-color: rgb(255 255 255);
   --text-instruction: #333333;
 }
 

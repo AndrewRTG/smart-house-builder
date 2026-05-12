@@ -7,6 +7,7 @@ export default function Sidebar({ filters, setFilters }) {
     const [isProtocolOpen, setIsProtocolOpen] = useState(false);
     const [isCategoriesOpen, setisCategoriesOpen] = useState(false);
     const [showAll, setShowAll] = useState(false);
+
     const handleCheckboxChange = (type, value) => {
         const currentList = filters[type];
         const newList = currentList.includes(value)

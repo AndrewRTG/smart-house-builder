@@ -37,10 +37,10 @@ services:
 
   frontend:
     build:
-      context: Frontend/smart-house-catalog
+      context: ./Frontend
     container_name: smart-house-frontend1
     ports:
-      - "3000:80"
+      - "3000:5173"
     depends_on:
       - backend
     networks:

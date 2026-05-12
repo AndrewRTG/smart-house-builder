@@ -6,3 +6,5 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
 });
+
+globalThis.fetch = vi.fn();

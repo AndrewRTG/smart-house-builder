@@ -86,18 +86,21 @@
 }
 
 .new-post-option:hover {
-  border-color: #0066cc;
+  border-color: #5092ce;
   background: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 102, 204, 0.12);
+  box-shadow: 0 6px 18px rgba(80, 146, 206, 0.18);
 }
 
+/* Both option icons use the site's brand blue. The Article icon is
+   slightly darker so the two choices are still visually distinguishable
+   without resorting to off-brand rainbow gradients. */
 .new-post-option.setup .option-icon {
-  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  background: #5092ce;
 }
 
 .new-post-option.article .option-icon {
-  background: linear-gradient(135deg, #f97316, #ec4899);
+  background: #2c3e50;
 }
 
 .option-icon {
@@ -146,8 +149,12 @@
 
 .new-post-modal-overlay.dark .new-post-option:hover {
   background: #333;
-  border-color: #4a9eff;
-  box-shadow: 0 6px 18px rgba(74, 158, 255, 0.18);
+  border-color: #6ba5d9;
+  box-shadow: 0 6px 18px rgba(107, 165, 217, 0.22);
+}
+
+.new-post-modal-overlay.dark .new-post-option.article .option-icon {
+  background: #455a73;
 }
 
 .new-post-modal-overlay.dark .new-post-option h3 {

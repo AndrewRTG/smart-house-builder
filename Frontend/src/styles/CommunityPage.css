@@ -460,6 +460,210 @@
   color: #ff4757;
 }
 
+/* Sidebar — user-profile button (avatar + name + stats). Was a <div> with
+   onClick; promoted to <button> so it gets keyboard + focus behavior for
+   free. We override default button chrome so it still looks like a card. */
+button.sidebar-section.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button.sidebar-section.user-profile:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* "+ New Post" — main CTA button in the sidebar. Inherits .sidebar-btn
+   sizing; this rule just adds the icon alignment. */
+.sidebar-btn.add-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Pill row — used for Sort and Filter chips in the sidebar.
+   Default = flex (variable widths, wraps if needed — good for tag chips).
+   `.pill-row-equal` switches to a grid where every pill takes the same
+   width regardless of label length, so a 3-pill Sort row lines up
+   edge-to-edge inside the sidebar without one pill hugging a side. */
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill-row-equal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pill-row-wrap {
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+
+.pill:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.55);
+  transform: translateY(-1px);
+}
+
+.pill.active {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  color: #2c3e50;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.pill:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.pill svg {
+  flex-shrink: 0;
+}
+
+/* Inline banner that appears in the main article column when a tag
+   filter is active (the filter itself lives in the sidebar now). */
+.active-tag-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  border-radius: 999px;
+  background-color: rgba(80, 146, 206, 0.12);
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dark-mode .active-tag-banner {
+  background-color: rgba(189, 211, 231, 0.15);
+}
+
+.active-tag-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(80, 146, 206, 0.2);
+  color: #5092ce;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.active-tag-clear:hover {
+  background-color: rgba(80, 146, 206, 0.35);
+}
+
+/* Card icon buttons (Copy / Bookmark on a setup card). Plain <button>
+   tags styled to look like icons — but keeping <button> semantics so
+   clicks don't bubble up to the parent card. */
+.card-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
+}
+
+.card-icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.dark-mode .card-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.card-icon-btn:focus-visible {
+  outline: 2px solid #5092ce;
+  outline-offset: 2px;
+}
+
+/* Saved state: dark slate fill + matching text so the user can read it
+   in both light and dark themes. Distinct from the heart (#ff4757) so
+   the two icons don't look like the same action. */
+.card-icon-btn.saved {
+  background-color: rgba(55, 71, 79, 0.12);
+  color: #37474f;
+}
+
+.dark-mode .card-icon-btn.saved {
+  background-color: rgba(189, 211, 231, 0.18);
+  color: #bdd3e7;
+}
+
+/* Clickable title button — strips all the default <button> chrome so it
+   reads as a heading but gets <button>'s keyboard + a11y behavior for
+   free. */
+.setup-title-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.setup-title-btn:hover .setup-title,
+.setup-title-btn:hover .article-title {
+  color: #5092ce;
+}
+
+.setup-title-btn:focus-visible {
+  outline: 2px solid #5092ce;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 .setup-title {
   font-size: 16px;
   font-weight: 700;

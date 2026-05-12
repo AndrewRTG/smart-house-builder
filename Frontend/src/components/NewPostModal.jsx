@@ -39,7 +39,7 @@ export default function NewPostModal({ isOpen, onClose, onChooseSetup, onChooseA
           <X size={20} />
         </button>
 
-        <h2 id="new-post-title" className="new-post-title">Ce vrei sa creezi?</h2>
+        <h2 id="new-post-title" className="new-post-title">What would you like to create?</h2>
         <p className="new-post-subtitle">Choose the type of post you'd like to share with the community.</p>
 
         <div className="new-post-options">

@@ -18,6 +18,132 @@ body {
   width: 100%;
 }
 
+/* Banner shown on a draft that was copied from another user's setup —
+   makes lineage visible at a glance so the user knows the "View original"
+   button is relevant for this card. */
+.copied-from-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  margin: 8px 0;
+  border-radius: 999px;
+  background-color: rgba(80, 146, 206, 0.15);
+  color: #5092ce;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   Profile setup card — action buttons.
+   Unified on the site's #5092ce brand blue (matches the community
+   sidebar gradient and the create/view buttons elsewhere). Each role
+   has a single visual rank:
+     - Edit:    primary, filled blue   (most common action on a draft)
+     - View:    secondary, ghost blue  (lower weight; you can still spot it)
+     - Publish: accent green           (distinct "go live" call to action)
+     - Delete:  icon-only, ghost red, REVEALED ON CARD HOVER
+   The hover-reveal for Delete is gated behind @media (hover: hover) so
+   touch devices (no hover state) keep the trash visible all the time —
+   otherwise mobile users could never delete anything.
+   ============================================================ */
+.card-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.card-buttons .btn-edit,
+.card-buttons .btn-publish,
+.card-buttons .btn-view,
+.card-buttons .btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.card-buttons .btn-edit {
+  background-color: #5092ce;
+  color: #ffffff;
+}
+
+.card-buttons .btn-edit:hover {
+  background-color: #4280bd;
+}
+
+.card-buttons .btn-view {
+  background-color: transparent;
+  border-color: #5092ce;
+  color: #5092ce;
+}
+
+.card-buttons .btn-view:hover {
+  background-color: rgba(80, 146, 206, 0.12);
+}
+
+.dark-mode .card-buttons .btn-view {
+  border-color: #6ba5d9;
+  color: #bdd3e7;
+}
+
+.dark-mode .card-buttons .btn-view:hover {
+  background-color: rgba(189, 211, 231, 0.12);
+}
+
+.card-buttons .btn-publish {
+  background-color: #2da774;
+  color: #ffffff;
+}
+
+.card-buttons .btn-publish:hover {
+  background-color: #258f63;
+}
+
+.card-buttons .btn-delete {
+  padding: 7px 10px;
+  background-color: transparent;
+  color: #c0392b;
+  margin-left: auto;
+}
+
+.card-buttons .btn-delete:hover {
+  background-color: rgba(192, 57, 43, 0.12);
+}
+
+.dark-mode .card-buttons .btn-delete {
+  color: #e57368;
+}
+
+.dark-mode .card-buttons .btn-delete:hover {
+  background-color: rgba(229, 115, 104, 0.16);
+}
+
+/* Reveal-on-hover for Delete (mouse devices only). Keyboard focus also
+   reveals it so it stays reachable for accessibility. */
+@media (hover: hover) {
+  .card-buttons .btn-delete {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .setup-card:hover .card-buttons .btn-delete,
+  .card-buttons .btn-delete:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* Icon styling */
 .meta-item, .action-item {
   display: flex;

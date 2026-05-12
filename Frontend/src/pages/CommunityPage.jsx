@@ -1,5 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Bookmark, Copy, MessageCircle, FileText, Settings, Heart, X } from 'lucide-react';
+import {
+  Bookmark,
+  Copy,
+  MessageCircle,
+  FileText,
+  Settings,
+  Heart,
+  X,
+  Clock,
+  TrendingUp,
+  LayoutGrid,
+  Plus,
+  Filter,
+  History,
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CopySetupModal from '../components/CopySetupModal';
 import NewPostModal from '../components/NewPostModal';
@@ -24,6 +38,157 @@ function formatDate(value) {
   return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/**
+ * Sidebar contents — extracted into a helper so the desktop sidebar and the
+ * mobile drawer render the EXACT same UI with the same wiring. Everything
+ * here is contextual: the "Sort" pills and the tab-specific quick-filter
+ * sections switch based on `activeTab`. Hardcoded "device type" and "price"
+ * checkboxes that didn't actually filter anything were removed.
+ */
+function renderSidebar({
+  user,
+  userStats,
+  navigate,
+  onNewPost,
+  activeTab,
+  sortMode,
+  setSortMode,
+  setupFilter,
+  setSetupFilter,
+  availableTags,
+  activeTagFilter,
+  setActiveTagFilter,
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        className="sidebar-section user-profile"
+        onClick={() => navigate('/profile')}
+      >
+        <div className="user-avatar" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt="avatar"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          ) : (
+            user?.username?.charAt(0)?.toUpperCase() || 'U'
+          )}
+        </div>
+        <div className="user-info">
+          <div className="user-name">{user?.username || 'Sign in'}</div>
+          <div className="user-stats">
+            <span className="stat-item">{userStats.posts} <small>Posts</small></span>
+            <span className="stat-item">{userStats.likes} <small>Likes</small></span>
+          </div>
+        </div>
+      </button>
+
+      <button className="sidebar-btn add-new" onClick={onNewPost}>
+        <Plus size={16} /> New Post
+      </button>
+
+      <div className="sidebar-section">
+        <div className="sidebar-title">Sort</div>
+        <div className="pill-row pill-row-equal">
+          <button
+            type="button"
+            className={`pill ${sortMode === 'newest' ? 'active' : ''}`}
+            onClick={() => setSortMode('newest')}
+            aria-pressed={sortMode === 'newest'}
+          >
+            <Clock size={14} /> Newest
+          </button>
+          <button
+            type="button"
+            className={`pill ${sortMode === 'oldest' ? 'active' : ''}`}
+            onClick={() => setSortMode('oldest')}
+            aria-pressed={sortMode === 'oldest'}
+          >
+            <History size={14} /> Oldest
+          </button>
+          <button
+            type="button"
+            className={`pill ${sortMode === 'mostLiked' ? 'active' : ''}`}
+            onClick={() => setSortMode('mostLiked')}
+            aria-pressed={sortMode === 'mostLiked'}
+          >
+            <TrendingUp size={14} /> Most Liked
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'setups' && (
+        <div className="sidebar-section">
+          <div className="sidebar-title">Filter setups</div>
+          <div className="pill-row pill-row-equal">
+            <button
+              type="button"
+              className={`pill ${setupFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setSetupFilter('all')}
+              aria-pressed={setupFilter === 'all'}
+            >
+              <LayoutGrid size={14} /> All
+            </button>
+            <button
+              type="button"
+              className={`pill ${setupFilter === 'saved' ? 'active' : ''}`}
+              onClick={() => setSetupFilter('saved')}
+              aria-pressed={setupFilter === 'saved'}
+            >
+              <Bookmark size={14} /> Saved
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'articles' && availableTags.length > 0 && (
+        <div className="sidebar-section">
+          <div className="sidebar-title">Filter by tag</div>
+          <div className="pill-row pill-row-wrap">
+            <button
+              type="button"
+              className={`pill ${activeTagFilter === null ? 'active' : ''}`}
+              onClick={() => setActiveTagFilter(null)}
+            >
+              All
+            </button>
+            {availableTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className={`pill ${activeTagFilter === tag ? 'active' : ''}`}
+                onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)}
+                aria-pressed={activeTagFilter === tag}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="sidebar-section">
+        <div className="sidebar-title">My library</div>
+        <div className="sidebar-links">
+          <button className="sidebar-link" onClick={() => navigate('/profile?tab=mysetups')}>
+            <Settings size={16} /> My Setups
+          </button>
+          <button className="sidebar-link" onClick={() => navigate('/profile?tab=myarticles')}>
+            <FileText size={16} /> My Articles
+          </button>
+          <button className="sidebar-link" onClick={() => navigate('/profile?tab=wishlist')}>
+            <Bookmark size={16} /> Wishlist
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function CommunityPage({ darkMode }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,12 +205,13 @@ export default function CommunityPage({ darkMode }) {
   const [page, setPage] = useState(0);
   const [user, setUser] = useState(null);
   const [userStats, setUserStats] = useState({ posts: 0, likes: 0 });
-  const [priceRange, setPriceRange] = useState(500);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [selectedSetupToCopy, setSelectedSetupToCopy] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [newPostModalOpen, setNewPostModalOpen] = useState(false);
   const [activeTagFilter, setActiveTagFilter] = useState(null);
+  const [sortMode, setSortMode] = useState('newest'); // 'newest' | 'mostLiked'
+  const [setupFilter, setSetupFilter] = useState('all'); // 'all' | 'saved'
 
 
   const API_BASE = 'http://localhost:20025/api/v1';
@@ -56,22 +222,67 @@ export default function CommunityPage({ darkMode }) {
   // query change.
   // For setups we fuzzy-match against name + description + author username.
   // For articles we match against title + content + author username.
+  // Stable sort comparator — newest-first uses createdAt, mostLiked uses
+  // the likeCount the backend ships inline on each list response. We sort
+  // AFTER the fuzzy filter so search results stay in score-order when the
+  // user is searching (sort only kicks in for the unfiltered list).
+  const sortedSetups = useMemo(() => {
+    let list;
+    if (sortMode === 'mostLiked') {
+      list = [...setups].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+    } else if (sortMode === 'oldest') {
+      list = [...setups].sort((a, b) => {
+        const da = new Date(a.createdAt || 0).getTime();
+        const db = new Date(b.createdAt || 0).getTime();
+        return da - db;
+      });
+    } else {
+      list = [...setups].sort((a, b) => {
+        const da = new Date(a.createdAt || 0).getTime();
+        const db = new Date(b.createdAt || 0).getTime();
+        return db - da;
+      });
+    }
+    return setupFilter === 'saved'
+      ? list.filter((s) => wishlist.has(s.id))
+      : list;
+  }, [setups, sortMode, setupFilter, wishlist]);
+
   const filteredSetups = useMemo(
-    () => fuzzyFilter(setups, searchQuery, (s) => [
+    () => fuzzyFilter(sortedSetups, searchQuery, (s) => [
       s.name, s.description, s.user?.username,
     ]),
-    [setups, searchQuery]
+    [sortedSetups, searchQuery]
   );
+
+  const sortedArticles = useMemo(() => {
+    if (sortMode === 'mostLiked') {
+      return [...articles].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+    }
+    if (sortMode === 'oldest') {
+      return [...articles].sort((a, b) => {
+        const da = new Date(a.createdAt || 0).getTime();
+        const db = new Date(b.createdAt || 0).getTime();
+        return da - db;
+      });
+    }
+    return [...articles].sort((a, b) => {
+      const da = new Date(a.createdAt || 0).getTime();
+      const db = new Date(b.createdAt || 0).getTime();
+      return db - da;
+    });
+  }, [articles, sortMode]);
+
   const filteredArticles = useMemo(() => {
     const byTag = activeTagFilter
-      ? articles.filter((a) =>
+      ? sortedArticles.filter((a) =>
           (a.tags || []).some((t) => t.toLowerCase() === activeTagFilter.toLowerCase())
         )
-      : articles;
+      : sortedArticles;
     return fuzzyFilter(byTag, searchQuery, (a) => [
       a.title, a.content, a.authorUsername,
     ]);
-  }, [articles, searchQuery, activeTagFilter]);
+  }, [sortedArticles, searchQuery, activeTagFilter]);
 
   // Collect distinct tags from current articles for the filter chip row.
   const availableTags = useMemo(() => {
@@ -105,12 +316,35 @@ export default function CommunityPage({ darkMode }) {
   useEffect(() => {
     if (!user) {
       setLikes(new Map());
+      setWishlist(new Set());
       return;
     }
 
     const storedLikes = getStoredLikedItems(user);
     setLikes(new Map(Object.entries(storedLikes)));
+    fetchMyWishlist();
   }, [user]);
+
+  const fetchMyWishlist = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/wishlists?page=0&size=200`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const items = data.content || data || [];
+      const ids = new Set(
+        items
+          .map((it) => it?.setupId ?? it?.setup?.id ?? it?.id)
+          .filter((v) => v != null)
+      );
+      setWishlist(ids);
+    } catch (e) {
+      console.error('Failed to load wishlist:', e);
+    }
+  };
 
   const fetchCurrentUser = async () => {
     // Use the shared cache instead of hitting /auth/me on every page mount.
@@ -119,9 +353,56 @@ export default function CommunityPage({ darkMode }) {
     const data = await getCurrentUser();
     if (data) {
       setUser(data);
-      setUserStats({ posts: 12, likes: 47 });
+      fetchUserStats();
     } else {
       setUser(null);
+      setUserStats({ posts: 0, likes: 0 });
+    }
+  };
+
+  // Real Posts + Likes counts for the sidebar user card.
+  //
+  // "Posts" = community-visible content the user authored = published setups
+  // + articles. Drafts are intentionally excluded because they aren't
+  // visible to the community; the sidebar represents the user's footprint
+  // on the public feed.
+  //
+  // "Likes" = total likes received across all of the user's content (both
+  // setups and articles). Uses the `likeCount` field the backend already
+  // ships inline on each list response, so no extra round trips per item.
+  //
+  // TODO (Phase 4 follow-up): add a dedicated `GET /api/v1/users/me/stats`
+  // endpoint so this becomes one cached round trip instead of two list
+  // fetches. Fine for now since size=200 covers any realistic case.
+  const fetchUserStats = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setUserStats({ posts: 0, likes: 0 });
+        return;
+      }
+      const [pubRes, artRes] = await Promise.all([
+        fetch(`${API_BASE}/setups/user/published?page=0&size=200`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+        fetch(`${API_BASE}/articles/user/my-articles`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+      ]);
+
+      const publishedSetups = pubRes.ok ? (await pubRes.json()).content || [] : [];
+      const myArticles = artRes.ok ? (await artRes.json()) || [] : [];
+
+      const setupLikes = publishedSetups.reduce((sum, s) => sum + (s.likeCount || 0), 0);
+      const articleLikes = myArticles.reduce((sum, a) => sum + (a.likeCount || 0), 0);
+
+      setUserStats({
+        posts: publishedSetups.length + myArticles.length,
+        likes: setupLikes + articleLikes,
+      });
+    } catch (err) {
+      console.error('Failed to compute user stats:', err);
+      setUserStats({ posts: 0, likes: 0 });
     }
   };
 
@@ -255,36 +536,6 @@ export default function CommunityPage({ darkMode }) {
     goToDetail(`/setup/${setupId}`);
   };
 
-  const isInteractiveTarget = (event) => {
-    const target = event.target;
-    return typeof target?.closest === 'function'
-      && Boolean(target.closest('button, a, input, textarea, select'));
-  };
-
-  const handleArticleCardClick = (event, articleId) => {
-    if (isInteractiveTarget(event)) return;
-    openArticleDetail(articleId);
-  };
-
-  const handleSetupCardClick = (event, setupId) => {
-    if (isInteractiveTarget(event)) return;
-    openSetupDetail(setupId);
-  };
-
-  const handleArticleCardKeyDown = (event, articleId) => {
-    if (isInteractiveTarget(event)) return;
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    openArticleDetail(articleId);
-  };
-
-  const handleSetupCardKeyDown = (event, setupId) => {
-    if (isInteractiveTarget(event)) return;
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    openSetupDetail(setupId);
-  };
-
   const toggleWishlist = async (setupId, isWishlisted) => {
     if (!user) {
       showError('Please login to save setups');
@@ -385,103 +636,20 @@ export default function CommunityPage({ darkMode }) {
     <div className="community-container">
       {/* SIDEBAR */}
       <div className="community-sidebar">
-        <div
-          className="sidebar-section user-profile"
-          onClick={() => navigate('/profile')}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/profile'); } }}
-          role="button"
-          tabIndex={0}
-          style={{ cursor: 'pointer' }}
-        >
-          <div className="user-avatar" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
-            ) : (
-              user?.username?.charAt(0)?.toUpperCase() || 'U'
-            )}
-          </div>
-          <div className="user-info">
-            <div className="user-name">{user?.username || 'User'}</div>
-            <div className="user-stats">
-              <span className="stat-item">{userStats.posts} <small>Postări</small></span>
-              <span className="stat-item">{userStats.likes} <small>Like-uri</small></span>
-            </div>
-          </div>
-        </div>
-
-        <button className="sidebar-btn add-new" onClick={() => setNewPostModalOpen(true)}>+ Postare noua</button>
-
-        <div className="sidebar-links">
-          <button className="sidebar-link" onClick={() => navigate('/profile?tab=wishlist')}>
-            <Bookmark size={16} /> Wishlist
-          </button>
-          <button className="sidebar-link" onClick={() => navigate('/profile?tab=myarticles')}>
-            <FileText size={16} /> My Articles
-          </button>
-          <button className="sidebar-link" onClick={() => navigate('/profile?tab=mysetups')}>
-            <Settings size={16} /> My Setups
-          </button>
-        </div>
-
-        <div className="sidebar-section">
-          <div className="sidebar-title">Pret</div>
-          <div className="price-range">
-            <span>0</span>
-            <input
-              type="range"
-              min="0"
-              max="1000"
-              value={priceRange}
-              onChange={(e) => setPriceRange(e.target.value)}
-              className="range-input"
-            />
-            <span>{priceRange}</span>
-          </div>
-          <input type="text" placeholder="Introduceti categoria produsului" className="sidebar-input" />
-        </div>
-
-        <div className="sidebar-section">
-          <div className="sidebar-title">Device Type</div>
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input type="checkbox" /> Bec
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" defaultChecked /> Masina de spalat
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" /> Mixer
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" /> Other Devices
-            </label>
-          </div>
-        </div>
-
-        <div className="sidebar-section">
-          <div className="sidebar-title">Protocol</div>
-          <select className="sidebar-select">
-            <option>Select Protocol</option>
-            <option>Zigbee</option>
-            <option>Z-Wave</option>
-            <option>Wi-Fi</option>
-            <option>Matter</option>
-          </select>
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input type="checkbox" /> Zigbee
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" defaultChecked /> Z-Wave
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" /> Wi-Fi
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" /> Matter
-            </label>
-          </div>
-        </div>
+        {renderSidebar({
+          user,
+          userStats,
+          navigate,
+          onNewPost: () => setNewPostModalOpen(true),
+          activeTab,
+          sortMode,
+          setSortMode,
+          setupFilter,
+          setSetupFilter,
+          availableTags,
+          activeTagFilter,
+          setActiveTagFilter,
+        })}
       </div>
 
       {/* MAIN CONTENT */}
@@ -491,7 +659,7 @@ export default function CommunityPage({ darkMode }) {
         {/* CONTROLS - Search + Tabs on same line */}
         <div className="community-controls">
           <button className="filters-btn" onClick={() => setDrawerOpen(true)}>
-            ☰ Filters
+            <Filter size={16} /> Filters
           </button>
           <div className="search-box">
             {/*
@@ -533,15 +701,7 @@ export default function CommunityPage({ darkMode }) {
             ) : filteredSetups.length > 0 ? (
               <div className="setups-grid">
                 {filteredSetups.map((setup) => (
-                  <div
-                    key={setup.id}
-                    className="setup-card clickable-card"
-                    onClick={(event) => handleSetupCardClick(event, setup.id)}
-                    onKeyDown={(event) => handleSetupCardKeyDown(event, setup.id)}
-                    role="link"
-                    tabIndex={0}
-                    aria-label={`Open setup ${setup.name}`}
-                  >
+                  <div key={setup.id} className="setup-card">
                     <div className="setup-header">
                       <div className="user-info-compact">
                         <div className="avatar-small" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -563,16 +723,35 @@ export default function CommunityPage({ darkMode }) {
                         </div>
                       </div>
                       <div className="setup-actions">
-                        <Copy size={18} onClick={() => handleCopySetup(setup)} className="action-icon" />
-                        <Bookmark
-                          size={18}
-                          className={`action-icon ${wishlist.has(setup.id) ? 'filled' : ''}`}
+                        <button
+                          type="button"
+                          className="card-icon-btn"
+                          onClick={() => handleCopySetup(setup)}
+                          title="Copy this setup"
+                          aria-label="Copy setup"
+                        >
+                          <Copy size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`card-icon-btn ${wishlist.has(setup.id) ? 'saved' : ''}`}
                           onClick={() => toggleWishlist(setup.id, wishlist.has(setup.id))}
-                        />
+                          title={wishlist.has(setup.id) ? 'Remove from wishlist' : 'Save to wishlist'}
+                          aria-label={wishlist.has(setup.id) ? 'Remove from wishlist' : 'Save to wishlist'}
+                          aria-pressed={wishlist.has(setup.id)}
+                        >
+                          <Bookmark size={18} fill={wishlist.has(setup.id) ? 'currentColor' : 'none'} />
+                        </button>
                       </div>
                     </div>
 
-                    <h3 className="setup-title">{setup.name}</h3>
+                    <button
+                      type="button"
+                      className="setup-title-btn"
+                      onClick={() => openSetupDetail(setup.id)}
+                    >
+                      <h3 className="setup-title">{setup.name}</h3>
+                    </button>
                     <p className="setup-description">{setup.description}</p>
 
                     <div className="setup-image-placeholder">
@@ -616,26 +795,20 @@ export default function CommunityPage({ darkMode }) {
           </div>
 
           <div className={`content-pane ${activeTab === 'articles' ? 'active' : ''}`}>
-            {/* Tag filter chips — only render when there are tags to filter by */}
-            {availableTags.length > 0 && (
-              <div className="tag-filter-bar">
-                <span className="tag-filter-label">Filter by tag:</span>
+            {/* Tag filtering moved to sidebar. Keep an inline indicator when a
+                tag is active so the user can see (and clear) the current
+                filter without scrolling up to the sidebar. */}
+            {activeTagFilter && (
+              <div className="active-tag-banner">
+                <span>Showing: <strong>{activeTagFilter}</strong></span>
                 <button
-                  className={`tag-filter-chip ${activeTagFilter === null ? 'active' : ''}`}
+                  type="button"
+                  className="active-tag-clear"
                   onClick={() => setActiveTagFilter(null)}
+                  aria-label="Clear tag filter"
                 >
-                  All
+                  <X size={14} /> Clear
                 </button>
-                {availableTags.map((tag) => (
-                  <button
-                    key={tag}
-                    className={`tag-filter-chip ${activeTagFilter === tag ? 'active' : ''}`}
-                    onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)}
-                  >
-                    {tag}
-                    {activeTagFilter === tag && <X size={12} style={{ marginLeft: 4 }} />}
-                  </button>
-                ))}
               </div>
             )}
 
@@ -644,15 +817,7 @@ export default function CommunityPage({ darkMode }) {
             ) : filteredArticles.length > 0 ? (
               <div className="articles-grid">
                 {filteredArticles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="article-card clickable-card"
-                    onClick={(event) => handleArticleCardClick(event, article.id)}
-                    onKeyDown={(event) => handleArticleCardKeyDown(event, article.id)}
-                    role="link"
-                    tabIndex={0}
-                    aria-label={`Open article ${article.title}`}
-                  >
+                  <div key={article.id} className="article-card">
                     <div className="article-header">
                       <div className="user-info-compact">
                         <div className="avatar-small" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -675,7 +840,13 @@ export default function CommunityPage({ darkMode }) {
                       </div>
                     </div>
 
-                    <h3 className="article-title">{article.title}</h3>
+                    <button
+                      type="button"
+                      className="setup-title-btn"
+                      onClick={() => openArticleDetail(article.id)}
+                    >
+                      <h3 className="article-title">{article.title}</h3>
+                    </button>
 
                     {article.imageUrl && (
                       <div style={{ margin: '8px 0', borderRadius: '8px', overflow: 'hidden', maxHeight: '180px' }}>
@@ -761,76 +932,27 @@ export default function CommunityPage({ darkMode }) {
       {drawerOpen && (
           <div className="drawer-overlay" onClick={() => setDrawerOpen(false)}>
             <div className="drawer-panel" onClick={e => e.stopPropagation()}>
-              <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
-
-              <div className="sidebar-section user-profile" onClick={() => { navigate('/profile'); setDrawerOpen(false); }}>
-                <div className="user-avatar" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {user?.avatarUrl ? (
-                    <img src={user.avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
-                  ) : (
-                    user?.username?.charAt(0)?.toUpperCase() || 'U'
-                  )}
-                </div>
-                <div className="user-info">
-                  <div className="user-name">{user?.username || 'User'}</div>
-                  <div className="user-stats">
-                    <span className="stat-item">{userStats.posts} <small>Postări</small></span>
-                    <span className="stat-item">{userStats.likes} <small>Like-uri</small></span>
-                  </div>
-                </div>
-              </div>
-
-              <button className="sidebar-btn" onClick={() => { setDrawerOpen(false); setNewPostModalOpen(true); }}>+ Postare noua</button>
-
-              <div className="sidebar-links">
-                <button className="sidebar-link" onClick={() => { navigate('/profile?tab=wishlist'); setDrawerOpen(false); }}>
-                  <Bookmark size={16} /> Wishlist
-                </button>
-                <button className="sidebar-link" onClick={() => { navigate('/profile?tab=myarticles'); setDrawerOpen(false); }}>
-                  <FileText size={16} /> My Articles
-                </button>
-                <button className="sidebar-link" onClick={() => { navigate('/profile?tab=mysetups'); setDrawerOpen(false); }}>
-                  <Settings size={16} /> My Setups
-                </button>
-              </div>
-
-              <div className="sidebar-section">
-                <div className="sidebar-title">Pret</div>
-                <div className="price-range">
-                  <span>0</span>
-                  <input type="range" min="0" max="1000" value={priceRange}
-                         onChange={(e) => setPriceRange(e.target.value)} className="range-input" />
-                  <span>{priceRange}</span>
-                </div>
-                <input type="text" placeholder="Introduceti categoria produsului" className="sidebar-input" />
-              </div>
-
-              <div className="sidebar-section">
-                <div className="sidebar-title">Device Type</div>
-                <div className="checkbox-group">
-                  <label className="checkbox-label"><input type="checkbox" /> Bec</label>
-                  <label className="checkbox-label"><input type="checkbox" defaultChecked /> Masina de spalat</label>
-                  <label className="checkbox-label"><input type="checkbox" /> Mixer</label>
-                  <label className="checkbox-label"><input type="checkbox" /> Other Devices</label>
-                </div>
-              </div>
-
-              <div className="sidebar-section">
-                <div className="sidebar-title">Protocol</div>
-                <select className="sidebar-select">
-                  <option>Select Protocol</option>
-                  <option>Zigbee</option>
-                  <option>Z-Wave</option>
-                  <option>Wi-Fi</option>
-                  <option>Matter</option>
-                </select>
-                <div className="checkbox-group">
-                  <label className="checkbox-label"><input type="checkbox" /> Zigbee</label>
-                  <label className="checkbox-label"><input type="checkbox" defaultChecked /> Z-Wave</label>
-                  <label className="checkbox-label"><input type="checkbox" /> Wi-Fi</label>
-                  <label className="checkbox-label"><input type="checkbox" /> Matter</label>
-                </div>
-              </div>
+              <button
+                className="drawer-close"
+                onClick={() => setDrawerOpen(false)}
+                aria-label="Close filters"
+              >
+                <X size={20} />
+              </button>
+              {renderSidebar({
+                user,
+                userStats,
+                navigate: (path) => { navigate(path); setDrawerOpen(false); },
+                onNewPost: () => { setDrawerOpen(false); setNewPostModalOpen(true); },
+                activeTab,
+                sortMode,
+                setSortMode,
+                setupFilter,
+                setSetupFilter,
+                availableTags,
+                activeTagFilter,
+                setActiveTagFilter: (t) => { setActiveTagFilter(t); setDrawerOpen(false); },
+              })}
             </div>
           </div>
       )}

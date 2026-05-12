@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Tag, Heart, MessageCircle, Plus, X, Trash2 } from "lucide-react";
+import { Home, Tag, Heart, MessageCircle, Plus, X, Trash2, Edit3, ExternalLink, Eye } from "lucide-react";
 import { useError } from "../../context/ErrorContext";
 import { fuzzyFilter } from "../../utils/fuzzySearch";
 import "./MySetups.css";
@@ -200,30 +200,58 @@ export default function MySetups({ isDark }) {
           <span className="action-item"><MessageCircle size={14} /> {setup.comments || 0}</span>
         </div>
         {isDraft && (
-          <div className="card-buttons">
-            {/* The dedicated draft-edit page (/builder?draft=:id) doesn't
-                exist yet — until it does, "Edit" sends users to the same
-                detail page View uses, where they can preview and publish. */}
-            <button className="btn-edit" onClick={() => navigate(`/setups/${setup.id}`)}>
-              Edit
-            </button>
-            <button className="btn-publish" onClick={() => handlePublish(setup.id)}>
-              Publish
-            </button>
-            <button className="btn-delete" onClick={() => handleDelete(setup.id, true)}>
-              <Trash2 size={14} />
-            </button>
-          </div>
+          <>
+            {setup.copiedFromId && (
+              <div className="copied-from-banner">
+                <ExternalLink size={12} />
+                <span>Copied from another setup</span>
+              </div>
+            )}
+            <div className="card-buttons">
+              {/* Edit opens the builder loaded with this draft. The
+                  /builder?setupId=... handler is part of Phase 4 (builder
+                  integration); for now the route may fall through to the
+                  fresh builder. */}
+              <button
+                className="btn-edit"
+                onClick={() => navigate(`/builder?setupId=${setup.id}`)}
+                title="Edit in builder"
+              >
+                <Edit3 size={14} /> Edit
+              </button>
+              {setup.copiedFromId && (
+                <button
+                  className="btn-view"
+                  onClick={() => navigate(`/setups/${setup.copiedFromId}`)}
+                  title="See the original setup, its comments, and likes"
+                >
+                  <Eye size={14} /> View original
+                </button>
+              )}
+              <button className="btn-publish" onClick={() => handlePublish(setup.id)}>
+                Publish
+              </button>
+              <button
+                className="btn-delete"
+                onClick={() => handleDelete(setup.id, true)}
+                title="Delete this draft"
+                aria-label="Delete draft"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </>
         )}
         {!isDraft && (
           <div className="card-buttons">
             <button className="btn-view" onClick={() => navigate(`/setups/${setup.id}`)}>
-              View
+              <Eye size={14} /> View
             </button>
             <button
               className="btn-delete"
               onClick={() => handleDelete(setup.id, false)}
               title="Delete this published setup"
+              aria-label="Delete published setup"
             >
               <Trash2 size={14} />
             </button>

@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Upload, X, Tag } from "lucide-react";
 import { authFetch } from "../utils/authFetch";
 import "../styles/CreateArticlePage.css";
@@ -20,6 +20,9 @@ const SUGGESTED_TAGS = [
 export default function CreateArticlePage({ darkMode }) {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const [searchParams] = useSearchParams();
+  const articleId = searchParams.get("articleId");
+  const isEditing = Boolean(articleId);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -30,6 +33,34 @@ export default function CreateArticlePage({ darkMode }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(isEditing);
+
+  // When ?articleId=... is in the URL, pull the existing article and pre-fill
+  // the form. If the fetch fails (deleted, not owned, etc.) we surface the
+  // error in the same banner the create flow uses.
+  useEffect(() => {
+    if (!isEditing) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await authFetch(`/api/v1/articles/${articleId}`);
+        if (!res.ok) {
+          throw new Error(`Failed to load article (${res.status})`);
+        }
+        const data = await res.json();
+        if (cancelled) return;
+        setTitle(data.title || "");
+        setContent(data.content || "");
+        setImageUrl(data.imageUrl || "");
+        setTags(Array.isArray(data.tags) ? data.tags : []);
+      } catch (e) {
+        if (!cancelled) setError(e.message || "Could not load article.");
+      } finally {
+        if (!cancelled) setLoadingExisting(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [articleId, isEditing]);
 
   const handleImageSelect = async (file) => {
     if (!file) return;
@@ -135,8 +166,11 @@ export default function CreateArticlePage({ darkMode }) {
     try {
       const safeImageUrl = imageUrl.startsWith("blob:") ? "" : imageUrl;
 
-      const res = await authFetch("/api/v1/articles", {
-        method: "POST",
+      const endpoint = isEditing ? `/api/v1/articles/${articleId}` : "/api/v1/articles";
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await authFetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
@@ -149,13 +183,17 @@ export default function CreateArticlePage({ darkMode }) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || data.error || "Failed to publish article.");
+        throw new Error(
+          data.message
+          || data.error
+          || (isEditing ? "Failed to update article." : "Failed to publish article.")
+        );
       }
 
       const article = await res.json();
       navigate(`/articles/${article.id}`);
     } catch (e) {
-      setError(e.message || "Could not publish article.");
+      setError(e.message || (isEditing ? "Could not update article." : "Could not publish article."));
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +208,8 @@ export default function CreateArticlePage({ darkMode }) {
   return (
     <div className={`create-article-page ${darkMode ? "dark" : "light"}`}>
       <div className="create-article-container">
-        <h1 className="page-title">Create Article</h1>
+        <h1 className="page-title">{isEditing ? "Edit Article" : "Create Article"}</h1>
+        {loadingExisting && <p style={{ opacity: 0.7 }}>Loading article...</p>}
 
         {/* Image upload */}
         <div className="image-section">
@@ -320,7 +359,9 @@ export default function CreateArticlePage({ darkMode }) {
             onClick={handlePublish}
             disabled={!canPublish}
           >
-            {submitting ? "Publishing..." : "Publish"}
+            {submitting
+              ? (isEditing ? "Saving..." : "Publishing...")
+              : (isEditing ? "Save Changes" : "Publish")}
           </button>
         </div>
 

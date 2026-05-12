@@ -92,4 +92,25 @@ describe('authFetch', () => {
       })
     );
   });
+
+  it('returns a synthetic response on initial network failure', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+
+    const response = await authFetch('/api/v1/protected');
+
+    expect(response.status).toBe(0);
+    expect(response.statusText).toBe('Network error');
+  });
+
+  it('does not try to refresh when no refresh token exists', async () => {
+    localStorage.setItem('accessToken', 'old-token');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, { status: 401 })
+    );
+
+    const response = await authFetch('/api/v1/protected');
+
+    expect(response.status).toBe(401);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

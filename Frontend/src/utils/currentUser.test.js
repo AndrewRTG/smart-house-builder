@@ -51,4 +51,20 @@ describe('currentUser cache', () => {
     await expect(getCurrentUser()).resolves.toEqual({ id: 2 });
     expect(authFetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('returns null and does not cache a user when the response is not ok', async () => {
+    authFetchMock.mockResolvedValue({ ok: false });
+    localStorage.setItem('accessToken', 'token');
+
+    await expect(getCurrentUser()).resolves.toBeNull();
+    await expect(getCurrentUser({ force: true })).resolves.toBeNull();
+    expect(authFetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns null when authFetch throws', async () => {
+    authFetchMock.mockRejectedValue(new Error('boom'));
+    localStorage.setItem('accessToken', 'token');
+
+    await expect(getCurrentUser()).resolves.toBeNull();
+  });
 });

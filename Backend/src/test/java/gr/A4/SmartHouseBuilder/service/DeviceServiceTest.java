@@ -1,0 +1,129 @@
+package gr.A4.SmartHouseBuilder.service;
+
+import gr.A4.SmartHouseBuilder.dto.DeviceRequest;
+import gr.A4.SmartHouseBuilder.entity.Category;
+import gr.A4.SmartHouseBuilder.entity.Device;
+import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
+import gr.A4.SmartHouseBuilder.repository.CategoryRepository;
+import gr.A4.SmartHouseBuilder.repository.DeviceRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class DeviceServiceTest {
+
+    @Mock
+    private DeviceRepository deviceRepository;
+
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @InjectMocks
+    private DeviceService deviceService;
+
+    @Test
+    void createDevice_mapsRequestAndReturnsResponse() {
+        Category category = new Category();
+        category.setId(2);
+        category.setName("Security");
+        Device saved = Device.builder()
+                .id(7)
+                .category(category)
+                .name("Door Sensor")
+                .brand("Aqara")
+                .description("Contact sensor")
+                .imageUrl("img")
+                .communicationProtocol("Zigbee")
+                .specifications(Map.of("battery", "CR2032"))
+                .build();
+        when(categoryRepository.findById(2)).thenReturn(Optional.of(category));
+        when(deviceRepository.save(any(Device.class))).thenReturn(saved);
+
+        var response = deviceService.createDevice(new DeviceRequest(
+                2,
+                "Door Sensor",
+                "Aqara",
+                "Contact sensor",
+                "img",
+                "Zigbee",
+                Map.of("battery", "CR2032")
+        ));
+
+        assertThat(response.id()).isEqualTo(7);
+        assertThat(response.categoryName()).isEqualTo("Security");
+        assertThat(response.communicationProtocol()).isEqualTo("Zigbee");
+    }
+
+    @Test
+    void createDevice_throwsWhenCategoryIsMissing() {
+        when(categoryRepository.findById(99)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> deviceService.createDevice(new DeviceRequest(
+                99, "Name", "Brand", "Desc", null, null, Map.of()
+        )))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("99");
+    }
+
+    @Test
+    void getAllDevices_mapsEntitiesToResponses() {
+        Category category = new Category();
+        category.setId(1);
+        category.setName("Lighting");
+        Device device = Device.builder()
+                .id(5)
+                .category(category)
+                .name("Bulb")
+                .brand("Philips")
+                .description("Smart bulb")
+                .build();
+        when(deviceRepository.findAll()).thenReturn(List.of(device));
+
+        var result = deviceService.getAllDevices();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).categoryName()).isEqualTo("Lighting");
+    }
+
+    @Test
+    void getFilteredDevices_usesMappedSortColumnAndReturnsMappedResults() {
+        Category category = new Category();
+        category.setId(3);
+        category.setName("Comfort");
+        Device device = Device.builder().id(1).category(category).name("Thermostat").build();
+        when(deviceRepository.findWithFilters(any(), any(), any(), any(), any(), any(Sort.class)))
+                .thenReturn(List.of(device));
+
+        var result = deviceService.getFilteredDevices(
+                List.of(3), "Nest", 300.0, 50.0, List.of("WiFi"), "price", "asc"
+        );
+
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+        verify(deviceRepository).findWithFilters(eq(List.of(3)), eq("Nest"), eq(300.0), eq(50.0), eq(List.of("WiFi")), sortCaptor.capture());
+        assertThat(sortCaptor.getValue().toString()).contains("best_price: ASC");
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void getSearchSuggestion_handlesBlankInputAndDelegatesOtherwise() {
+        when(deviceRepository.findDidYouMeanSuggestion("thermo")).thenReturn("thermostat");
+
+        assertThat(deviceService.getSearchSuggestion("   ")).isNull();
+        assertThat(deviceService.getSearchSuggestion("thermo")).isEqualTo("thermostat");
+    }
+}

@@ -19,11 +19,20 @@ export default function NewPostModal({ isOpen, onClose, onChooseSetup, onChooseA
   if (!isOpen) return null;
 
   return (
-    <div className={`new-post-modal-overlay ${darkMode ? "dark" : "light"}`} onClick={onClose}>
+    <div
+      className={`new-post-modal-overlay ${darkMode ? "dark" : "light"}`}
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close modal"
+    >
       <div
         className="new-post-modal"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
         role="dialog"
+        tabIndex={-1}
         aria-labelledby="new-post-title"
       >
         <button className="new-post-close" onClick={onClose} aria-label="Close">

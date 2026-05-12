@@ -74,8 +74,21 @@ export default function CopySetupModal({ isOpen, onClose, originalSetup, onSucce
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close modal"
+    >
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        tabIndex={-1}
+      >
         <div className="modal-header">
           <h2 className="modal-title">Copy Setup</h2>
           <button className="modal-close" onClick={onClose}>

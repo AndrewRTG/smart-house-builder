@@ -273,7 +273,13 @@ export default function MySetups({ isDark }) {
                 <div className="empty-state">No drafts found</div>
               )}
 
-              <div className="setup-card add-card" onClick={handleOpenModal}>
+              <div
+                className="setup-card add-card"
+                onClick={handleOpenModal}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenModal(); } }}
+                role="button"
+                tabIndex={0}
+              >
                 <div className="add-content">
                   <Plus size={32} className="add-icon" />
                   <span>Adaugă setup nou</span>
@@ -296,8 +302,21 @@ export default function MySetups({ isDark }) {
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={handleCloseModal}
+          onKeyDown={(e) => { if (e.key === 'Escape') handleCloseModal(); }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
+        >
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="dialog"
+            tabIndex={-1}
+          >
             <div className="modal-header">
               <h2 className="modal-title">Setup nou</h2>
               <button className="modal-close" onClick={handleCloseModal}>

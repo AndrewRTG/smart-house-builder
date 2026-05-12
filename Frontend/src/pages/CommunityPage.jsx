@@ -77,7 +77,7 @@ export default function CommunityPage({ darkMode }) {
   const availableTags = useMemo(() => {
     const set = new Set();
     articles.forEach((a) => (a.tags || []).forEach((t) => set.add(t)));
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [articles]);
 
   // Restore scroll position and tab on mount
@@ -385,7 +385,14 @@ export default function CommunityPage({ darkMode }) {
     <div className="community-container">
       {/* SIDEBAR */}
       <div className="community-sidebar">
-        <div className="sidebar-section user-profile" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
+        <div
+          className="sidebar-section user-profile"
+          onClick={() => navigate('/profile')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/profile'); } }}
+          role="button"
+          tabIndex={0}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="user-avatar" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {user?.avatarUrl ? (
               <img src={user.avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />

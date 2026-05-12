@@ -50,6 +50,9 @@ export default function Sidebar({ profile, activePage, onNavigate, setupCount, o
             key={item.key}
             className={`nav-item ${activePage === item.key ? "active" : ""}`}
             onClick={() => onNavigate(item.key)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(item.key); } }}
+            role="button"
+            tabIndex={0}
           >
             <span className="nav-icon">{item.icon}</span>
             <span>{item.label}</span>

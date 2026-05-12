@@ -1,6 +1,10 @@
 package gr.A4.SmartHouseBuilder.controller;
 
 import gr.A4.SmartHouseBuilder.service.S3Service;
+import gr.A4.SmartHouseBuilder.security.JwtAuthenticationFilter;
+import gr.A4.SmartHouseBuilder.security.OAuth2LoginSuccessHandler;
+import gr.A4.SmartHouseBuilder.security.RateLimitingFilter;
+import gr.A4.SmartHouseBuilder.security.UserDetailsServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -36,6 +40,18 @@ class ImageUploadControllerTest {
 
     @MockBean
     private S3Service s3Service;
+
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockBean
+    private UserDetailsServiceImpl userDetailsService;
+
+    @MockBean
+    private RateLimitingFilter rateLimitingFilter;
+
+    @MockBean
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Test
     @WithMockUser(username = "test@example.com")

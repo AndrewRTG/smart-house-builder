@@ -6,19 +6,6 @@ Acest ghid explică pas cu pas tot ce trebuie făcut pentru a configura stocarea
 
 ---
 
-## ⚠️ Citește mai întâi — Cum funcționează în organizație
-
-Deoarece lucrați cu un **cont AWS partajat în organizație**, infrastructura se creează **o singură dată**, de către **un singur membru al echipei** (de obicei lead-ul sau devops-ul).
-
-| Rol | Ce face |
-|-----|---------|
-| **Persoana care rulează Terraform** (o singură dată) | Parcurge pașii 1–6: instalează AWS CLI + Terraform, creează bucket-ul și IAM user-ul, obține credențialele |
-| **Restul echipei** | Primesc direct cele 4 variabile de mediu și încep de la pasul 7 |
-
-> Dacă cineva din echipă **a rulat deja Terraform**, sari direct la **[Pasul 7 — Configurare backend](#7-configurare-backend-spring-boot)** și cere-i colegului credențialele.
-
----
-
 ## Ce creează acest modul Terraform
 
 Terraform creează automat toată infrastructura AWS necesară:

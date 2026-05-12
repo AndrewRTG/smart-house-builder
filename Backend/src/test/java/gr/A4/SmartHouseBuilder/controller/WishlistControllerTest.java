@@ -90,3 +90,5 @@ class WishlistControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.setupId").value(1))
                 .andExpect(jsonPath("$.count").value(42));
+    }
+}

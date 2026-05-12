@@ -12,6 +12,8 @@ public class SetupBuildDTO {
     private Double maxBudget;
     private String targetEcosystem;
     private List<RoomDTO> rooms;
-    private List<PlacedDeviceDTO> devices;
+    private List<PlacedDeviceRichDTO> devices;
     private List<ValidationResult> errors;
+
+    private String thumbnailPngBase64;
 }

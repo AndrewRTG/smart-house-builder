@@ -69,9 +69,12 @@ test('aplica filtrele pentru categorii si protocoale cand sunt selectate', async
     });
 
     fireEvent.click(screen.getByText("Price"));
+    fireEvent.click(screen.getByText("Category"));
     fireEvent.click(screen.getByText("Protocol"));
 
-    fireEvent.click(screen.getByLabelText("Lighting"));
+
+
+    fireEvent.click(screen.getByLabelText("Smart Cameras"));
     fireEvent.click(screen.getByLabelText("Zigbee"));
 
     await waitFor(() => {

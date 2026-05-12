@@ -9,6 +9,7 @@ import {
 import WizardSidebar from '../wizard/components/WizardSidebar';
 import {authFetch} from '../../utils/authFetch';
 import {captureLayoutThumbnailRoot} from './captureLayoutThumbnail';
+import useFilterStore from '../../store/useFilterStore';
 
 // --- INTERFACES ---
 interface Wall { x1: number; y1: number; x2: number; y2: number; }
@@ -44,21 +45,6 @@ const TOOL_ICON_MAP: Record<string, React.FC<{ color: string }>> = {
     wall: WallIcon, window: WindowIcon, door: DoorIcon, line: LineIcon, furniture: FurnitureIcon
 };
 
-const catalogDevices = [
-    {id: '1', name: 'Philips Hue E27', price: '49€', brand: 'Philips', type: 'bec', status: 'online'},
-    {id: '2', name: 'Nest Thermostat', price: '279€', brand: 'Google', type: 'senzor', status: 'online'},
-    {id: '3', name: 'Lock', price: '30€', brand: 'Amazon', type: 'lock', status: 'online'},
-    {id: '4', name: 'Router', price: '200€', brand: 'Amazon', type: 'router', status: 'online'},
-    {id: '5', name: 'Ps5', price: '400€', brand: 'Sony', type: 'controller', status: 'online'},
-    {id: '6', name: 'Smart Tv', price: '638€', brand: 'Samsung', type: 'tv', status: 'online'},
-    {id: '7', name: 'Door Camera', price: '64€', brand: 'Amazon', type: 'interfon', status: 'online'},
-    {id: '8', name: 'Extension Cord', price: '15€', brand: 'Amazon', type: 'prelungitor', status: 'online'},
-    {id: '9', name: 'Sound system', price: '148€', brand: 'Amazon', type: 'soundsystem', status: 'online'},
-    {id: '10', name: 'Plug', price: '5€', brand: 'Amazon', type: 'priza', status: 'online'},
-    {id: '11', name: 'Smart vacum', price: '250€', brand: 'Amazon', type: 'aspirator', status: 'online'},
-    {id: '12', name: 'Hub', price: '300€', brand: 'Amazon', type: 'hub', status: 'online'}
-];
-
 function formatEur(n: number): string {
     return new Intl.NumberFormat('ro-RO', {
         style: 'currency',
@@ -91,12 +77,119 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const [undoStack, setUndoStack] = useState<HistorySnapshot[]>([]);
     const [redoStack, setRedoStack] = useState<HistorySnapshot[]>([]);
     const [exportData, setExportData] = useState<{ devices: Device[]; rooms: Room[]; }>({devices: [], rooms: []});
+
     const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const exportDataRef = useRef(exportData);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [validationInfos, setValidationInfos] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSavedId, setLastSavedId] = useState<number | null>(null);
+
+    // --- THEME ---
+    const colors = {
+        panel:        isDarkMode ? '#2F2F41' : '#BDD3E7',
+        card:         isDarkMode ? '#3A3A4E' : '#ffffff',
+        cardHover:    isDarkMode ? '#4A4A60' : '#f0f4f8',
+        textMain:     isDarkMode ? '#ffffff' : '#2C3E50',
+        textMuted:    isDarkMode ? '#9AA0BE' : '#5A6080',
+        btnSecondary: isDarkMode ? '#3A3A4E' : '#A9C4DD',
+        btnSecHover:  isDarkMode ? '#4A4A60' : '#9AB5CE',
+        canvasBg:     isDarkMode ? '#5293DE' : '#C2C9CC',
+        border:       isDarkMode ? '#3A3A4E' : '#C2C9CC',
+        zoomBg:       isDarkMode ? 'rgba(47,47,65,0.95)' : 'rgba(255,255,255,0.95)',
+        floatingBg:   isDarkMode ? 'rgba(47,47,65,0.92)' : 'rgba(255,255,255,0.92)',
+        furnitureMenuBg: isDarkMode ? '#3A3A4E' : '#ffffff',
+    };
+
+    const [fetchedDevices, setFetchedDevices] = useState<any[]>([]);
+    const [isCatalogLoading, setIsCatalogLoading] = useState(true);
+
+    const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
+
+    const getIconTypeForCategory = (categoryId: number) => {
+        const iconMapping: Record<number, string> = {
+            1: 'interfon', 2: 'prelungitor', 3: 'controller', 4: 'hub',
+            5: 'hub', 6: 'tv', 7: 'priza', 8: 'senzor',
+            9: 'soundsystem', 10: 'tv', 11: 'aspirator', 12: 'router'
+        };
+        return iconMapping[categoryId] || 'bec';
+    };
+
+    const getCategoryIdByName = (name: string) => {
+        const mapping: Record<string, number> = {
+            "Smart Cameras": 1,
+            "Smart Power Strips": 2,
+            "Gaming Consoles": 3,
+            "Smart Appliances": 4,
+            "Smart Hubs": 5,
+            "Smart Monitors": 6,
+            "Smart Outlets": 7,
+            "Smart Sensors": 8,
+            "Smart Audio": 9,
+            "Smart TVs": 10,
+            "Robot Vacuums": 11,
+            "Smart Routers": 12
+        };
+        return mapping[name];
+    };
+
+    const filtersString = JSON.stringify({ priceRange, categories, brands, protocols, ecosystem });
+
+    useEffect(() => {
+        const fetchCatalog = async () => {
+            setIsCatalogLoading(true);
+            try {
+                let url = new URL(`${API_BASE}/api/devices`);
+
+                url.searchParams.append('minPrice', priceRange[0].toString());
+                url.searchParams.append('maxPrice', priceRange[1].toString());
+
+                if (categories.length > 0) {
+                    categories.forEach((catName: string) => {
+                        const id = getCategoryIdByName(catName);
+                        if (id) url.searchParams.append('categoryIds', id.toString());
+                    });
+                }
+                if (brands.length > 0) {
+                    brands.forEach((brandName: string) => url.searchParams.append('brand', brandName));
+                }
+                if (protocols.length > 0) {
+                    protocols.forEach((protName: string) => {
+                        const formattedProt = protName.toUpperCase().replace('-', '');
+                        url.searchParams.append('protocols', formattedProt);
+                    });
+                }
+                if (ecosystem) {
+                    url.searchParams.append('ecosystem', ecosystem);
+                }
+
+                const response = await fetch(url.toString());
+                if (response.ok) {
+                    const data = await response.json();
+                    const mapped = data.map((d: any) => ({
+                        id: d.id.toString(),
+                        name: d.name,
+                        brand: d.brand,
+                        price: `${d.bestPrice || 0}€`,
+                        priceEUR: d.bestPrice || 0,
+                        type: getIconTypeForCategory(d.categoryId),
+                        status: 'online'
+                    }));
+                    setFetchedDevices(mapped);
+                }
+            } catch (error) {
+                console.error("Eroare la aducerea produselor:", error);
+            } finally {
+                setIsCatalogLoading(false);
+            }
+        };
+
+        const delayTimer = setTimeout(() => {
+            fetchCatalog();
+        }, 300);
+
+        return () => clearTimeout(delayTimer);
+    }, [filtersString]);
 
     const linesRef = useRef(lines);
     const placedIconsRef = useRef(placedIcons);
@@ -112,22 +205,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         }, 0);
         return fromIcons + fromFurniture;
     }, [placedIcons, placedFurniture]);
-
-    // --- THEME (inline styles only, no Tailwind) ---
-    const colors = {
-        panel:        isDarkMode ? '#2F2F41' : '#BDD3E7',
-        card:         isDarkMode ? '#3A3A4E' : '#ffffff',
-        cardHover:    isDarkMode ? '#4A4A60' : '#f0f4f8',
-        textMain:     isDarkMode ? '#ffffff' : '#2C3E50',
-        textMuted:    isDarkMode ? '#9AA0BE' : '#5A6080',
-        btnSecondary: isDarkMode ? '#3A3A4E' : '#A9C4DD',
-        btnSecHover:  isDarkMode ? '#4A4A60' : '#9AB5CE',
-        canvasBg:     isDarkMode ? '#5293DE' : '#C2C9CC',
-        border:       isDarkMode ? '#3A3A4E' : '#C2C9CC',
-        zoomBg:       isDarkMode ? 'rgba(47,47,65,0.95)' : 'rgba(255,255,255,0.95)',
-        floatingBg:   isDarkMode ? 'rgba(47,47,65,0.92)' : 'rgba(255,255,255,0.92)',
-        furnitureMenuBg: isDarkMode ? '#3A3A4E' : '#ffffff',
-    };
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -401,19 +478,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || json?.saved !== true) {
-                const errs = Array.isArray(json?.errors) ? json.errors : [];
-                if (errs.length) {
-                    const blocking = errs
-                        .filter((e: any) => {
-                            const lvl = (e?.level ?? '').toUpperCase();
-                            return lvl === 'ERROR' || lvl === 'WARN' || lvl === 'WARNING';
-                        })
-                        .map((e: any) => e?.message)
-                        .filter(Boolean);
-                    setValidationErrors(blocking.length ? blocking : ['Eroare la salvare']);
-                } else {
-                    setValidationErrors(['Eroare la salvare']);
-                }
+                setValidationErrors(['Eroare la salvare']);
                 setLastSavedId(null);
                 return;
             }
@@ -423,19 +488,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         } finally {
             setIsSaving(false);
         }
-    };
-
-    const exportToJSON = () => {
-        const dataStr = JSON.stringify({
-            house: {
-                id: layoutId, name: "Smart House Setup", scale: "cm", maxBudget: 15000,
-                targetEcosystem: "Apple HomeKit", rooms: exportData.rooms, devices: exportData.devices
-            }
-        }, null, 2);
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr));
-        linkElement.setAttribute('download', `smart-house-setup-${new Date().toISOString().split('T')[0]}.json`);
-        linkElement.click();
     };
 
     // ─── RENDER ────────────────────────────────────────────────────────────────
@@ -531,36 +583,18 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
 
             {validationErrors.length > 0 && (
                 <div style={{
-                    padding: '12px 16px',
-                    borderRadius: '16px',
-                    background: 'rgba(239,68,68,0.12)',
-                    border: '1px solid rgba(239,68,68,0.25)',
-                    color: colors.textMain,
-                    fontSize: '13px',
-                    fontWeight: 600
+                    padding: '12px 16px', borderRadius: '16px',
+                    background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)',
+                    color: colors.textMain, fontSize: '13px', fontWeight: 600
                 }}>
                     {validationErrors.join(' | ')}
-                </div>
-            )}
-
-            {validationErrors.length === 0 && validationInfos.length > 0 && (
-                <div style={{
-                    padding: '12px 16px',
-                    borderRadius: '16px',
-                    background: 'rgba(34,197,94,0.12)',
-                    border: '1px solid rgba(34,197,94,0.25)',
-                    color: colors.textMain,
-                    fontSize: '13px',
-                    fontWeight: 600
-                }}>
-                    {validationInfos.join(' | ')}
                 </div>
             )}
 
             {/* ── Main content row ── */}
             <div style={{display: 'flex', flex: 1, gap: '24px', flexWrap: 'wrap', marginBottom: '40px'}}>
 
-                {/* Left sidebar – WizardSidebar */}
+                {/* Left sidebar */}
                 <div style={{width: '280px', flexShrink: 0}}>
                     <WizardSidebar/>
                 </div>
@@ -714,9 +748,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                         }}>
                                             {React.createElement(ICON_MAP[selectedDevice.type] || ControllerIcon, {color: 'white'})}
                                         </div>
-                                        <div style={{marginTop: '8px', fontSize: '9px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap', color: isDarkMode ? 'white' : '#2C3E50'}}>
-                                            PRESS 'R' TO ROTATE<br/>SCROLL TO SCALE
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -730,11 +761,9 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                 left: '50%', transform: 'translateX(-50%)',
                                 zIndex: 50, display: 'flex', gap: '32px',
                                 padding: '16px 40px', borderRadius: '999px',
-                                background: colors.floatingBg,
-                                border: `1px solid ${colors.border}`,
+                                background: colors.floatingBg, border: `1px solid ${colors.border}`,
                                 boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-                                backdropFilter: 'blur(8px)',
-                                transition: 'all 0.3s'
+                                backdropFilter: 'blur(8px)', transition: 'all 0.3s'
                             }}
                         >
                             {['Wall', 'Window', 'Door', 'Line', 'Furniture'].map((tool) => {
@@ -764,7 +793,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                             }}>{tool}</span>
                                         </button>
 
-                                        {/* Furniture submenu */}
                                         {isFurniture && showFurnitureMenu && (
                                             <div style={{
                                                 position: 'absolute', bottom: '100%', marginBottom: '16px',
@@ -801,7 +829,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                 {/* ── Right Sidebar ── */}
                 <div style={{width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '24px'}}>
 
-                    {/* Device Catalog */}
+                    {/* Device Catalog - SINGLE CLEAN LOOP */}
                     <div style={{
                         borderRadius: '24px', padding: '24px',
                         background: colors.panel, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
@@ -824,38 +852,42 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                 }}
                             />
                         </div>
-                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '230px', overflowY: 'auto', padding: '2px'}}>
-                            {catalogDevices.map((d) => {
-                                const IconComponent = ICON_MAP[d.type] || ControllerIcon;
-                                const isSelected = selectedDevice?.id === d.id;
-                                return (
-                                    <div
-                                        key={d.id}
-                                        onClick={() => { setActiveTool(null); setSelectedDevice(isSelected ? null : d); }}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                            padding: '12px', borderRadius: '16px',
-                                            background: isSelected ? 'transparent' : colors.card,
-                                            border: isSelected
-                                                ? `2px solid ${isDarkMode ? '#00B4D8' : '#2C3E50'}`
-                                                : '2px solid transparent',
-                                            cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
-                                            transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                                            transition: 'all 0.15s'
-                                        }}
-                                    >
-                                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                                            <div style={{width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                                <IconComponent color={isDarkMode ? "white" : "#000000"}/>
-                                            </div>
-                                            <div>
-                                                <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain}}>{d.name}</div>
-                                                <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{d.price} · {d.brand}</div>
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', padding: '2px'}}>
+                            {isCatalogLoading ? (
+                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Se caută produse...</div>
+                            ) : fetchedDevices.length === 0 ? (
+                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Niciun produs găsit.</div>
+                            ) : (
+                                fetchedDevices.map((d) => {
+                                    const IconComponent = ICON_MAP[d.type] || ControllerIcon;
+                                    const isSelected = selectedDevice?.id === d.id;
+                                    return (
+                                        <div
+                                            key={d.id}
+                                            onClick={() => { setActiveTool(null); setSelectedDevice(isSelected ? null : d); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: '12px', borderRadius: '16px',
+                                                background: isSelected ? 'transparent' : colors.card,
+                                                border: isSelected ? `2px solid ${isDarkMode ? '#00B4D8' : '#2C3E50'}` : '2px solid transparent',
+                                                cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                                                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                                                transition: 'all 0.15s'
+                                            }}
+                                        >
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                                <div style={{width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                                    <IconComponent color={isDarkMode ? "white" : "#000000"}/>
+                                                </div>
+                                                <div>
+                                                    <div style={{fontSize: '11px', fontWeight: 700, color: colors.textMain}}>{d.name}</div>
+                                                    <div style={{fontSize: '9px', fontWeight: 500, color: colors.textMuted, marginTop: '2px'}}>{d.price} · {d.brand}</div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 

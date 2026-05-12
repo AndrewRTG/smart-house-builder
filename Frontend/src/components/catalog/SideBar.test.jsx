@@ -27,7 +27,7 @@ test('extinde si restrange lista de categorii', () => {
 
     render(<Sidebar filters={initialFilters} setFilters={setFiltersMock} />);
 
-    fireEvent.click(screen.getByText("Price"));
+    fireEvent.click(screen.getByText("Category"));
 
     const toggleButton = screen.getByText(/more categories|View less/i);
 

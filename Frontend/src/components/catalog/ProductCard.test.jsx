@@ -24,7 +24,7 @@ test('randeaza corect informatiile din baza de date in card', () => {
     expect(screen.getByText("Bec Inteligent Philips Hue")).toBeInTheDocument();
     expect(screen.getByAltText("Bec Inteligent Philips Hue")).toHaveAttribute("src", "https://example.com/bec.jpg");
 
-    expect(screen.getByText("150.99 RON")).toBeInTheDocument();
+    expect(screen.getByText("€150.99")).toBeInTheDocument();
     expect(screen.getByText("eMAG")).toBeInTheDocument();
 
     expect(screen.getByText("Overall pick")).toBeInTheDocument();

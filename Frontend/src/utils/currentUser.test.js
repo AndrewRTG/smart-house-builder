@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const authFetchMock = vi.fn();
-
 vi.mock('./authFetch', () => ({
-  authFetch: authFetchMock,
+  authFetch: vi.fn(),
 }));
 
 import { getCurrentUser, invalidateCurrentUser } from './currentUser';
+import { authFetch } from './authFetch';
+
+const authFetchMock = vi.mocked(authFetch);
 
 describe('currentUser cache', () => {
   beforeEach(() => {

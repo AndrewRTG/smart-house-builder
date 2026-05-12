@@ -120,6 +120,23 @@ class DeviceServiceTest {
     }
 
     @Test
+    void getFilteredDevices_usesDefaultIdSortForUnknownColumnAndDescendingDirection() {
+        Category category = new Category();
+        category.setId(4);
+        category.setName("Climate");
+        when(deviceRepository.findWithFilters(any(), any(), any(), any(), any(), any(Sort.class)))
+                .thenReturn(List.of(Device.builder().id(2).category(category).name("Humidifier").build()));
+
+        deviceService.getFilteredDevices(
+                null, null, null, null, null, "unsupported", "desc"
+        );
+
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+        verify(deviceRepository).findWithFilters(isNull(), isNull(), isNull(), isNull(), isNull(), sortCaptor.capture());
+        assertThat(sortCaptor.getValue().toString()).contains("id: DESC");
+    }
+
+    @Test
     void getSearchSuggestion_handlesBlankInputAndDelegatesOtherwise() {
         when(deviceRepository.findDidYouMeanSuggestion("thermo")).thenReturn("thermostat");
 

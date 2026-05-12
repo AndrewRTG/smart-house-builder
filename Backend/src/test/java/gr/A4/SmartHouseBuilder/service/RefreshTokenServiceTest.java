@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,6 +67,28 @@ class RefreshTokenServiceTest {
     }
 
     @Test
+    void findByToken_delegatesToRepository() {
+        RefreshToken token = RefreshToken.builder().token("family:token").build();
+        when(refreshTokenRepository.findByToken("family:token")).thenReturn(Optional.of(token));
+
+        assertThat(refreshTokenService.findByToken("family:token")).contains(token);
+    }
+
+    @Test
+    void familyExists_delegatesToRepository() {
+        when(refreshTokenRepository.existsByFamilyId("family-123")).thenReturn(true);
+
+        assertThat(refreshTokenService.familyExists("family-123")).isTrue();
+    }
+
+    @Test
+    void invalidateFamily_deletesAllTokensInFamily() {
+        refreshTokenService.invalidateFamily("family-123");
+
+        verify(refreshTokenRepository).deleteByFamilyId("family-123");
+    }
+
+    @Test
     void verifyExpiration_returnsValidTokenUnchanged() {
         RefreshToken token = RefreshToken.builder()
                 .token("family:token")
@@ -88,5 +111,23 @@ class RefreshTokenServiceTest {
                 .hasMessageContaining("expired");
 
         verify(refreshTokenRepository).delete(token);
+    }
+
+    @Test
+    void deleteToken_deletesSingleToken() {
+        RefreshToken token = RefreshToken.builder().token("family:token").build();
+
+        refreshTokenService.deleteToken(token);
+
+        verify(refreshTokenRepository).delete(token);
+    }
+
+    @Test
+    void deleteByUser_deletesAllTokensForUser() {
+        User user = User.builder().email("user@example.com").username("user").build();
+
+        refreshTokenService.deleteByUser(user);
+
+        verify(refreshTokenRepository).deleteByUser(user);
     }
 }

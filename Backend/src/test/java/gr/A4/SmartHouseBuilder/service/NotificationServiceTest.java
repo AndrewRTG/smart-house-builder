@@ -73,6 +73,15 @@ class NotificationServiceTest {
     }
 
     @Test
+    void markAsReadIfOwner_throwsWhenNotificationIsMissing() {
+        when(notificationRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.markAsReadIfOwner(99L, "john"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Notificarea");
+    }
+
+    @Test
     void markAllAsRead_delegatesToRepository() {
         notificationService.markAllAsRead("john");
 

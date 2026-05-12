@@ -5,6 +5,7 @@ import gr.A4.SmartHouseBuilder.model.PlacedDevice;
 import gr.A4.SmartHouseBuilder.model.SetupBuild;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,11 +51,11 @@ class EcosystemMatchRuleTest {
     void validate_acceptsCompatibleDevicesAndNullEntries() {
         SetupBuild build = new SetupBuild();
         build.setTargetEcosystem("Google Home");
-        build.setDevices(List.of(
-                null,
-                placedDevice(null, "Google Home"),
-                new PlacedDevice()
-        ));
+        List<PlacedDevice> devices = new ArrayList<>();
+        devices.add(null);
+        devices.add(placedDevice(null, "Google Home"));
+        devices.add(new PlacedDevice());
+        build.setDevices(devices);
 
         var result = rule.validate(build);
 

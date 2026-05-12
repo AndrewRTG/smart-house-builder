@@ -5,6 +5,7 @@ import gr.A4.SmartHouseBuilder.model.PlacedDevice;
 import gr.A4.SmartHouseBuilder.model.SetupBuild;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,11 +49,11 @@ class HubRequirementRuleTest {
     @Test
     void validate_ignoresNullEntriesAndUnrelatedProtocols() {
         SetupBuild build = new SetupBuild();
-        build.setDevices(List.of(
-                null,
-                new PlacedDevice(),
-                placedDevice("Lamp", "light", "WiFi")
-        ));
+        List<PlacedDevice> devices = new ArrayList<>();
+        devices.add(null);
+        devices.add(new PlacedDevice());
+        devices.add(placedDevice("Lamp", "light", "WiFi"));
+        build.setDevices(devices);
 
         var result = rule.validate(build);
 

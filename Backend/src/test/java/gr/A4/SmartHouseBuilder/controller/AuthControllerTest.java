@@ -44,7 +44,7 @@ class AuthControllerTest {
 
     @Test
     void verifyMfa_ReturnsOk() throws Exception {
-      
+
         String requestBody = """
                 {
                     "mfaToken": "un_token_generat_la_login",

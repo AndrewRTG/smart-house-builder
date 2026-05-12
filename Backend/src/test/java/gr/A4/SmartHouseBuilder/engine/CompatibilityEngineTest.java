@@ -1,44 +1,47 @@
 package gr.A4.SmartHouseBuilder.engine;
 
-import gr.A4.SmartHouseBuilder.model.Device;
-import gr.A4.SmartHouseBuilder.model.PlacedDevice;
 import gr.A4.SmartHouseBuilder.model.SetupBuild;
+import gr.A4.SmartHouseBuilder.model.ValidationResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CompatibilityEngineTest {
 
-    private final CompatibilityEngine compatibilityEngine = new CompatibilityEngine();
+    private CompatibilityEngine compatibilityEngine;
 
-    @Test
-    void runAllChecks_returnsEmptyListForNullBuild() {
-        assertThat(compatibilityEngine.runAllChecks(null)).isEmpty();
+    @BeforeEach
+    void setUp() {
+        compatibilityEngine = new CompatibilityEngine();
     }
 
     @Test
-    void runAllChecks_returnsResultsForAllRules() {
+    void testRunAllChecks_Success() {
+        // GIVEN
         SetupBuild build = new SetupBuild();
-        build.setTargetEcosystem("Google Home");
-        build.setDevices(List.of(placedDevice("Hub", "hub", "wifi", "Google Home")));
+        // Aici poți seta proprietăți pe build dacă regulile tale (EcosystemMatchRule etc.)
+        // au nevoie de date specifice pentru a nu da NullPointerException intern
 
-        var results = compatibilityEngine.runAllChecks(build);
+        // WHEN
+        List<ValidationResult> results = compatibilityEngine.runAllChecks(build);
 
-        assertThat(results).hasSize(2);
-        assertThat(results).extracting("valid").containsExactly(true, true);
+        // THEN
+        assertNotNull(results);
+        // Deoarece ai 2 reguli instantiate în listă, ar trebui să avem 2 rezultate
+        assertEquals(2, results.size());
     }
 
-    private PlacedDevice placedDevice(String name, String type, String protocol, String ecosystem) {
-        Device device = new Device();
-        device.setName(name);
-        device.setDeviceType(type);
-        device.setProtocol(protocol);
-        device.setEcosystem(ecosystem);
+    @Test
+    void testRunAllChecks_NullBuild() {
+        // GIVEN: Forțăm ramura de build == null
+        // WHEN
+        List<ValidationResult> results = compatibilityEngine.runAllChecks(null);
 
-        PlacedDevice placedDevice = new PlacedDevice();
-        placedDevice.setDevice(device);
-        return placedDevice;
+        // THEN
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 }

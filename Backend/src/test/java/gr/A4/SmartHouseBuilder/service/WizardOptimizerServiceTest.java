@@ -10,8 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WizardOptimizerServiceTest {
@@ -23,15 +23,43 @@ class WizardOptimizerServiceTest {
     private WizardOptimizerService wizardOptimizerService;
 
     @Test
-    void getDeviceSuggestions_returnsRepositorySuggestions() {
-        List<HardwareDevice> expected = List.of(
-                HardwareDevice.builder().id(1L).name("Hub").build(),
-                HardwareDevice.builder().id(2L).name("Sensor").build()
-        );
-        when(repository.findRandomDevices()).thenReturn(expected);
+    void testGetDeviceSuggestions_Success() {
+        // GIVEN: Pregătim o listă simulată de dispozitive
+        HardwareDevice device1 = new HardwareDevice();
+        device1.setId(1L);
+        device1.setName("Smart Plug");
 
-        var result = wizardOptimizerService.getDeviceSuggestions();
+        HardwareDevice device2 = new HardwareDevice();
+        device2.setId(2L);
+        device2.setName("Motion Sensor");
 
-        assertThat(result).isSameAs(expected);
+        List<HardwareDevice> mockDevices = List.of(device1, device2);
+
+        // Simulăm apelul către repository
+        when(repository.findRandomDevices()).thenReturn(mockDevices);
+
+        // WHEN: Apelăm metoda din serviciu
+        List<HardwareDevice> result = wizardOptimizerService.getDeviceSuggestions();
+
+        // THEN: Verificăm rezultatele
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("Smart Plug", result.get(0).getName());
+
+        // Verificăm că metoda din repository a fost apelată exact o dată
+        verify(repository, times(1)).findRandomDevices();
+    }
+
+    @Test
+    void testGetDeviceSuggestions_Empty() {
+        // GIVEN: Repository-ul returnează o listă goală
+        when(repository.findRandomDevices()).thenReturn(List.of());
+
+        // WHEN
+        List<HardwareDevice> result = wizardOptimizerService.getDeviceSuggestions();
+
+        // THEN
+        assertTrue(result.isEmpty());
+        verify(repository).findRandomDevices();
     }
 }

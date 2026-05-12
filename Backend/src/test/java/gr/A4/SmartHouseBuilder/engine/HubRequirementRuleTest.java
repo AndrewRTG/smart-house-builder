@@ -3,71 +3,115 @@ package gr.A4.SmartHouseBuilder.engine;
 import gr.A4.SmartHouseBuilder.model.Device;
 import gr.A4.SmartHouseBuilder.model.PlacedDevice;
 import gr.A4.SmartHouseBuilder.model.SetupBuild;
+import gr.A4.SmartHouseBuilder.model.ValidationResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 class HubRequirementRuleTest {
 
-    private final HubRequirementRule rule = new HubRequirementRule();
+    private HubRequirementRule rule;
 
-    @Test
-    void validate_acceptsNullBuildOrDevices() {
-        assertThat(rule.validate(null).isValid()).isTrue();
-
-        SetupBuild build = new SetupBuild();
-        assertThat(rule.validate(build).isValid()).isTrue();
+    @BeforeEach
+    void setUp() {
+        rule = new HubRequirementRule();
     }
 
     @Test
-    void validate_rejectsZigbeeDevicesWithoutHub() {
-        SetupBuild build = new SetupBuild();
-        build.setDevices(List.of(placedDevice("Sensor", "sensor", "Zigbee")));
-
-        var result = rule.validate(build);
-
-        assertThat(result.isValid()).isFalse();
-        assertThat(result.getMessage()).contains("Hub");
+    void testValidate_NullBuild() {
+        // Acoperă ramura: build == null
+        ValidationResult result = rule.validate(null);
+        assertTrue(result.isValid());
+        assertEquals("INFO", result.getLevel());
     }
 
     @Test
-    void validate_acceptsHubWhenRequired() {
+    void testValidate_NullDevices() {
+        // Acoperă ramura: build.getDevices() == null
         SetupBuild build = new SetupBuild();
-        build.setDevices(List.of(
-                placedDevice("Main Hub", "smart hub", "WiFi"),
-                placedDevice("Door Sensor", "sensor", "Z-Wave")
-        ));
-
-        var result = rule.validate(build);
-
-        assertThat(result.isValid()).isTrue();
+        build.setDevices(null);
+        ValidationResult result = rule.validate(build);
+        assertTrue(result.isValid());
     }
 
     @Test
-    void validate_ignoresNullEntriesAndUnrelatedProtocols() {
+    void testValidate_MissingHubForZigbee() {
+        // Acoperă: are Zigbee dar lipsește Hub (needsHub = true, hasHub = false)
+        SetupBuild build = new SetupBuild();
+
+        Device zigbeeDev = new Device();
+        zigbeeDev.setName("Senzor");
+        zigbeeDev.setProtocol("Zigbee"); // S-a corectat în setProtocol conform model
+        zigbeeDev.setDeviceType("SENSOR"); // S-a corectat în setDeviceType conform model
+
+        PlacedDevice pd = new PlacedDevice();
+        pd.setDevice(zigbeeDev);
+        build.setDevices(List.of(pd));
+
+        ValidationResult result = rule.validate(build);
+        assertFalse(result.isValid());
+        assertEquals("ERROR", result.getLevel());
+        assertTrue(result.getMessage().contains("lipsește un Hub"));
+    }
+
+    @Test
+    void testValidate_WithHubPresent() {
+        // Acoperă: are Zigbee ȘI are Hub (needsHub = true, hasHub = true)
+        SetupBuild build = new SetupBuild();
+
+        Device zigbeeDev = new Device();
+        zigbeeDev.setProtocol("z-wave"); // Testăm și varianta z-wave
+
+        Device hubDev = new Device();
+        hubDev.setDeviceType("Smart Hub"); // Conține "hub", deci hasHub devine true
+
+        PlacedDevice pd1 = new PlacedDevice();
+        pd1.setDevice(zigbeeDev);
+
+        PlacedDevice pd2 = new PlacedDevice();
+        pd2.setDevice(hubDev);
+
+        build.setDevices(List.of(pd1, pd2));
+
+        ValidationResult result = rule.validate(build);
+        assertTrue(result.isValid());
+        assertEquals("Cerințe Hub îndeplinite.", result.getMessage());
+    }
+
+    @Test
+    void testValidate_ContinueBranches() {
+        // Acoperă ramurile de 'continue' pentru elemente nule
         SetupBuild build = new SetupBuild();
         List<PlacedDevice> devices = new ArrayList<>();
         devices.add(null);
-        devices.add(new PlacedDevice());
-        devices.add(placedDevice("Lamp", "light", "WiFi"));
+
+        PlacedDevice pdNoDev = new PlacedDevice();
+        pdNoDev.setDevice(null);
+        devices.add(pdNoDev);
+
         build.setDevices(devices);
 
-        var result = rule.validate(build);
-
-        assertThat(result.isValid()).isTrue();
+        ValidationResult result = rule.validate(build);
+        assertTrue(result.isValid());
     }
 
-    private PlacedDevice placedDevice(String name, String type, String protocol) {
-        Device device = new Device();
-        device.setName(name);
-        device.setDeviceType(type);
-        device.setProtocol(protocol);
+    @Test
+    void testValidate_NoZigbeeNoHub() {
+        // Acoperă cazul în care nu avem nici Zigbee nici Hub (ambele false)
+        SetupBuild build = new SetupBuild();
+        Device wifiDev = new Device();
+        wifiDev.setProtocol("Wifi");
+        wifiDev.setDeviceType("Light");
 
-        PlacedDevice placedDevice = new PlacedDevice();
-        placedDevice.setDevice(device);
-        return placedDevice;
+        PlacedDevice pd = new PlacedDevice();
+        pd.setDevice(wifiDev);
+        build.setDevices(List.of(pd));
+
+        ValidationResult result = rule.validate(build);
+        assertTrue(result.isValid());
     }
 }

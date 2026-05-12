@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SimpleAiService {
@@ -40,17 +41,20 @@ public class SimpleAiService {
     }
 
     public String askGemini(String message) {
-        return chatClient
-                .prompt()
-                .system("""
-                        You are a smart home assistant for a store.
-                        When a user asks about devices, recommendations, or mentions
-                        a budget, always call searchDevices or getAllDevices
-                        to check what is available before answering.
-                        """)
-                .user(message)
-                .call()
-                .content();
+        // Securizat cu Optional pentru a preveni returnarea unui null
+        return Optional.ofNullable(
+                chatClient
+                        .prompt()
+                        .system("""
+                                You are a smart home assistant for a store.
+                                When a user asks about devices, recommendations, or mentions
+                                a budget, always call searchDevices or getAllDevices
+                                to check what is available before answering.
+                                """)
+                        .user(message)
+                        .call()
+                        .content()
+        ).orElse("");
     }
 
     public List<HardwareDevice> getSmartSuggestions(String criteria, List<Integer> layoutIds) {
@@ -140,23 +144,18 @@ public class SimpleAiService {
                 Return ONLY the raw SQL query, no explanation, no markdown, no backticks.
                 """.formatted(criteria);
 
-            String sql = chatClient
-                    .prompt()
-                    .user(sqlPrompt)
-                    .call()
-                    .content()
-                    .replace("```sql", "")
-                    .replace("```", "")
-                    .trim();
-
-            System.out.println("=========================================");
-            System.out.println("BEEP BOOP! Am primit următoarele criterii de la Frontend:");
-            System.out.println(criteria);
-            System.out.println("=========================================");
-            System.out.println("Generated SQL: " + sql);
+            // Varianta 2: Securizat cu Optional și prelucrare prin .map()
+            String sql = Optional.ofNullable(
+                            chatClient
+                                    .prompt()
+                                    .user(sqlPrompt)
+                                    .call()
+                                    .content()
+                    )
+                    .map(content -> content.replace("```sql", "").replace("```", "").trim())
+                    .orElse("");
 
             List<HardwareDevice> candidates = dynamicDeviceRepository.executeQuery(sql);
-            System.out.println("Found " + candidates.size() + " candidates before AI filtering");
 
             if (candidates.isEmpty()) {
                 return Collections.emptyList();
@@ -190,26 +189,23 @@ public class SimpleAiService {
                 No extra text, no markdown, no explanation.
                 """.formatted(criteria, existingDevicesSection, candidatesJson);
 
-            String aiText = chatClient
-                    .prompt()
-                    .user(filterPrompt)
-                    .call()
-                    .content()
-                    .replace("```json", "")
-                    .replace("```", "")
-                    .trim();
-
-            System.out.println("AI selected IDs: " + aiText);
+            // Varianta 2: Securizat cu Optional. orElse("[]") evită erorile la parsarea de către Jackson
+            String aiText = Optional.ofNullable(
+                            chatClient
+                                    .prompt()
+                                    .user(filterPrompt)
+                                    .call()
+                                    .content()
+                    )
+                    .map(content -> content.replace("```json", "").replace("```", "").trim())
+                    .orElse("[]");
 
             List<Long> ids = mapper.readValue(aiText, new com.fasterxml.jackson.core.type.TypeReference<List<Long>>() {});
             List<HardwareDevice> result = deviceRepository.findAllById(ids);
 
-            System.out.println("Final recommendations: " + result.size() + " devices");
-
             return result;
 
         } catch (Exception e) {
-            System.err.println("AI suggestion error: " + e.getMessage());
             return Collections.emptyList();
         }
     }

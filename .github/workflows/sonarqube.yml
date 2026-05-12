@@ -48,6 +48,10 @@ jobs:
         working-directory: Frontend
         run: npm run coverage
 
+      - name: Make Maven wrapper executable
+        working-directory: Backend
+        run: chmod +x mvnw
+
       - name: Run backend tests and JaCoCo report
         working-directory: Backend
         run: ./mvnw -B verify

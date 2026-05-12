@@ -6,18 +6,16 @@ vi.mock('./authFetch', () => ({
   authFetch: authFetchMock,
 }));
 
-const loadModule = async () => import(`./currentUser.js?test=${Date.now()}-${Math.random()}`);
+import { getCurrentUser, invalidateCurrentUser } from './currentUser';
 
 describe('currentUser cache', () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     localStorage.clear();
+    invalidateCurrentUser();
   });
 
   it('returns null without calling the backend when no token exists', async () => {
-    const { getCurrentUser } = await loadModule();
-
     await expect(getCurrentUser()).resolves.toBeNull();
     expect(authFetchMock).not.toHaveBeenCalled();
   });
@@ -29,8 +27,6 @@ describe('currentUser cache', () => {
       json: vi.fn().mockResolvedValue(user),
     });
     localStorage.setItem('accessToken', 'token');
-
-    const { getCurrentUser } = await loadModule();
 
     await expect(getCurrentUser()).resolves.toEqual(user);
     await expect(getCurrentUser()).resolves.toEqual(user);
@@ -48,8 +44,6 @@ describe('currentUser cache', () => {
         json: vi.fn().mockResolvedValue({ id: 2 }),
       });
     localStorage.setItem('accessToken', 'token');
-
-    const { getCurrentUser } = await loadModule();
 
     await expect(getCurrentUser()).resolves.toEqual({ id: 1 });
     window.dispatchEvent(new Event('auth-change'));

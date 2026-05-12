@@ -31,8 +31,6 @@ Terraform creează automat toată infrastructura AWS necesară:
 
 Terraform rulează local și are nevoie de credențiale AWS pentru a putea crea resursele.
 
-> ℹ️ **Cont de organizație:** Nu folosi contul root al organizației. Fie folosești userul tău personal din organizație (dacă are permisiuni de admin), fie creezi un user IAM nou dedicat pentru Terraform — ambele variante sunt descrise mai jos.
-
 ###  Generează Access Key pentru userul tău existent
 
 Folosește această variantă dacă userul tău din organizație are permisiuni suficiente (AdministratorAccess sau permisiuni de S3 + IAM).
@@ -242,27 +240,12 @@ iam_user_name          = "smart-house-images-dev-app-user"
 terraform output aws_access_key_id
 terraform output aws_secret_access_key
 ```
-
-> ℹ️ Terraform a creat un user IAM nou (`smart-house-images-dev-app-user`) cu permisiuni minime, separat de userul de admin de la pasul 2. Folosește **credențialele acestui user nou** pentru backend — nu pe cele de admin.
-
 ---
 
 ## 7. Configurare backend Spring Boot
 
 ### IntelliJ IDEA (recomandat)
-
-1. Click pe meniul dropdown de lângă butonul Run ▶ → **Edit Configurations...**
-2. La **Environment variables** click pe iconița de folder 📁
-3. Adaugă fisierul .env(e in Backend dar in afara proiectului java si Terraform(e langa ala cu docker)):
-
-| Variabilă | Valoare |
-|-----------|---------|
-| `AWS_ACCESS_KEY` | valoarea din `terraform output aws_access_key_id` |
-| `AWS_SECRET_KEY` | valoarea din `terraform output aws_secret_access_key` |
-| `AWS_REGION` | `eu-north-1` (sau regiunea ta) |
-| `AWS_S3_BUCKET` | `smart-house-images-dev` |
-
-4. Click **OK** → **Apply** → repornește backend-ul
+1. Creeaza .env(in Backend in afar proiectului java si Terraform(e langa ala cu docker))
 
 ### .env
 
@@ -272,6 +255,19 @@ AWS_SECRET_KEY=...
 AWS_REGION=eu-north-1
  AWS_S3_BUCKET=smart-house-images-dev
 ```
+
+2. Click pe meniul dropdown de lângă butonul Run ▶ → **Edit Configurations...**
+3. La **Environment variables** click pe iconița de folder 📁
+3. Adaugă fisierul .env de mai sus:
+
+| Variabilă | Valoare |
+|-----------|---------|
+| `AWS_ACCESS_KEY` | valoarea din `terraform output aws_access_key_id` |
+| `AWS_SECRET_KEY` | valoarea din `terraform output aws_secret_access_key` |
+| `AWS_REGION` | `eu-north-1` (sau regiunea ta) |
+| `AWS_S3_BUCKET` | `smart-house-images-dev` |
+
+4. Click **OK** → **Apply** → repornește backend-ul
 
 
 ## 8. Verificare că totul funcționează

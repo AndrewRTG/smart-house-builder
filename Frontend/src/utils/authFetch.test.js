@@ -98,7 +98,7 @@ describe('authFetch', () => {
 
     const response = await authFetch('/api/v1/protected');
 
-    expect(response.status).toBe(0);
+    expect(response.status).toBe(503);
     expect(response.statusText).toBe('Network error');
   });
 

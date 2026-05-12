@@ -28,6 +28,7 @@
  */
 
 const API_ROOT = "http://localhost:20025";
+const NETWORK_ERROR_STATUS = 503;
 
 // Single shared in-flight refresh promise so 5 parallel 401s → 1 refresh.
 let inFlightRefresh = null;
@@ -92,7 +93,7 @@ export async function authFetch(path, init = {}) {
   } catch (e) {
     // Network error — surface a synthetic Response so callers don't blow up
     // on response.ok.
-    return new Response(null, { status: 0, statusText: "Network error" });
+    return new Response(null, { status: NETWORK_ERROR_STATUS, statusText: "Network error" });
   }
 
   if (response.status === 401 && !skipAuth && !path.includes("/auth/refresh")) {
@@ -102,7 +103,7 @@ export async function authFetch(path, init = {}) {
       try {
         response = await doFetch();
       } catch {
-        return new Response(null, { status: 0, statusText: "Network error" });
+        return new Response(null, { status: NETWORK_ERROR_STATUS, statusText: "Network error" });
       }
     } else {
       // Refresh failed — purge local tokens so the Navbar shows login.

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Eye } from 'lucide-react';
+import { Plus, Trash2, Eye, Edit3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../../utils/authFetch';
 import './MyArticles.css';
@@ -129,20 +129,28 @@ export default function MyArticles({ isDark, profile }) {
                   </span>
                 </div>
               </div>
-              <div className="article-actions">
+              <div className="card-buttons">
                 <button
-                  className="action-btn view-btn"
+                  className="btn-edit"
+                  onClick={() => navigate(`/articles/create?articleId=${article.id}`)}
+                  title="Edit article"
+                >
+                  <Edit3 size={14} /> Edit
+                </button>
+                <button
+                  className="btn-view"
                   onClick={() => handleView(article.id)}
                   title="View article"
                 >
-                  <Eye size={18} />
+                  <Eye size={14} /> View
                 </button>
                 <button
-                  className="action-btn delete-btn"
+                  className="btn-delete"
                   onClick={() => handleDelete(article.id)}
                   title="Delete article"
+                  aria-label="Delete article"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>

@@ -25,16 +25,17 @@
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
   border: none;
-  border-radius: 6px;
-  background: #0066cc;
+  border-radius: 8px;
+  background: #5092ce;
   color: white;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .create-btn:hover {
-  background: #0052a3;
+  background: #4280bd;
 }
 
 .empty-state {
@@ -53,16 +54,17 @@
 .cta-btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
-  background: #0066cc;
+  border-radius: 8px;
+  background: #5092ce;
   color: white;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .cta-btn:hover {
-  background: #0052a3;
+  background: #4280bd;
 }
 
 .articles-list {
@@ -73,18 +75,19 @@
 
 .article-card {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   padding: 1.5rem;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid var(--border-color, #e0e0e0);
   background: var(--card-bg, white);
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .article-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
+
 
 .article-content {
   flex: 1;
@@ -130,38 +133,105 @@
   white-space: nowrap;
 }
 
-.article-actions {
+/* ============================================================
+   Article card — action buttons (mirrors MySetups for visual
+   consistency across the profile pages). Edit is primary filled
+   blue, View is a ghost outline button, Delete is icon-only and
+   hidden until the card is hovered (mouse devices only).
+   ============================================================ */
+.card-buttons {
   display: flex;
-  gap: 0.75rem;
-  margin-left: 1rem;
+  gap: 8px;
+  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
-.action-btn {
-  padding: 0.5rem;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
+.card-buttons .btn-edit,
+.card-buttons .btn-view,
+.card-buttons .btn-publish,
+.card-buttons .btn-delete {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
 }
 
-.view-btn {
-  color: #0066cc;
+.card-buttons .btn-edit {
+  background-color: #5092ce;
+  color: #ffffff;
 }
 
-.view-btn:hover {
-  background: rgba(0, 102, 204, 0.1);
+.card-buttons .btn-edit:hover {
+  background-color: #4280bd;
 }
 
-.delete-btn {
-  color: #cc3333;
+.card-buttons .btn-view {
+  background-color: transparent;
+  border-color: #5092ce;
+  color: #5092ce;
 }
 
-.delete-btn:hover {
-  background: rgba(204, 51, 51, 0.1);
+.card-buttons .btn-view:hover {
+  background-color: rgba(80, 146, 206, 0.12);
+}
+
+.my-articles-container.dark .card-buttons .btn-view {
+  border-color: #6ba5d9;
+  color: #bdd3e7;
+}
+
+.my-articles-container.dark .card-buttons .btn-view:hover {
+  background-color: rgba(189, 211, 231, 0.12);
+}
+
+.card-buttons .btn-publish {
+  background-color: #2da774;
+  color: #ffffff;
+}
+
+.card-buttons .btn-publish:hover {
+  background-color: #258f63;
+}
+
+.card-buttons .btn-delete {
+  padding: 7px 10px;
+  background-color: transparent;
+  color: #c0392b;
+  margin-left: auto;
+}
+
+.card-buttons .btn-delete:hover {
+  background-color: rgba(192, 57, 43, 0.12);
+}
+
+.my-articles-container.dark .card-buttons .btn-delete {
+  color: #e57368;
+}
+
+.my-articles-container.dark .card-buttons .btn-delete:hover {
+  background-color: rgba(229, 115, 104, 0.16);
+}
+
+@media (hover: hover) {
+  .card-buttons .btn-delete {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .article-card:hover .card-buttons .btn-delete,
+  .card-buttons .btn-delete:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* Dark mode */
@@ -188,14 +258,8 @@
     gap: 1rem;
   }
 
-  .article-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .article-actions {
+  .card-buttons {
     margin-left: 0;
-    margin-top: 1rem;
   }
 
   .created-at {

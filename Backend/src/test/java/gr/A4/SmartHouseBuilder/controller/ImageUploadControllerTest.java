@@ -6,6 +6,7 @@ import gr.A4.SmartHouseBuilder.security.OAuth2LoginSuccessHandler;
 import gr.A4.SmartHouseBuilder.security.RateLimitingFilter;
 import gr.A4.SmartHouseBuilder.security.UserDetailsServiceImpl;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ImageUploadController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "aws.s3.access-key=dummy",

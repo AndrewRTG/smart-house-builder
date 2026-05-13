@@ -181,26 +181,32 @@
 }
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-draft,
+.btn-danger {
   padding: 0.65rem 1.4rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.2s, opacity 0.2s;
 }
 
 .btn-primary {
-  background: #0066cc;
+  background: #5092ce;
   color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #0052a3;
+  background: #4280bd;
 }
 
-.btn-primary:disabled {
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-draft:disabled,
+.btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -212,6 +218,158 @@
 
 .btn-secondary:hover:not(:disabled) {
   background: #e2e2e2;
+}
+
+/* Save as Draft — ghost outlined version of the primary button so the
+   eye reads "secondary action" but it still belongs to the brand. */
+.btn-draft {
+  background: transparent;
+  color: #5092ce;
+  border: 1.5px solid #5092ce;
+  padding: calc(0.65rem - 1.5px) calc(1.4rem - 1.5px);
+}
+
+.btn-draft:hover:not(:disabled) {
+  background: rgba(80, 146, 206, 0.1);
+}
+
+/* Used inside the Cancel-confirmation modal for the "Discard" button. */
+.btn-danger {
+  background: transparent;
+  color: #c0392b;
+  border: 1.5px solid #c0392b;
+  padding: calc(0.65rem - 1.5px) calc(1.4rem - 1.5px);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.create-article-page.dark .btn-draft {
+  color: #6ba5d9;
+  border-color: #6ba5d9;
+}
+
+.create-article-page.dark .btn-draft:hover:not(:disabled) {
+  background: rgba(107, 165, 217, 0.15);
+}
+
+.create-article-page.dark .btn-danger {
+  color: #e57368;
+  border-color: #e57368;
+}
+
+.create-article-page.dark .btn-danger:hover:not(:disabled) {
+  background: rgba(229, 115, 104, 0.12);
+}
+
+/* ============================================================
+   Cancel confirmation modal — appears when the user tries to
+   leave an editor that has unsaved changes. Three explicit
+   choices (Save Draft / Discard / Keep Editing).
+   ============================================================ */
+.cancel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+  animation: cancel-fade-in 0.18s ease-out;
+}
+
+@keyframes cancel-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cancel-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cancel-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  padding: 2rem 1.75rem 1.75rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  animation: cancel-slide-up 0.22s ease-out;
+  text-align: left;
+}
+
+.cancel-modal-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.cancel-modal-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+}
+
+.cancel-modal-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a2236;
+  margin: 0 0 0.35rem 0;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.cancel-modal-subtitle {
+  color: #555;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  margin: 0 0 1.5rem 0;
+}
+
+.cancel-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cancel-modal-btn {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+.create-article-page.dark .cancel-modal {
+  background: #1e1e1e;
+}
+
+.create-article-page.dark .cancel-modal-title {
+  color: #fff;
+}
+
+.create-article-page.dark .cancel-modal-subtitle {
+  color: #bbb;
+}
+
+.create-article-page.dark .cancel-modal-close {
+  color: #aaa;
+}
+
+.create-article-page.dark .cancel-modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 /* ----- Spinner ----- */

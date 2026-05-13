@@ -31,4 +31,12 @@ public class ArticleRequest {
     private List<Long> deviceIds;
 
     private List<String> tags;
+
+    /**
+     * Optional. If omitted the service defaults to PUBLISHED — keeps
+     * backwards compat with every existing create call. Accept the
+     * string form ("DRAFT" / "PUBLISHED") so the frontend can send it
+     * without depending on the Java enum ordering.
+     */
+    private String status;
 }

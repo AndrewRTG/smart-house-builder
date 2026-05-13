@@ -316,4 +316,49 @@ class SetupServiceTest {
         verify(setupRepository).findByPublicSetupTrueAndStatus(captor.capture(), eq(SetupStatus.PUBLISHED));
         assertThat(captor.getValue().getSort().getOrderFor("updatedAt")).isNotNull();
     }
+
+    @Test
+    void createSetup_throwsWhenUserNotFound() {
+        when(userRepository.findByEmail("notfound@e")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> setupService.createSetup("notfound@e", request("Name", "Desc", List.of(), false)))
+                .isInstanceOf(RuntimeException.class);
+        verify(setupRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSetup_throwsWhenNotOwner() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> setupService.updateSetup(10L, "u@e", request("New", "Desc", List.of(), true)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("not owned");
+        verify(setupRepository, never()).save(any());
+    }
+
+    @Test
+    void publishSetup_throwsWhenSetupNotFound() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.findByIdAndUserId(99L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> setupService.publishSetup(99L, "u@e"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("not owned");
+    }
+
+    @Test
+    void copySetup_throwsWhenCopyNameNullAndAutoFails() {
+        User user = User.builder().id(2L).email("u@e").build();
+        Setup original = Setup.builder().id(10L).publicSetup(true).name("Orig").deviceIds("[]").build();
+        when(setupRepository.findById(10L)).thenReturn(Optional.of(original));
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        // Auto-generated name "Copy of Orig" already exists
+        when(setupRepository.existsByUserIdAndNameIgnoreCase(2L, "Copy of Orig")).thenReturn(true);
+
+        assertThatThrownBy(() -> setupService.copySetup(10L, "u@e", null))
+                .isInstanceOf(DuplicateSetupNameException.class);
+    }
 }

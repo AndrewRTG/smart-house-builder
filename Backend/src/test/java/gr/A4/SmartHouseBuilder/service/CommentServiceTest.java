@@ -289,4 +289,48 @@ class CommentServiceTest {
 
         verify(commentRepository).delete(root);
     }
+
+    @Test
+    void createSetupComment_throwsWhenSetupNotFound() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.createSetupComment(99L, "u@e", "Text", null))
+                .isInstanceOf(RuntimeException.class);
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void createArticleComment_throwsWhenArticleNotFound() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.createArticleComment(99L, "u@e", "Text", null))
+                .isInstanceOf(RuntimeException.class);
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteCommentTreeForSetup_handlesEmptyTree() {
+        when(commentRepository.findBySetupIdAndParentCommentIsNull(10L)).thenReturn(List.of());
+
+        commentService.deleteCommentTreeForSetup(10L);
+
+        verify(commentRepository, never()).delete(any());
+    }
+
+    @Test
+    void createSetupComment_throwsWhenContentBlank() {
+        User user = User.builder().id(1L).email("u@e").build();
+        Setup setup = Setup.builder().id(10L).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.findById(10L)).thenReturn(Optional.of(setup));
+
+        assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", "   ", null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("blank");
+        verify(commentRepository, never()).save(any());
+    }
 }

@@ -34,6 +34,11 @@ export default function CreateArticlePage({ darkMode }) {
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditing);
+  // Existing-status snapshot — non-null only when editing. Lets the form
+  // know whether the article was already published (so "Save as Draft"
+  // doesn't make sense and we hide it).
+  const [existingStatus, setExistingStatus] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // When ?articleId=... is in the URL, pull the existing article and pre-fill
   // the form. If the fetch fails (deleted, not owned, etc.) we surface the
@@ -53,6 +58,7 @@ export default function CreateArticlePage({ darkMode }) {
         setContent(data.content || "");
         setImageUrl(data.imageUrl || "");
         setTags(Array.isArray(data.tags) ? data.tags : []);
+        setExistingStatus(data.status || "PUBLISHED");
       } catch (e) {
         if (!cancelled) setError(e.message || "Could not load article.");
       } finally {
@@ -150,14 +156,31 @@ export default function CreateArticlePage({ darkMode }) {
     }
   };
 
-  const handlePublish = async () => {
-    if (!title.trim() || title.trim().length < 5) {
-      setError("Title must be at least 5 characters.");
-      return;
-    }
-    if (!content.trim() || content.trim().length < 10) {
-      setError("Content must be at least 10 characters.");
-      return;
+  // The single network path for both Publish AND Save-as-Draft. The only
+  // thing that differs between them is the `status` field on the request
+  // body, so parameterizing avoids duplicating ~30 lines of validation,
+  // payload construction, and error handling.
+  //
+  // Drafts deliberately have a more lenient validation gate (title may be
+  // shorter, content can still be empty) — the whole point of a draft is
+  // "I'm not done yet but don't want to lose what I have."
+  const submitArticle = async (status, { lenient = false } = {}) => {
+    if (!lenient) {
+      if (!title.trim() || title.trim().length < 5) {
+        setError("Title must be at least 5 characters.");
+        return null;
+      }
+      if (!content.trim() || content.trim().length < 10) {
+        setError("Content must be at least 10 characters.");
+        return null;
+      }
+    } else {
+      // Lenient draft save still needs SOMETHING — saving an entirely
+      // empty record creates a useless ghost row.
+      if (!title.trim() && !content.trim() && tags.length === 0 && !imageUrl) {
+        setError("Add at least a title or some content before saving a draft.");
+        return null;
+      }
     }
 
     setError(null);
@@ -173,11 +196,12 @@ export default function CreateArticlePage({ darkMode }) {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: title.trim(),
-          content: content.trim(),
+          title: title.trim() || "(untitled draft)",
+          content: content.trim() || "(empty)",
           imageUrl: safeImageUrl,
           deviceIds: [],
           tags,
+          status,
         }),
       });
 
@@ -190,12 +214,39 @@ export default function CreateArticlePage({ darkMode }) {
         );
       }
 
-      const article = await res.json();
-      navigate(`/articles/${article.id}`);
+      return await res.json();
     } catch (e) {
       setError(e.message || (isEditing ? "Could not update article." : "Could not publish article."));
+      return null;
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    const article = await submitArticle("PUBLISHED");
+    if (article) navigate(`/articles/${article.id}`);
+  };
+
+  const handleSaveDraft = async () => {
+    const article = await submitArticle("DRAFT", { lenient: true });
+    if (article) navigate("/profile?tab=myarticles");
+  };
+
+  // Has the user typed anything that would be lost if we navigate away?
+  // Used to decide whether Cancel needs the confirmation modal or can
+  // just navigate back immediately.
+  const hasUnsavedChanges =
+    title.trim().length > 0
+    || content.trim().length > 0
+    || tags.length > 0
+    || imageUrl.length > 0;
+
+  const handleCancelClick = () => {
+    if (hasUnsavedChanges) {
+      setShowCancelModal(true);
+    } else {
+      navigate(-1);
     }
   };
 
@@ -204,6 +255,13 @@ export default function CreateArticlePage({ darkMode }) {
     content.trim().length >= 10 &&
     !uploading &&
     !submitting;
+
+  const canSaveDraft = hasUnsavedChanges && !uploading && !submitting;
+  // Save-as-Draft only makes sense when (a) creating a new article, or
+  // (b) editing one that's already a draft. Editing a published article
+  // and downgrading it back to draft would surprise the reader of any
+  // existing comments/likes.
+  const showDraftButton = !isEditing || existingStatus === "DRAFT";
 
   return (
     <div className={`create-article-page ${darkMode ? "dark" : "light"}`}>
@@ -348,11 +406,22 @@ export default function CreateArticlePage({ darkMode }) {
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => navigate(-1)}
+            onClick={handleCancelClick}
             disabled={submitting}
           >
             Cancel
           </button>
+          {showDraftButton && (
+            <button
+              type="button"
+              className="btn-draft"
+              onClick={handleSaveDraft}
+              disabled={!canSaveDraft}
+              title="Save your progress and finish later"
+            >
+              {submitting ? "Saving..." : "Save as Draft"}
+            </button>
+          )}
           <button
             type="button"
             className="btn-primary"
@@ -361,11 +430,82 @@ export default function CreateArticlePage({ darkMode }) {
           >
             {submitting
               ? (isEditing ? "Saving..." : "Publishing...")
-              : (isEditing ? "Save Changes" : "Publish")}
+              : (isEditing && existingStatus === "PUBLISHED" ? "Save Changes" : "Publish")}
           </button>
         </div>
 
       </div>
+
+      {/* Cancel-with-unsaved-changes confirmation. Three explicit
+          choices so the user is never surprised: keep their work as a
+          draft, throw it away, or close this and keep editing. */}
+      {showCancelModal && (
+        <div
+          className="cancel-modal-overlay"
+          onClick={() => setShowCancelModal(false)}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowCancelModal(false); }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close confirmation"
+        >
+          <div
+            className="cancel-modal"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="cancel-modal-title"
+            tabIndex={-1}
+          >
+            <button
+              type="button"
+              className="cancel-modal-close"
+              onClick={() => setShowCancelModal(false)}
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+
+            <h2 id="cancel-modal-title" className="cancel-modal-title">
+              Save your progress?
+            </h2>
+            <p className="cancel-modal-subtitle">
+              You haven't published this article yet. What would you like to do
+              with what you've written so far?
+            </p>
+
+            <div className="cancel-modal-actions">
+              <button
+                type="button"
+                className="btn-primary cancel-modal-btn"
+                onClick={async () => {
+                  setShowCancelModal(false);
+                  await handleSaveDraft();
+                }}
+                disabled={submitting}
+              >
+                Save as Draft
+              </button>
+              <button
+                type="button"
+                className="btn-danger cancel-modal-btn"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  navigate(-1);
+                }}
+              >
+                Discard &amp; Lose Progress
+              </button>
+              <button
+                type="button"
+                className="btn-secondary cancel-modal-btn"
+                onClick={() => setShowCancelModal(false)}
+              >
+                Keep Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

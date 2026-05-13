@@ -18,8 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -174,8 +173,8 @@ class AuthControllerTest {
 
     @Test
     void verifyEmail_ReturnsBadRequestOnInvalidToken() throws Exception {
-        when(authService.verifyEmail("invalid_token"))
-                .thenThrow(new RuntimeException("Invalid token"));
+        doThrow(new RuntimeException("Invalid token"))
+                .when(authService).verifyEmail("invalid_token");
 
         mockMvc.perform(get("/api/v1/auth/verify-email")
                         .param("token", "invalid_token"))
@@ -297,8 +296,8 @@ class AuthControllerTest {
                 }
                 """;
 
-        when(authService.resetPassword("invalid_reset_token", "NewSecurePass123!"))
-                .thenThrow(new RuntimeException("Invalid reset token"));
+        doThrow(new RuntimeException("Invalid reset token"))
+                .when(authService).resetPassword("invalid_reset_token", "NewSecurePass123!");
 
         mockMvc.perform(post("/api/v1/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -409,7 +408,7 @@ class AuthControllerTest {
     @WithMockUser(username = "john_doe")
     void setupMfa_ReturnsOkWithQrCode() throws Exception {
         MfaSetupResponse mockResponse = new MfaSetupResponse();
-        mockResponse.setQrCode("data:image/png;base64,iVBORw0KGgo=");
+        mockResponse.setQrCodeUri("data:image/png;base64,iVBORw0KGgo=");
         mockResponse.setSecret("secret_key");
 
         when(authService.setupMfa("john_doe")).thenReturn(mockResponse);

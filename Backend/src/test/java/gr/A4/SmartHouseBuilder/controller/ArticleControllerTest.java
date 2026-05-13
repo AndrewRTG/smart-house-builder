@@ -26,8 +26,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -264,8 +264,8 @@ class ArticleControllerTest {
     @Test
     @WithMockUser(username = "alexandra")
     void deleteArticle_ReturnsNotFoundOnInvalidId() throws Exception {
-        when(articleService.deleteArticle(999L, "alexandra"))
-                .thenThrow(new RuntimeException("Article not found"));
+        doThrow(new RuntimeException("Article not found"))
+                .when(articleService).deleteArticle(999L, "alexandra");
 
         mockMvc.perform(delete("/api/v1/articles/999"))
                 .andExpect(status().isInternalServerError());
@@ -274,8 +274,8 @@ class ArticleControllerTest {
     @Test
     @WithMockUser(username = "other_user")
     void deleteArticle_ReturnsForbiddenOnUnauthorized() throws Exception {
-        when(articleService.deleteArticle(100L, "other_user"))
-                .thenThrow(new RuntimeException("Article not owned by user"));
+        doThrow(new RuntimeException("Article not owned by user"))
+                .when(articleService).deleteArticle(100L, "other_user");
 
         mockMvc.perform(delete("/api/v1/articles/100"))
                 .andExpect(status().isInternalServerError());
@@ -304,7 +304,7 @@ class ArticleControllerTest {
 
     @Test
     void getAllArticles_ReturnsEmptyPageOnNoArticles() throws Exception {
-        var emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
+        var emptyPage = new PageImpl<Article>(List.of(), PageRequest.of(0, 10), 0);
         when(articleService.getAllArticles(any(PageRequest.class))).thenReturn(emptyPage);
 
         mockMvc.perform(get("/api/v1/articles?page=0&size=10"))

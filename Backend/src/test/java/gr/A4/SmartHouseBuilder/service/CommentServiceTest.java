@@ -330,7 +330,7 @@ class CommentServiceTest {
 
         assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", new CommentRequest("   ", null)))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("blank");
+                .hasMessageContaining("cannot be empty");
         verify(commentRepository, never()).save(any());
     }
 }

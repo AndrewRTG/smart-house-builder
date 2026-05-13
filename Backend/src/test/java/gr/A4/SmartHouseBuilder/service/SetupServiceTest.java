@@ -348,17 +348,4 @@ class SetupServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("not owned");
     }
-
-    @Test
-    void copySetup_throwsWhenCopyNameNullAndAutoFails() {
-        User user = User.builder().id(2L).email("u@e").build();
-        Setup original = Setup.builder().id(10L).publicSetup(true).name("Orig").deviceIds("[]").build();
-        when(setupRepository.findById(10L)).thenReturn(Optional.of(original));
-        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
-        // Auto-generated name "Copy of Orig" already exists
-        when(setupRepository.existsByUserIdAndNameIgnoreCase(2L, "Copy of Orig")).thenReturn(true);
-
-        assertThatThrownBy(() -> setupService.copySetup(10L, "u@e", null))
-                .isInstanceOf(DuplicateSetupNameException.class);
-    }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
+import java.util.Optional;
 
 public interface DeviceRepository extends JpaRepository<Device,Integer> {
     @Query(value = "SELECT * FROM devices WHERE " +
@@ -31,4 +32,5 @@ public interface DeviceRepository extends JpaRepository<Device,Integer> {
             LIMIT 1
             """, nativeQuery = true)
     String findDidYouMeanSuggestion(@Param("keyword") String keyword);
+    Optional<Device> findByName(String name);
 }

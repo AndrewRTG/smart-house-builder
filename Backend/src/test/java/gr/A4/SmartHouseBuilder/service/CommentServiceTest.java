@@ -320,4 +320,15 @@ class CommentServiceTest {
 
         verify(commentRepository, never()).delete(any());
     }
+
+    @Test
+    void createSetupComment_throwsWhenContentBlank() {
+        // The blank-content guard runs before any repository lookup, so no
+        // user/setup stubs are needed (and Mockito's strict mode would flag
+        // them as unused).
+        assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", new CommentRequest("   ", null)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("empty");
+        verify(commentRepository, never()).save(any());
+    }
 }

@@ -348,4 +348,25 @@ class SetupServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("not owned");
     }
+
+    @Test
+    void copySetup_fallsBackToNumberedNameWhenBaseAutoNameCollides() {
+        // When the user doesn't supply a custom name, copySetup never throws
+        // DuplicateSetupNameException — generateUniqueCopyName walks
+        // "Copy of X", "Copy of X (2)", "Copy of X (3)", ... until it finds a
+        // free slot (with a timestamp suffix as the pathological fallback).
+        // Here the base "Copy of Orig" is taken, so the copy must land on
+        // "Copy of Orig (2)".
+        User user = User.builder().id(2L).email("u@e").build();
+        Setup original = Setup.builder().id(10L).publicSetup(true).name("Orig").deviceIds("[]").build();
+        when(setupRepository.findById(10L)).thenReturn(Optional.of(original));
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.existsByUserIdAndNameIgnoreCase(2L, "Copy of Orig")).thenReturn(true);
+        when(setupRepository.existsByUserIdAndNameIgnoreCase(2L, "Copy of Orig (2)")).thenReturn(false);
+        when(setupRepository.save(any(Setup.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Setup copy = setupService.copySetup(10L, "u@e", null);
+
+        assertThat(copy.getName()).isEqualTo("Copy of Orig (2)");
+    }
 }

@@ -1,0 +1,1303 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/features/canvas/Icons.tsx</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">src/features/canvas</a> Icons.tsx</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">66.66% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>24/36</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">33.33% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>6/18</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">66.66% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>24/36</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line medium'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a>
+<a name='L287'></a><a href='#L287'>287</a>
+<a name='L288'></a><a href='#L288'>288</a>
+<a name='L289'></a><a href='#L289'>289</a>
+<a name='L290'></a><a href='#L290'>290</a>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a>
+<a name='L293'></a><a href='#L293'>293</a>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a>
+<a name='L297'></a><a href='#L297'>297</a>
+<a name='L298'></a><a href='#L298'>298</a>
+<a name='L299'></a><a href='#L299'>299</a>
+<a name='L300'></a><a href='#L300'>300</a>
+<a name='L301'></a><a href='#L301'>301</a>
+<a name='L302'></a><a href='#L302'>302</a>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a>
+<a name='L306'></a><a href='#L306'>306</a>
+<a name='L307'></a><a href='#L307'>307</a>
+<a name='L308'></a><a href='#L308'>308</a>
+<a name='L309'></a><a href='#L309'>309</a>
+<a name='L310'></a><a href='#L310'>310</a>
+<a name='L311'></a><a href='#L311'>311</a>
+<a name='L312'></a><a href='#L312'>312</a>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a>
+<a name='L316'></a><a href='#L316'>316</a>
+<a name='L317'></a><a href='#L317'>317</a>
+<a name='L318'></a><a href='#L318'>318</a>
+<a name='L319'></a><a href='#L319'>319</a>
+<a name='L320'></a><a href='#L320'>320</a>
+<a name='L321'></a><a href='#L321'>321</a>
+<a name='L322'></a><a href='#L322'>322</a>
+<a name='L323'></a><a href='#L323'>323</a>
+<a name='L324'></a><a href='#L324'>324</a>
+<a name='L325'></a><a href='#L325'>325</a>
+<a name='L326'></a><a href='#L326'>326</a>
+<a name='L327'></a><a href='#L327'>327</a>
+<a name='L328'></a><a href='#L328'>328</a>
+<a name='L329'></a><a href='#L329'>329</a>
+<a name='L330'></a><a href='#L330'>330</a>
+<a name='L331'></a><a href='#L331'>331</a>
+<a name='L332'></a><a href='#L332'>332</a>
+<a name='L333'></a><a href='#L333'>333</a>
+<a name='L334'></a><a href='#L334'>334</a>
+<a name='L335'></a><a href='#L335'>335</a>
+<a name='L336'></a><a href='#L336'>336</a>
+<a name='L337'></a><a href='#L337'>337</a>
+<a name='L338'></a><a href='#L338'>338</a>
+<a name='L339'></a><a href='#L339'>339</a>
+<a name='L340'></a><a href='#L340'>340</a>
+<a name='L341'></a><a href='#L341'>341</a>
+<a name='L342'></a><a href='#L342'>342</a>
+<a name='L343'></a><a href='#L343'>343</a>
+<a name='L344'></a><a href='#L344'>344</a>
+<a name='L345'></a><a href='#L345'>345</a>
+<a name='L346'></a><a href='#L346'>346</a>
+<a name='L347'></a><a href='#L347'>347</a>
+<a name='L348'></a><a href='#L348'>348</a>
+<a name='L349'></a><a href='#L349'>349</a>
+<a name='L350'></a><a href='#L350'>350</a>
+<a name='L351'></a><a href='#L351'>351</a>
+<a name='L352'></a><a href='#L352'>352</a>
+<a name='L353'></a><a href='#L353'>353</a>
+<a name='L354'></a><a href='#L354'>354</a>
+<a name='L355'></a><a href='#L355'>355</a>
+<a name='L356'></a><a href='#L356'>356</a>
+<a name='L357'></a><a href='#L357'>357</a>
+<a name='L358'></a><a href='#L358'>358</a>
+<a name='L359'></a><a href='#L359'>359</a>
+<a name='L360'></a><a href='#L360'>360</a>
+<a name='L361'></a><a href='#L361'>361</a>
+<a name='L362'></a><a href='#L362'>362</a>
+<a name='L363'></a><a href='#L363'>363</a>
+<a name='L364'></a><a href='#L364'>364</a>
+<a name='L365'></a><a href='#L365'>365</a>
+<a name='L366'></a><a href='#L366'>366</a>
+<a name='L367'></a><a href='#L367'>367</a>
+<a name='L368'></a><a href='#L368'>368</a>
+<a name='L369'></a><a href='#L369'>369</a>
+<a name='L370'></a><a href='#L370'>370</a>
+<a name='L371'></a><a href='#L371'>371</a>
+<a name='L372'></a><a href='#L372'>372</a>
+<a name='L373'></a><a href='#L373'>373</a>
+<a name='L374'></a><a href='#L374'>374</a>
+<a name='L375'></a><a href='#L375'>375</a>
+<a name='L376'></a><a href='#L376'>376</a>
+<a name='L377'></a><a href='#L377'>377</a>
+<a name='L378'></a><a href='#L378'>378</a>
+<a name='L379'></a><a href='#L379'>379</a>
+<a name='L380'></a><a href='#L380'>380</a>
+<a name='L381'></a><a href='#L381'>381</a>
+<a name='L382'></a><a href='#L382'>382</a>
+<a name='L383'></a><a href='#L383'>383</a>
+<a name='L384'></a><a href='#L384'>384</a>
+<a name='L385'></a><a href='#L385'>385</a>
+<a name='L386'></a><a href='#L386'>386</a>
+<a name='L387'></a><a href='#L387'>387</a>
+<a name='L388'></a><a href='#L388'>388</a>
+<a name='L389'></a><a href='#L389'>389</a>
+<a name='L390'></a><a href='#L390'>390</a>
+<a name='L391'></a><a href='#L391'>391</a>
+<a name='L392'></a><a href='#L392'>392</a>
+<a name='L393'></a><a href='#L393'>393</a>
+<a name='L394'></a><a href='#L394'>394</a>
+<a name='L395'></a><a href='#L395'>395</a>
+<a name='L396'></a><a href='#L396'>396</a>
+<a name='L397'></a><a href='#L397'>397</a>
+<a name='L398'></a><a href='#L398'>398</a>
+<a name='L399'></a><a href='#L399'>399</a>
+<a name='L400'></a><a href='#L400'>400</a>
+<a name='L401'></a><a href='#L401'>401</a>
+<a name='L402'></a><a href='#L402'>402</a>
+<a name='L403'></a><a href='#L403'>403</a>
+<a name='L404'></a><a href='#L404'>404</a>
+<a name='L405'></a><a href='#L405'>405</a>
+<a name='L406'></a><a href='#L406'>406</a>
+<a name='L407'></a><a href='#L407'>407</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as React from 'react';
+&nbsp;
+interface IconProps {
+  color: string;
+}
+&nbsp;
+//  1. controller
+export const ControllerIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+  &gt;
+    
+&nbsp;
+        &lt;path d="M22.6074 1.96118C22.9794 1.96118 23.2568 2.2801 23.2568 2.64185V10.1116C23.2566 11.5018 22.1996 12.6593 20.8691 12.6594C19.5385 12.6594 18.4817 11.5019 18.4814 10.1116V8.47681C18.4812 7.67961 17.8805 7.05706 17.1738 7.05688C16.467 7.05688 15.8655 7.6795 15.8652 8.47681V13.6321H21.4102C25.0818 13.6321 28.0381 16.8802 28.0381 20.8352C28.0381 25.1805 25.0934 27.9866 22.2891 28.0383H22.2871C21.6485 28.0451 19.7938 27.906 18.0527 27.3918C16.2042 26.8461 13.8958 26.846 12.04 27.3918C10.4122 27.8705 8.82405 28.0383 7.90332 28.0383C7.87191 28.0383 7.8386 28.0388 7.80664 28.0383C6.03938 28.0136 4.57331 27.0551 3.55664 25.6917C2.54108 24.3296 1.96094 22.5488 1.96094 20.8352C1.96094 16.8772 4.96232 13.6322 8.68359 13.6321H14.5684V8.47681C14.5686 6.95814 15.7232 5.69556 17.1738 5.69556C18.6243 5.69573 19.7781 6.95825 19.7783 8.47681V10.1116C19.7785 10.7801 20.2823 11.2981 20.8691 11.2981C21.4558 11.2979 21.9588 10.78 21.959 10.1116V2.64185C21.959 2.28024 22.2357 1.96143 22.6074 1.96118ZM8.68359 14.9934C5.7061 14.9935 3.25781 17.6 3.25781 20.8352C3.25782 24.3307 5.6622 26.6472 7.82422 26.677L8.15918 26.6731C9.01114 26.645 10.3276 26.4812 11.6904 26.0803C13.7664 25.4699 16.3349 25.4697 18.4043 26.0813C19.9928 26.5503 21.7307 26.6854 22.2666 26.676C23.5821 26.6519 24.697 25.9086 25.4902 24.8C26.2842 23.6905 26.7412 22.2332 26.7412 20.8352C26.7412 17.5959 24.3319 14.9934 21.4102 14.9934H8.68359Z" fill={color} stroke={color} stroke-width="0.4275"/&gt;
+        &lt;path d="M16.7959 16.1797C16.7959 15.9216 16.6011 15.7129 16.3611 15.7129H14.3478C14.1079 15.7129 13.9131 15.9216 13.9131 16.1797C13.9131 16.4379 14.1079 16.6466 14.3478 16.6466H16.3611C16.6016 16.6466 16.7959 16.4379 16.7959 16.1797Z" fill={color}/&gt;
+        &lt;path d="M18.2605 18.981C17.3014 18.981 16.5215 19.8185 16.5215 20.8483C16.5215 21.8781 17.3014 22.7156 18.2605 22.7156C19.2195 22.7156 19.9995 21.8781 19.9995 20.8483C19.9995 19.8185 19.2195 18.981 18.2605 18.981ZM18.2605 21.7819C17.7809 21.7819 17.391 21.3632 17.391 20.8483C17.391 20.3334 17.7809 19.9146 18.2605 19.9146C18.74 19.9146 19.13 20.3334 19.13 20.8483C19.13 21.3632 18.74 21.7819 18.2605 21.7819Z" fill={color}/&gt;
+        &lt;path d="M24.3469 18.981C23.3878 18.981 22.6079 19.8185 22.6079 20.8483C22.6079 21.8781 23.3878 22.7156 24.3469 22.7156C25.3059 22.7156 26.0859 21.8781 26.0859 20.8483C26.0859 19.8185 25.3059 18.981 24.3469 18.981ZM24.3469 21.7819C23.8674 21.7819 23.4774 21.3632 23.4774 20.8483C23.4774 20.3334 23.8674 19.9146 24.3469 19.9146C24.8264 19.9146 25.2164 20.3334 25.2164 20.8483C25.2164 21.3632 24.8264 21.7819 24.3469 21.7819Z" fill={color}/&gt;
+        &lt;path d="M21.3034 22.2485C20.3444 22.2485 19.5645 23.086 19.5645 24.1159C19.5645 25.1457 20.3444 25.9832 21.3034 25.9832C22.2625 25.9832 23.0424 25.1457 23.0424 24.1159C23.0424 23.086 22.2625 22.2485 21.3034 22.2485ZM21.3034 25.0495C20.8239 25.0495 20.4339 24.6308 20.4339 24.1159C20.4339 23.6009 20.8239 23.1822 21.3034 23.1822C21.783 23.1822 22.1729 23.6009 22.1729 24.1159C22.1729 24.6308 21.783 25.0495 21.3034 25.0495Z" fill={color}/&gt;
+        &lt;path d="M21.3034 19.4475C22.2625 19.4475 23.0424 18.61 23.0424 17.5802C23.0424 16.5504 22.2625 15.7129 21.3034 15.7129C20.3444 15.7129 19.5645 16.5504 19.5645 17.5802C19.5645 18.61 20.3444 19.4475 21.3034 19.4475ZM21.3034 16.6466C21.783 16.6466 22.1729 17.0653 22.1729 17.5802C22.1729 18.0951 21.783 18.5139 21.3034 18.5139C20.8239 18.5139 20.4339 18.0951 20.4339 17.5802C20.4339 17.0653 20.8239 16.6466 21.3034 16.6466Z" fill={color}/&gt;
+        &lt;path d="M12.1735 18.9808H10.8693V17.5804C10.8693 17.3222 10.6745 17.1135 10.4345 17.1135H7.82607C7.58609 17.1135 7.39133 17.3222 7.39133 17.5804V18.9808H6.08709C5.84711 18.9808 5.65234 19.1895 5.65234 19.4477V22.2487C5.65234 22.5068 5.84711 22.7155 6.08709 22.7155H7.39133V24.116C7.39133 24.3741 7.58609 24.5828 7.82607 24.5828H10.4345C10.6745 24.5828 10.8693 24.3741 10.8693 24.116V22.7155H12.1735C12.4135 22.7155 12.6083 22.5068 12.6083 22.2487V19.4477C12.6083 19.1891 12.4135 18.9808 12.1735 18.9808ZM11.7388 21.7818H10.4345C10.1946 21.7818 9.9998 21.9905 9.9998 22.2487V23.6492H8.26082V22.2487C8.26082 21.9905 8.06605 21.7818 7.82607 21.7818H6.52184V19.9145H7.82607C8.06605 19.9145 8.26082 19.7058 8.26082 19.4477V18.0472H9.9998V19.4477C9.9998 19.7058 10.1946 19.9145 10.4345 19.9145H11.7388V21.7818Z" fill={color}/&gt;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+// 2. senzor miscare
+export const SenzorIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+  &gt;
+   
+       &lt;path d="M14.9501 18.5211C16.9224 18.5211 18.5213 16.9222 18.5213 14.9499C18.5213 12.9775 16.9224 11.3787 14.9501 11.3787C12.9778 11.3787 11.3789 12.9775 11.3789 14.9499C11.3789 16.9222 12.9778 18.5211 14.9501 18.5211Z" fill={color}/&gt;
+       &lt;path d="M23.8782 6.02197L14.9502 14.95L23.8782 23.878" stroke={color} stroke-width="1.7856" stroke-linecap="round"/&gt;
+       &lt;path d="M28.3421 14.9501C28.3421 7.55391 22.3463 1.55811 14.9501 1.55811C7.55391 1.55811 1.55811 7.55391 1.55811 14.9501C1.55811 22.3463 7.55391 28.3421 14.9501 28.3421C22.3463 28.3421 28.3421 22.3463 28.3421 14.9501Z" stroke={color} stroke-width="1.7856"/&gt;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+// 3. smart lock
+export const LockIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+            
+        &lt;path d="M15.0002 21.3C15.9943 21.3 16.8002 20.4941 16.8002 19.5C16.8002 18.5058 15.9943 17.7 15.0002 17.7C14.0061 17.7 13.2002 18.5058 13.2002 19.5C13.2002 20.4941 14.0061 21.3 15.0002 21.3Z" fill={color}/&gt;
+        &lt;path d="M10.5 10.5V6C10.5 3.51472 12.5147 1.5 15 1.5C17.4853 1.5 19.5 3.51472 19.5 6V10.5" stroke={color} stroke-width="1.8"/&gt;
+        &lt;path d="M22.2 10.5H7.8C6.80589 10.5 6 11.3059 6 12.3V26.7C6 27.6941 6.80589 28.5 7.8 28.5H22.2C23.1941 28.5 24 27.6941 24 26.7V12.3C24 11.3059 23.1941 10.5 22.2 10.5Z" stroke={color} stroke-width="1.8"/&gt;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//4. router 
+export const RouterIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+        &lt;path d="M15.2628 27.1547C16.9043 27.1547 18.235 25.8137 18.235 24.1595C18.235 22.5053 16.9043 21.1643 15.2628 21.1643C13.6212 21.1643 12.2905 22.5053 12.2905 24.1595C12.2905 25.8137 13.6212 27.1547 15.2628 27.1547Z" fill={color}/&gt;
+        &lt;path d="M2.38281 11.1801C8.3273 5.18966 22.1978 5.18966 28.1422 11.1801" stroke={color} stroke-width="2.0592" stroke-linecap="round"/&gt;
+        &lt;path d="M7.33643 16.1724C10.3087 13.1772 20.2161 13.1772 23.1884 16.1724" stroke={color} stroke-width="2.0592" stroke-linecap="round"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//5. Tv 
+export const TvIcon: React.FC&lt;IconProps&gt; = ({ color }) =&gt; (
+  &lt;svg 
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+       
+        &lt;path d="M23.7998 9.94242C24.272 9.94242 24.6548 9.55963 24.6548 9.08742C24.6548 8.61522 24.272 8.23242 23.7998 8.23242C23.3276 8.23242 22.9448 8.61522 22.9448 9.08742C22.9448 9.55963 23.3276 9.94242 23.7998 9.94242Z" fill="#E74C3C"/&gt;
+        &lt;path d="M19.5249 22.25H10.5249V24.05H19.5249V22.25Z" fill={color}/&gt;
+        &lt;path d="M27.6473 6.94995H2.8523C2.6162 6.94995 2.4248 7.14135 2.4248 7.37745V21.485C2.4248 21.7211 2.6162 21.9125 2.8523 21.9125H27.6473C27.8834 21.9125 28.0748 21.7211 28.0748 21.485V7.37745C28.0748 7.14135 27.8834 6.94995 27.6473 6.94995Z" stroke={color} stroke-width="1.8"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//6. Interfon video
+export const InterfonIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+&nbsp;
+            &lt;path d="M22.5 3.75H7.5C5.42893 3.75 3.75 5.42893 3.75 7.5V22.5C3.75 24.5711 5.42893 26.25 7.5 26.25H22.5C24.5711 26.25 26.25 24.5711 26.25 22.5V7.5C26.25 5.42893 24.5711 3.75 22.5 3.75Z" stroke={color} stroke-width="1.86"/&gt;
+            &lt;path d="M16.25 7.5H8.75C8.05964 7.5 7.5 8.05964 7.5 8.75V13.75C7.5 14.4404 8.05964 15 8.75 15H16.25C16.9404 15 17.5 14.4404 17.5 13.75V8.75C17.5 8.05964 16.9404 7.5 16.25 7.5Z" stroke={color} stroke-width="1.86"/&gt;
+            &lt;path d="M21.875 7.5H20.625C20.2798 7.5 20 7.77982 20 8.125V9.375C20 9.72018 20.2798 10 20.625 10H21.875C22.2202 10 22.5 9.72018 22.5 9.375V8.125C22.5 7.77982 22.2202 7.5 21.875 7.5Z" fill={color}/&gt;
+            &lt;path d="M21.875 12.5H20.625C20.2798 12.5 20 12.7798 20 13.125V14.375C20 14.7202 20.2798 15 20.625 15H21.875C22.2202 15 22.5 14.7202 22.5 14.375V13.125C22.5 12.7798 22.2202 12.5 21.875 12.5Z" fill={color}/&gt;
+            &lt;path d="M8.75 20.125C9.16421 20.125 9.5 19.7892 9.5 19.375C9.5 18.9608 9.16421 18.625 8.75 18.625C8.33579 18.625 8 18.9608 8 19.375C8 19.7892 8.33579 20.125 8.75 20.125Z" fill={color}/&gt;
+            &lt;path d="M11.25 20.125C11.6642 20.125 12 19.7892 12 19.375C12 18.9608 11.6642 18.625 11.25 18.625C10.8358 18.625 10.5 18.9608 10.5 19.375C10.5 19.7892 10.8358 20.125 11.25 20.125Z" fill={color}/&gt;
+            &lt;path d="M13.7505 20.125C14.1647 20.125 14.5005 19.7892 14.5005 19.375C14.5005 18.9608 14.1647 18.625 13.7505 18.625C13.3363 18.625 13.0005 18.9608 13.0005 19.375C13.0005 19.7892 13.3363 20.125 13.7505 20.125Z" fill={color}/&gt;
+            &lt;path d="M16.25 20.125C16.6642 20.125 17 19.7892 17 19.375C17 18.9608 16.6642 18.625 16.25 18.625C15.8358 18.625 15.5 18.9608 15.5 19.375C15.5 19.7892 15.8358 20.125 16.25 20.125Z" fill={color}/&gt;
+            &lt;path d="M8.75 22.625C9.16421 22.625 9.5 22.2892 9.5 21.875C9.5 21.4608 9.16421 21.125 8.75 21.125C8.33579 21.125 8 21.4608 8 21.875C8 22.2892 8.33579 22.625 8.75 22.625Z" fill={color}/&gt;
+            &lt;path d="M11.25 22.625C11.6642 22.625 12 22.2892 12 21.875C12 21.4608 11.6642 21.125 11.25 21.125C10.8358 21.125 10.5 21.4608 10.5 21.875C10.5 22.2892 10.8358 22.625 11.25 22.625Z" fill={color}/&gt;
+            &lt;path d="M13.7505 22.625C14.1647 22.625 14.5005 22.2892 14.5005 21.875C14.5005 21.4608 14.1647 21.125 13.7505 21.125C13.3363 21.125 13.0005 21.4608 13.0005 21.875C13.0005 22.2892 13.3363 22.625 13.7505 22.625Z" fill={color}/&gt;
+            &lt;path d="M16.25 22.625C16.6642 22.625 17 22.2892 17 21.875C17 21.4608 16.6642 21.125 16.25 21.125C15.8358 21.125 15.5 21.4608 15.5 21.875C15.5 22.2892 15.8358 22.625 16.25 22.625Z" fill={color}/&gt;
+            &lt;path d="M12.5 12.75C13.3284 12.75 14 12.0784 14 11.25C14 10.4216 13.3284 9.75 12.5 9.75C11.6716 9.75 11 10.4216 11 11.25C11 12.0784 11.6716 12.75 12.5 12.75Z" fill={color}/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//7. Prelungitor icon
+export const PrelungitorIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+      
+        &lt;path d="M21.6201 20.955C22.2252 20.955 22.7158 20.4645 22.7158 19.8594C22.7158 19.2542 22.2252 18.7637 21.6201 18.7637C21.015 18.7637 20.5244 19.2542 20.5244 19.8594C20.5244 20.4645 21.015 20.955 21.6201 20.955Z" fill={color}/&gt;
+        &lt;path d="M21.6193 23.2831C23.5103 23.2831 25.0433 21.7501 25.0433 19.8591C25.0433 17.968 23.5103 16.4351 21.6193 16.4351C19.7283 16.4351 18.1953 17.968 18.1953 19.8591C18.1953 21.7501 19.7283 23.2831 21.6193 23.2831Z" stroke={color} stroke-width="1.5"/&gt;
+        &lt;path d="M7.9238 20.955C8.52893 20.955 9.01948 20.4645 9.01948 19.8594C9.01948 19.2542 8.52893 18.7637 7.9238 18.7637C7.31868 18.7637 6.82812 19.2542 6.82812 19.8594C6.82812 20.4645 7.31868 20.955 7.9238 20.955Z" fill={color}/&gt;
+        &lt;path d="M7.92351 23.2831C9.81453 23.2831 11.3475 21.7501 11.3475 19.8591C11.3475 17.968 9.81453 16.4351 7.92351 16.4351C6.03249 16.4351 4.49951 17.968 4.49951 19.8591C4.49951 21.7501 6.03249 23.2831 7.92351 23.2831Z" stroke={color} stroke-width="1.5"/&gt;
+        &lt;path d="M22.9898 13.696H6.5546C4.28537 13.696 2.4458 15.5356 2.4458 17.8048V21.9136C2.4458 24.1829 4.28537 26.0224 6.5546 26.0224H22.9898C25.259 26.0224 27.0986 24.1829 27.0986 21.9136V17.8048C27.0986 15.5356 25.259 13.696 22.9898 13.696Z" stroke={color} stroke-width="1.5"/&gt;
+        &lt;path d="M23.6743 8.21729V13.6957" stroke={color} stroke-width="1.34165" stroke-linecap="round"/&gt;
+        &lt;path d="M22.9897 4.10883V1.36963H20.2505V4.10883M27.0985 4.10883V1.36963H24.3593V4.10883M20.2505 8.21762H27.0985C27.8549 8.21762 28.4681 7.60443 28.4681 6.84802V5.47843C28.4681 4.72202 27.8549 4.10883 27.0985 4.10883H20.2505C19.494 4.10883 18.8809 4.72202 18.8809 5.47843V6.84802C18.8809 7.60443 19.494 8.21762 20.2505 8.21762Z" fill={color}/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//8. SoundSystem icon
+export const SoundSystemIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+    
+        &lt;path d="M21.5568 1.7749H7.54284C6.94748 1.7749 6.46484 2.25754 6.46484 2.8529V27.6469C6.46484 28.2423 6.94748 28.7249 7.54284 28.7249H21.5568C22.1522 28.7249 22.6348 28.2423 22.6348 27.6469V2.8529C22.6348 2.25754 22.1522 1.7749 21.5568 1.7749Z" stroke={color} stroke-width="1.4"/&gt;
+        &lt;path d="M14.5497 26.03C17.5265 26.03 19.9397 23.6168 19.9397 20.64C19.9397 17.6632 17.5265 15.25 14.5497 15.25C11.5729 15.25 9.15967 17.6632 9.15967 20.64C9.15967 23.6168 11.5729 26.03 14.5497 26.03Z" stroke={color} stroke-width="1.4"/&gt;
+        &lt;path d="M14.5499 13.0942C16.336 13.0942 17.7839 11.6463 17.7839 9.86022C17.7839 8.07413 16.336 6.62622 14.5499 6.62622C12.7638 6.62622 11.3159 8.07413 11.3159 9.86022C11.3159 11.6463 12.7638 13.0942 14.5499 13.0942Z" stroke={color} stroke-width="1.4"/&gt;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//9. Bec icon
+export const BecIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+    
+&nbsp;
+        &lt;path d="M14.08 1V4.024M24.16 6.04L22.144 8.056M4 6.04L6.016 8.056" stroke={color} stroke-width="1.4" stroke-linecap="round"/&gt;
+        &lt;path d="M14.08 26.2V29.224M9.04004 26.2H19.12" stroke={color} stroke-width="1.4" stroke-linecap="round"/&gt;
+        &lt;path d="M14.0801 6.03979C9.04011 6.03979 6.01611 10.0718 6.01611 14.1038C6.01611 18.1358 9.04011 21.1598 11.0561 23.1758V26.1998H17.1041V23.1758C19.1201 21.1598 22.1441 18.1358 22.1441 14.1038C22.1441 10.0718 19.1201 6.03979 14.0801 6.03979Z" stroke={color} stroke-width="1.4"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//10. Priza icon
+export const PrizaIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+     
+        &lt;path d="M18.2522 10.5535H17.3969C16.9245 10.5535 16.5415 10.9364 16.5415 11.4088V18.2517C16.5415 18.7241 16.9245 19.1071 17.3969 19.1071H18.2522C18.7246 19.1071 19.1076 18.7241 19.1076 18.2517V11.4088C19.1076 10.9364 18.7246 10.5535 18.2522 10.5535Z" fill={color}/&gt;
+        &lt;path d="M12.2639 10.5535H11.4086C10.9362 10.5535 10.5532 10.9364 10.5532 11.4088V18.2517C10.5532 18.7241 10.9362 19.1071 11.4086 19.1071H12.2639C12.7363 19.1071 13.1193 18.7241 13.1193 18.2517V11.4088C13.1193 10.9364 12.7363 10.5535 12.2639 10.5535Z" fill={color}/&gt;
+        &lt;path d="M27.6608 14.8304C27.6608 7.74437 21.9164 2 14.8304 2C7.74437 2 2 7.74437 2 14.8304C2 21.9164 7.74437 27.6608 14.8304 27.6608C21.9164 27.6608 27.6608 21.9164 27.6608 14.8304Z" stroke={color} stroke-width="1.71072"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+//11. Aspirator icon
+export const AspiratorIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+     
+&nbsp;
+        &lt;path d="M15.15 27.3C21.8603 27.3 27.3 21.8603 27.3 15.15C27.3 8.43974 21.8603 3 15.15 3C8.43974 3 3 8.43974 3 15.15C3 21.8603 8.43974 27.3 15.15 27.3Z" stroke={color} stroke-width="2.025"/&gt;
+        &lt;ellipse cx="15.414" cy="15.414" rx="0.792391" ry="0.792391" fill={color}/&gt;
+        &lt;path d="M15.1495 23.0739C19.5258 23.0739 23.0734 19.5262 23.0734 15.15C23.0734 10.7737 19.5258 7.22607 15.1495 7.22607C10.7732 7.22607 7.22559 10.7737 7.22559 15.15C7.22559 19.5262 10.7732 23.0739 15.1495 23.0739Z" stroke={color} stroke-width="2.025" stroke-dasharray="2.27 1.13"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//12. Hub icon
+export const HubIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color }) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    viewBox="0 0 30 30" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+     
+ 
+        &lt;path d="M20.5952 19.7446H24.6377" stroke={color} stroke-width="1.617" stroke-linecap="round"/&gt;
+        &lt;path d="M23.021 6H6.851C4.17187 6 2 8.17187 2 10.851V20.553C2 23.2321 4.17187 25.404 6.851 25.404H23.021C25.7001 25.404 27.872 23.2321 27.872 20.553V10.851C27.872 8.17187 25.7001 6 23.021 6Z" stroke={color} stroke-width="2" stroke-linejoin="round"/&gt;
+        &lt;path d="M5.23389 19.7446H9.27639" stroke={color} stroke-width="1.617" stroke-linecap="round"/&gt;
+        &lt;path d="M20.5951 10.8511H9.27609C7.93652 10.8511 6.85059 11.937 6.85059 13.2766C6.85059 14.6161 7.93652 15.7021 9.27609 15.7021H20.5951C21.9347 15.7021 23.0206 14.6161 23.0206 13.2766C23.0206 11.937 21.9347 10.8511 20.5951 10.8511Z" stroke={color} stroke-width="1.6632" stroke-linejoin="round"/&gt;
+        &lt;path d="M13.272 22.355H16.506" stroke={color} stroke-width="1.617" stroke-linecap="round"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+//logo icon
+export const LogoIcon: React.FC&lt;IconProps&gt; = <span class="fstat-no" title="function not covered" >({</span> color = <span class="branch-0 cbranch-no" title="branch not covered" >"currentColor" }</span>) =&gt; (
+<span class="cstat-no" title="statement not covered" >  &lt;svg </span>
+    width="40"   
+    height="40" 
+    viewBox="0 0 40 40" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  &gt;
+   
+    &lt;path d="M1.5 14.9954L19 1.5L35.5 14.2553V37H23.0605" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/&gt;
+    &lt;path d="M23.1484 36.1395C23.1484 24.5901 13.502 15.2273 1.60254 15.2273" stroke={color} strokeWidth="3" strokeLinecap="round"/&gt;
+    &lt;path d="M16.9924 36.1399C16.9924 27.8903 10.1023 21.2026 1.60254 21.2026" stroke={color} strokeWidth="3" strokeLinecap="round"/&gt;
+    &lt;path d="M10.8364 36.1394C10.8364 31.1898 6.70238 27.177 1.60254 27.177" stroke={color} strokeWidth="3" strokeLinecap="round"/&gt;
+  &lt;/svg&gt;
+);
+&nbsp;
+//wall
+export const WallIcon: React.FC&lt;IconProps&gt; = ({ color }) =&gt; (
+  &lt;svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+       
+        &lt;path d="M19.3669 12H2.03353C1.29715 12 0.700195 12.7163 0.700195 13.6V18.4C0.700195 19.2837 1.29715 20 2.03353 20H19.3669C20.1032 20 20.7002 19.2837 20.7002 18.4V13.6C20.7002 12.7163 20.1032 12 19.3669 12Z" stroke={color} stroke-width="1.4"/&gt;
+        &lt;path d="M19.3669 0H2.03353C1.29715 0 0.700195 0.716344 0.700195 1.6V6.4C0.700195 7.28366 1.29715 8 2.03353 8H19.3669C20.1032 8 20.7002 7.28366 20.7002 6.4V1.6C20.7002 0.716344 20.1032 0 19.3669 0Z" fill={color}/&gt;
+      
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//window
+export const WindowIcon: React.FC&lt;IconProps&gt; = ({ color }) =&gt; (
+  &lt;svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+        
+    &lt;path d="M0.700195 10.7H20.7002" stroke={color} stroke-width="1.4"/&gt;
+    &lt;path d="M10.7002 0.699951V20.7" stroke={color} stroke-width="1.4"/&gt;
+    &lt;path d="M18.7002 0.699951H2.7002C1.59563 0.699951 0.700195 1.77447 0.700195 3.09995V18.3C0.700195 19.6254 1.59563 20.7 2.7002 20.7H18.7002C19.8048 20.7 20.7002 19.6254 20.7002 18.3V3.09995C20.7002 1.77447 19.8048 0.699951 18.7002 0.699951Z" stroke={color} stroke-width="1.4"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+&nbsp;
+//door
+export const DoorIcon: React.FC&lt;IconProps&gt; = ({ color }) =&gt; (
+  &lt;svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+      
+    &lt;path d="M0.629883 20.6299H20.6299" stroke={color} stroke-width="1.26" stroke-dasharray="1.26 1.26"/&gt;
+    &lt;path d="M0.629883 20.6299V0.629883C12.6299 0.629883 20.6299 8.62988 20.6299 20.6299" stroke={color} stroke-width="1.26" stroke-linecap="round"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+//line
+export const LineIcon: React.FC&lt;IconProps&gt; = ({ color }) =&gt; (
+  &lt;svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+    
+    
+    &lt;path d="M19.6955 13C20.4159 13 20.9998 12.3284 20.9998 11.5C20.9998 10.6716 20.4159 10 19.6955 10C18.9751 10 18.3911 10.6716 18.3911 11.5C18.3911 12.3284 18.9751 13 19.6955 13Z" fill={color}/&gt;
+    &lt;path d="M2.30437 13C3.02475 13 3.60873 12.3284 3.60873 11.5C3.60873 10.6716 3.02475 10 2.30437 10C1.58398 10 1 10.6716 1 11.5C1 12.3284 1.58398 13 2.30437 13Z" fill={color}/&gt;
+    &lt;path d="M2.3042 11.5H19.6958" stroke={color} stroke-width="0.9072" stroke-linecap="round"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;
+//furniture
+export const FurnitureIcon: React.FC&lt;IconProps&gt; = ({ color }) =&gt; (
+  &lt;svg 
+    viewBox="0 0 22 22" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: '100%', height: '100%' }}
+        
+    &gt;
+        
+  
+&lt;path d="M18.0262 0.693115H3.35954C1.88678 0.693115 0.692871 2.25039 0.692871 4.17138V14.6062C0.692871 16.5271 1.88678 18.0844 3.35954 18.0844H18.0262C19.499 18.0844 20.6929 16.5271 20.6929 14.6062V4.17138C20.6929 2.25039 19.499 0.693115 18.0262 0.693115Z" stroke={color} stroke-width="1.386"/&gt;
+&lt;path d="M4.02637 18.0847V20.6934M17.3597 18.0847V20.6934" stroke={color} stroke-width="1.386"/&gt;
+&lt;path d="M16.693 5.04102H4.69303C4.32484 5.04102 4.02637 5.43033 4.02637 5.91058V12.8671C4.02637 13.3474 4.32484 13.7367 4.69303 13.7367H16.693C17.0612 13.7367 17.3597 13.3474 17.3597 12.8671V5.91058C17.3597 5.43033 17.0612 5.04102 16.693 5.04102Z" stroke={color} stroke-width="1.0395"/&gt;
+&nbsp;
+&nbsp;
+&nbsp;
+  &lt;/svg&gt;
+);
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-05-13T14:56:51.906Z
+            </div>
+        <script src="../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../sorter.js"></script>
+        <script src="../../../block-navigation.js"></script>
+    </body>
+</html>
+    

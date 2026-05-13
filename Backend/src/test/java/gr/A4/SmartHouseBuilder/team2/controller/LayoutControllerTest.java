@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -137,6 +138,91 @@ class LayoutControllerTest {
     }
 
     @Test
+    void saveLayout_skipsUserLookupWhenAuthenticationNotAuthenticated() {
+        SetupBuildDTO input = new SetupBuildDTO();
+        SetupBuildDTO validated = new SetupBuildDTO();
+        when(layoutService.validateLayout(any())).thenReturn(validated);
+        when(authentication.isAuthenticated()).thenReturn(false);
+        when(layoutPersistenceService.saveAsJson(eq(validated), eq(null))).thenReturn(42);
+
+        ResponseEntity<Map<String, Object>> response = controller.saveLayout(input, authentication);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(42, response.getBody().get("id"));
+        verify(layoutPersistenceService).saveAsJson(validated, null);
+        verify(userRepository, never()).findByEmail(any());
+    }
+
+    @Test
+    void saveLayout_treatsNullValidationResultEntriesAsValid() {
+        SetupBuildDTO input = new SetupBuildDTO();
+        SetupBuildDTO validated = new SetupBuildDTO();
+        // anyMatch must short-circuit on null entries (the lambda guards with
+        // r != null), so a list that contains only nulls is considered valid.
+        validated.setErrors(Arrays.asList((gr.A4.SmartHouseBuilder.model.ValidationResult) null));
+        when(layoutService.validateLayout(any())).thenReturn(validated);
+        when(layoutPersistenceService.saveAsJson(eq(validated), eq(null))).thenReturn(8);
+
+        ResponseEntity<Map<String, Object>> response = controller.saveLayout(input, null);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals(Boolean.TRUE, response.getBody().get("saved"));
+    }
+
+    @Test
+    void saveLayout_skipsUserLookupWhenEmailIsNull() {
+        SetupBuildDTO input = new SetupBuildDTO();
+        SetupBuildDTO validated = new SetupBuildDTO();
+        when(layoutService.validateLayout(any())).thenReturn(validated);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn(null);
+        when(layoutPersistenceService.saveAsJson(eq(validated), eq(null))).thenReturn(4);
+
+        ResponseEntity<Map<String, Object>> response = controller.saveLayout(input, authentication);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        verify(userRepository, never()).findByEmail(any());
+    }
+
+    @Test
+    void saveLayout_skipsUserLookupWhenEmailIsBlank() {
+        SetupBuildDTO input = new SetupBuildDTO();
+        SetupBuildDTO validated = new SetupBuildDTO();
+        when(layoutService.validateLayout(any())).thenReturn(validated);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("   ");
+        when(layoutPersistenceService.saveAsJson(eq(validated), eq(null))).thenReturn(3);
+
+        ResponseEntity<Map<String, Object>> response = controller.saveLayout(input, authentication);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        verify(layoutPersistenceService).saveAsJson(validated, null);
+        verify(userRepository, never()).findByEmail(any());
+    }
+
+    @Test
+    void saveLayout_passesNullUserIdWhenUserIdOverflowsInteger() {
+        SetupBuildDTO input = new SetupBuildDTO();
+        SetupBuildDTO validated = new SetupBuildDTO();
+        when(layoutService.validateLayout(any())).thenReturn(validated);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("big@example.com");
+
+        // Long.MAX_VALUE cannot be represented as an int, so Math.toIntExact
+        // throws ArithmeticException and the controller must fall back to null.
+        User user = new User();
+        user.setId(Long.MAX_VALUE);
+        when(userRepository.findByEmail("big@example.com")).thenReturn(Optional.of(user));
+        when(layoutPersistenceService.saveAsJson(eq(validated), eq(null))).thenReturn(17);
+
+        ResponseEntity<Map<String, Object>> response = controller.saveLayout(input, authentication);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        verify(layoutPersistenceService).saveAsJson(validated, null);
+    }
+
+    @Test
     void getLayoutThumbnail_returnsBytesAndPngContentType() {
         byte[] png = new byte[]{1, 2, 3};
         Layout layout = new Layout();
@@ -166,6 +252,18 @@ class LayoutControllerTest {
         when(layoutRepository.findById(8)).thenReturn(Optional.of(layout));
 
         ResponseEntity<byte[]> response = controller.getLayoutThumbnail(8);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void getLayoutThumbnail_returns404WhenThumbnailIsNull() {
+        // Layout exists but thumbnailPng is null (default) — the filter must
+        // short-circuit on `bytes != null` and produce a 404, not an NPE.
+        Layout layout = new Layout();
+        when(layoutRepository.findById(9)).thenReturn(Optional.of(layout));
+
+        ResponseEntity<byte[]> response = controller.getLayoutThumbnail(9);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }

@@ -8,6 +8,7 @@ import gr.A4.SmartHouseBuilder.team2.dto.PlacedDeviceRichDTO;
 import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,6 +101,25 @@ class ModelMapperTest {
 
         SetupBuild model = mapper.toEngineModel(dto);
 
+        PlacedDevice pd = model.getDevices().get(0);
+        assertNotNull(pd.getDevice());
+        assertNull(pd.getDevice().getName());
+        assertNull(pd.getX());
+        assertNull(pd.getY());
+    }
+
+    @Test
+    void toEngineModel_handlesNullPlacedDeviceEntries() {
+        // A null element in the devices stream exercises the `dto != null` =
+        // false short-circuit branches in both the device and coordinates
+        // guards of mapDevice.
+        SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setDevices(Arrays.asList((PlacedDeviceRichDTO) null));
+
+        SetupBuild model = mapper.toEngineModel(dto);
+
+        assertNotNull(model.getDevices());
+        assertEquals(1, model.getDevices().size());
         PlacedDevice pd = model.getDevices().get(0);
         assertNotNull(pd.getDevice());
         assertNull(pd.getDevice().getName());

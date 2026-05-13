@@ -323,14 +323,12 @@ class CommentServiceTest {
 
     @Test
     void createSetupComment_throwsWhenContentBlank() {
-        User user = User.builder().id(1L).email("u@e").build();
-        Setup setup = Setup.builder().id(10L).build();
-        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
-        when(setupRepository.findById(10L)).thenReturn(Optional.of(setup));
-
+        // The blank-content guard runs before any repository lookup, so no
+        // user/setup stubs are needed (and Mockito's strict mode would flag
+        // them as unused).
         assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", new CommentRequest("   ", null)))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("blank");
+                .hasMessageContaining("empty");
         verify(commentRepository, never()).save(any());
     }
 }

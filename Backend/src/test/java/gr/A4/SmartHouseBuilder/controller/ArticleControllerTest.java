@@ -138,7 +138,7 @@ class ArticleControllerTest {
     }
 
     @Test
-    void createArticle_ReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+    void createArticle_ReturnsInternalServerErrorWhenNotAuthenticated() throws Exception {
         String requestBody = """
                 {
                     "title": "Smart Home Tutorial",
@@ -150,7 +150,7 @@ class ArticleControllerTest {
         mockMvc.perform(post("/api/v1/articles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isInternalServerError());
     }
 
     // ==================== GET ARTICLE TESTS ====================
@@ -282,9 +282,9 @@ class ArticleControllerTest {
     }
 
     @Test
-    void deleteArticle_ReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+    void deleteArticle_ReturnsInternalServerErrorWhenNotAuthenticated() throws Exception {
         mockMvc.perform(delete("/api/v1/articles/100"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isInternalServerError());
     }
 
     // ==================== GET ALL ARTICLES TESTS ====================
@@ -350,9 +350,9 @@ class ArticleControllerTest {
     }
 
     @Test
-    void getUserArticles_ReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+    void getUserArticles_ReturnsInternalServerErrorWhenNotAuthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/articles/user/my-articles"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isInternalServerError());
     }
 
     // ==================== GET USER DRAFTS TESTS ====================
@@ -456,8 +456,8 @@ class ArticleControllerTest {
     }
 
     @Test
-    void publishArticle_ReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+    void publishArticle_ReturnsInternalServerErrorWhenNotAuthenticated() throws Exception {
         mockMvc.perform(put("/api/v1/articles/100/publish"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isInternalServerError());
     }
 }

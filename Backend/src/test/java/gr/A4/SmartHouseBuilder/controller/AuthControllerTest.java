@@ -105,7 +105,7 @@ class AuthControllerTest {
     void login_ReturnsOkWithTokens() throws Exception {
         String requestBody = """
                 {
-                    "username": "john_doe",
+                    "identifier": "john_doe",
                     "password": "SecurePass123!"
                 }
                 """;
@@ -129,7 +129,7 @@ class AuthControllerTest {
     void login_ReturnsUnauthorizedOnInvalidCredentials() throws Exception {
         String requestBody = """
                 {
-                    "username": "john_doe",
+                    "identifier": "john_doe",
                     "password": "WrongPassword"
                 }
                 """;
@@ -147,7 +147,7 @@ class AuthControllerTest {
     void login_ReturnsUnauthorizedOnUserNotFound() throws Exception {
         String requestBody = """
                 {
-                    "username": "nonexistent",
+                    "identifier": "nonexistent",
                     "password": "Password123!"
                 }
                 """;

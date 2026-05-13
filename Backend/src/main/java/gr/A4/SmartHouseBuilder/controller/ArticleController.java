@@ -75,6 +75,28 @@ public class ArticleController {
         return ResponseEntity.ok(articles.stream().map(this::toResponse).toList());
     }
 
+    @GetMapping("/user/drafts")
+    public ResponseEntity<List<ArticleResponse>> getUserDrafts(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        List<Article> drafts = articleService.getUserDrafts(userDetails.getUsername());
+        return ResponseEntity.ok(drafts.stream().map(this::toResponse).toList());
+    }
+
+    @GetMapping("/user/published")
+    public ResponseEntity<List<ArticleResponse>> getUserPublished(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        List<Article> published = articleService.getUserPublished(userDetails.getUsername());
+        return ResponseEntity.ok(published.stream().map(this::toResponse).toList());
+    }
+
+    @PutMapping("/{id}/publish")
+    public ResponseEntity<ArticleResponse> publishArticle(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Article article = articleService.publishArticle(id, userDetails.getUsername());
+        return ResponseEntity.ok(toResponse(article));
+    }
+
     private ArticleResponse toResponse(Article article) {
         long likes = likeRepository.countByArticleId(article.getId());
         long comments = commentRepository.countByArticleId(article.getId());
@@ -92,6 +114,7 @@ public class ArticleController {
                 .updatedAt(article.getUpdatedAt())
                 .likeCount(likes)
                 .commentCount(comments)
+                .status(article.getStatus() != null ? article.getStatus().name() : null)
                 .build();
     }
 

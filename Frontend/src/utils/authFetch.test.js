@@ -1,17 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { authFetch } from './authFetch';
 
 describe('authFetch', () => {
-  beforeEach(() => {
+  // Two isolation strategies are combined here:
+  //
+  // 1. vi.resetModules() + dynamic import — gives each test a fresh module
+  //    instance so the module-level `let inFlightRefresh = null` truly starts
+  //    at null (a static top-level import would share that variable across all
+  //    tests in the file).
+  //
+  // 2. vi.stubGlobal('fetch', vi.fn()) / vi.unstubAllGlobals() — gives each
+  //    test a completely independent fetch mock. vi.spyOn(globalThis, 'fetch')
+  //    wraps the existing spy on every call, causing call counts to accumulate
+  //    across tests (test 2 sees 1+3=4, test 6 sees 1+3+2+1+1+1=9, etc.).
+  //    vi.stubGlobal replaces the global outright so the returned vi.fn()
+  //    always starts at 0 calls.
+  let authFetch;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.unstubAllGlobals();
     localStorage.clear();
-    vi.restoreAllMocks();
+    const mod = await import('./authFetch.js');
+    authFetch = mod.authFetch;
   });
 
   it('adds the bearer token to authenticated requests', async () => {
     localStorage.setItem('accessToken', 'abc123');
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 200 })
     );
+    vi.stubGlobal('fetch', fetchMock);
 
     await authFetch('/api/v1/auth/me');
 
@@ -32,7 +50,7 @@ describe('authFetch', () => {
     const authChangeListener = vi.fn();
     window.addEventListener('auth-change', authChangeListener);
 
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
+    const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(null, { status: 401 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         accessToken: 'new-token',
@@ -42,6 +60,7 @@ describe('authFetch', () => {
         headers: { 'Content-Type': 'application/json' },
       }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
 
     const response = await authFetch('/api/v1/protected');
 
@@ -61,9 +80,10 @@ describe('authFetch', () => {
     const authChangeListener = vi.fn();
     window.addEventListener('auth-change', authChangeListener);
 
-    vi.spyOn(globalThis, 'fetch')
+    const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(null, { status: 401 }))
       .mockResolvedValueOnce(new Response(null, { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
 
     const response = await authFetch('/api/v1/protected');
 
@@ -77,9 +97,10 @@ describe('authFetch', () => {
 
   it('skips auth header and refresh logic when skipAuth is true', async () => {
     localStorage.setItem('accessToken', 'abc123');
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    const fetchMock = vi.fn().mockResolvedValue(
       new Response(null, { status: 401 })
     );
+    vi.stubGlobal('fetch', fetchMock);
 
     const response = await authFetch('/api/v1/auth/login', { skipAuth: true });
 
@@ -94,7 +115,7 @@ describe('authFetch', () => {
   });
 
   it('returns a synthetic response on initial network failure', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
 
     const response = await authFetch('/api/v1/protected');
 
@@ -104,9 +125,10 @@ describe('authFetch', () => {
 
   it('does not try to refresh when no refresh token exists', async () => {
     localStorage.setItem('accessToken', 'old-token');
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    const fetchMock = vi.fn().mockResolvedValue(
       new Response(null, { status: 401 })
     );
+    vi.stubGlobal('fetch', fetchMock);
 
     const response = await authFetch('/api/v1/protected');
 

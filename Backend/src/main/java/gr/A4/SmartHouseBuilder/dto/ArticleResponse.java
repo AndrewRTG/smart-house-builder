@@ -26,4 +26,7 @@ public class ArticleResponse {
     private LocalDateTime updatedAt;
     @lombok.Builder.Default private Long likeCount = 0L;
     @lombok.Builder.Default private Long commentCount = 0L;
+    /** Lifecycle stage. "DRAFT" or "PUBLISHED" — kept as a String so the
+     *  frontend doesn't need to mirror the Java enum class. */
+    private String status;
 }

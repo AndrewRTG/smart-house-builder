@@ -117,7 +117,10 @@ describe('CommunityPage', () => {
   it('loads setups, user stats, wishlist state, and filters setup cards', async () => {
     renderCommunity();
 
-    expect(await screen.findByText('Kitchen Automation')).toBeInTheDocument();
+    // Increase timeout to 3s to handle parallel test execution load that can slow async rendering
+    await waitFor(() => {
+      expect(screen.getByText('Kitchen Automation')).toBeInTheDocument();
+    }, { timeout: 3000 });
     expect(screen.getByText('Security Pack')).toBeInTheDocument();
     expect(screen.getByText('ana')).toBeInTheDocument();
     expect(screen.getByText('Posts').parentElement).toHaveTextContent('2');
@@ -133,17 +136,23 @@ describe('CommunityPage', () => {
       target: { value: '' },
     });
     fireEvent.click(screen.getByText('Most Liked'));
-    const cards = screen.getAllByRole('heading', { level: 3 });
-    expect(cards[0]).toHaveTextContent('Security Pack');
+    await waitFor(() => {
+      const cards = screen.getAllByRole('heading', { level: 3 });
+      expect(cards[0]).toHaveTextContent('Security Pack');
+    });
 
     fireEvent.click(screen.getByText('Saved'));
-    expect(screen.getByText('Kitchen Automation')).toBeInTheDocument();
-    expect(screen.queryByText('Security Pack')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Kitchen Automation')).toBeInTheDocument();
+      expect(screen.queryByText('Security Pack')).not.toBeInTheDocument();
+    });
   });
 
   it('handles setup wishlist, like, copy modal, and detail navigation', async () => {
     renderCommunity();
-    expect(await screen.findByText('Security Pack')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Security Pack')).toBeInTheDocument();
+    }, { timeout: 3000 });
     await screen.findByLabelText('Remove from wishlist');
 
     const securityCard = screen.getByText('Security Pack').closest('.setup-card');

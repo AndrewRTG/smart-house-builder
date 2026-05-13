@@ -289,4 +289,46 @@ class CommentServiceTest {
 
         verify(commentRepository).delete(root);
     }
+
+    @Test
+    void createSetupComment_throwsWhenSetupNotFound() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.createSetupComment(99L, "u@e", new CommentRequest("Text", null)))
+                .isInstanceOf(RuntimeException.class);
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void createArticleComment_throwsWhenArticleNotFound() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.createArticleComment(99L, "u@e", new CommentRequest("Text", null)))
+                .isInstanceOf(RuntimeException.class);
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteCommentTreeForSetup_handlesEmptyTree() {
+        when(commentRepository.findBySetupIdAndParentCommentIsNull(10L)).thenReturn(List.of());
+
+        commentService.deleteCommentTreeForSetup(10L);
+
+        verify(commentRepository, never()).delete(any());
+    }
+
+    @Test
+    void createSetupComment_throwsWhenContentBlank() {
+        // The blank-content guard runs before any repository lookup, so no
+        // user/setup stubs are needed (and Mockito's strict mode would flag
+        // them as unused).
+        assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", new CommentRequest("   ", null)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("empty");
+        verify(commentRepository, never()).save(any());
+    }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.dto.ArticleRequest;
 import gr.A4.SmartHouseBuilder.entity.Article;
+import gr.A4.SmartHouseBuilder.entity.ArticleStatus;
 import gr.A4.SmartHouseBuilder.entity.User;
 import gr.A4.SmartHouseBuilder.repository.ArticleRepository;
 import gr.A4.SmartHouseBuilder.repository.LikeRepository;
@@ -43,10 +44,11 @@ public class ArticleService {
                 .imageUrl(emptyToNull(request.getImageUrl()))
                 .deviceIds(serializeDeviceIds(request.getDeviceIds()))
                 .tags(serializeTags(request.getTags()))
+                .status(parseStatus(request.getStatus(), ArticleStatus.PUBLISHED))
                 .build();
 
         Article saved = articleRepository.save(article);
-        log.info("Article created: {} by user: {}", saved.getId(), email);
+        log.info("Article created: {} (status={}) by user: {}", saved.getId(), saved.getStatus(), email);
         return saved;
     }
 
@@ -73,6 +75,13 @@ public class ArticleService {
         article.setImageUrl(newImage);
         article.setDeviceIds(serializeDeviceIds(request.getDeviceIds()));
         article.setTags(serializeTags(request.getTags()));
+        // If the request specifies a status, honor it (lets the frontend
+        // promote a draft to published from the editor). If it's omitted,
+        // preserve the existing status — editing a published article
+        // shouldn't silently flip it back to draft.
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            article.setStatus(parseStatus(request.getStatus(), article.getStatus()));
+        }
 
         Article updated = articleRepository.save(article);
         log.info("Article updated: {} by user: {}", id, email);
@@ -99,8 +108,34 @@ public class ArticleService {
         return articleRepository.findByUserId(userId);
     }
 
+    public List<Article> getUserDrafts(String email) {
+        Long userId = getUserId(email);
+        return articleRepository.findByUserIdAndStatus(userId, ArticleStatus.DRAFT);
+    }
+
+    public List<Article> getUserPublished(String email) {
+        Long userId = getUserId(email);
+        return articleRepository.findByUserIdAndStatus(userId, ArticleStatus.PUBLISHED);
+    }
+
     public Page<Article> getAllArticles(Pageable pageable) {
-        return articleRepository.findAll(pageable);
+        // Public feed only — drafts must never leak. Prior versions called
+        // findAll() and would have started returning drafts the moment the
+        // status column was introduced; switching to a status-filtered
+        // query closes that hole at the source.
+        return articleRepository.findByStatus(ArticleStatus.PUBLISHED, pageable);
+    }
+
+    @Transactional
+    public Article publishArticle(Long id, String email) {
+        Long userId = getUserId(email);
+        Article article = articleRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new RuntimeException("Article not found or not owned by you"));
+
+        article.setStatus(ArticleStatus.PUBLISHED);
+        Article saved = articleRepository.save(article);
+        log.info("Article published: {} by user: {}", id, email);
+        return saved;
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -130,5 +165,21 @@ public class ArticleService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email))
                 .getId();
+    }
+
+    /**
+     * Lenient parser for the status string the frontend sends. We
+     * uppercase + trim so "draft" / " Draft " both work; anything we
+     * don't recognize falls back to the supplied default rather than
+     * raising — the UI flow's job is to validate before sending, the
+     * service is the safety net.
+     */
+    private ArticleStatus parseStatus(String raw, ArticleStatus fallback) {
+        if (raw == null || raw.isBlank()) return fallback;
+        try {
+            return ArticleStatus.valueOf(raw.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
     }
 }

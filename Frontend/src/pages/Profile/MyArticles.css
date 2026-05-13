@@ -67,6 +67,87 @@
   background: #4280bd;
 }
 
+/* ============================================================
+   Drafts / Published tabs (mirrors the MySetups tab layout for
+   visual consistency across the profile area). The little count
+   chip next to the label is only rendered when count > 0, so an
+   empty Drafts tab shows just "Drafts" without trailing zero.
+   ============================================================ */
+.articles-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.articles-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary, #666);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s;
+  margin-bottom: -1px;
+}
+
+.articles-tab:hover {
+  color: #5092ce;
+}
+
+.articles-tab.active {
+  color: #5092ce;
+  border-bottom-color: #5092ce;
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(80, 146, 206, 0.15);
+  color: #5092ce;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.articles-tab.active .tab-count {
+  background: #5092ce;
+  color: #fff;
+}
+
+.my-articles-container.dark .articles-tab {
+  color: #aaa;
+}
+
+.my-articles-container.dark .articles-tab:hover,
+.my-articles-container.dark .articles-tab.active {
+  color: #6ba5d9;
+}
+
+.my-articles-container.dark .articles-tab.active {
+  border-bottom-color: #6ba5d9;
+}
+
+.my-articles-container.dark .tab-count {
+  background: rgba(107, 165, 217, 0.18);
+  color: #6ba5d9;
+}
+
+.my-articles-container.dark .articles-tab.active .tab-count {
+  background: #6ba5d9;
+  color: #1a2236;
+}
+
 .articles-list {
   display: flex;
   flex-direction: column;

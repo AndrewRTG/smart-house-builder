@@ -3,6 +3,7 @@ package gr.A4.SmartHouseBuilder.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.dto.ArticleRequest;
 import gr.A4.SmartHouseBuilder.entity.Article;
+import gr.A4.SmartHouseBuilder.entity.ArticleStatus;
 import gr.A4.SmartHouseBuilder.entity.User;
 import gr.A4.SmartHouseBuilder.repository.ArticleRepository;
 import gr.A4.SmartHouseBuilder.repository.LikeRepository;
@@ -188,15 +189,87 @@ class ArticleServiceTest {
     }
 
     @Test
-    void getAllArticles_returnsPaginatedResult() {
+    void getAllArticles_returnsOnlyPublishedArticles() {
+        // After the DRAFT/PUBLISHED split, the public feed must filter out
+        // drafts at the source. Service now calls findByStatus(PUBLISHED, ...)
+        // instead of findAll, and that's what we need to mock + verify here.
         Pageable pageable = PageRequest.of(0, 10);
-        Article a = Article.builder().id(7L).build();
+        Article a = Article.builder().id(7L).status(ArticleStatus.PUBLISHED).build();
         Page<Article> page = new PageImpl<>(List.of(a), pageable, 1);
-        when(articleRepository.findAll(pageable)).thenReturn(page);
+        when(articleRepository.findByStatus(ArticleStatus.PUBLISHED, pageable)).thenReturn(page);
 
         Page<Article> result = articleService.getAllArticles(pageable);
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent()).containsExactly(a);
+    }
+
+    @Test
+    void getUserDrafts_returnsOnlyDraftArticles() {
+        User user = User.builder().id(1L).email("u@e").build();
+        Article draft = Article.builder().id(7L).status(ArticleStatus.DRAFT).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findByUserIdAndStatus(1L, ArticleStatus.DRAFT))
+                .thenReturn(List.of(draft));
+
+        assertThat(articleService.getUserDrafts("u@e")).containsExactly(draft);
+    }
+
+    @Test
+    void getUserPublished_returnsOnlyPublishedArticles() {
+        User user = User.builder().id(1L).email("u@e").build();
+        Article pub = Article.builder().id(7L).status(ArticleStatus.PUBLISHED).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findByUserIdAndStatus(1L, ArticleStatus.PUBLISHED))
+                .thenReturn(List.of(pub));
+
+        assertThat(articleService.getUserPublished("u@e")).containsExactly(pub);
+    }
+
+    @Test
+    void publishArticle_promotesDraftToPublished() {
+        User user = User.builder().id(1L).email("u@e").build();
+        Article draft = Article.builder().id(7L).user(user).status(ArticleStatus.DRAFT).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findByIdAndUserId(7L, 1L)).thenReturn(Optional.of(draft));
+        when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Article published = articleService.publishArticle(7L, "u@e");
+
+        assertThat(published.getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+        assertThat(draft.getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishArticle_throwsWhenNotOwned() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findByIdAndUserId(7L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> articleService.publishArticle(7L, "u@e"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("not owned");
+    }
+
+    @Test
+    void createArticle_defaultsStatusToPublishedWhenNotSpecified() {
+        User user = User.builder().id(1L).email("u@e").username("u").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Article saved = articleService.createArticle("u@e", request("Title", "Body content xyz", null, List.of(), null));
+        assertThat(saved.getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+    }
+
+    @Test
+    void createArticle_honorsDraftStatusWhenRequested() {
+        User user = User.builder().id(1L).email("u@e").username("u").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ArticleRequest req = request("Title", "Body content xyz", null, List.of(), null);
+        req.setStatus("DRAFT");
+        Article saved = articleService.createArticle("u@e", req);
+        assertThat(saved.getStatus()).isEqualTo(ArticleStatus.DRAFT);
     }
 }

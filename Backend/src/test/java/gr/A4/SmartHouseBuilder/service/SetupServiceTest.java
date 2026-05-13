@@ -316,4 +316,57 @@ class SetupServiceTest {
         verify(setupRepository).findByPublicSetupTrueAndStatus(captor.capture(), eq(SetupStatus.PUBLISHED));
         assertThat(captor.getValue().getSort().getOrderFor("updatedAt")).isNotNull();
     }
+
+    @Test
+    void createSetup_throwsWhenUserNotFound() {
+        when(userRepository.findByEmail("notfound@e")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> setupService.createSetup("notfound@e", request("Name", "Desc", List.of(), false)))
+                .isInstanceOf(RuntimeException.class);
+        verify(setupRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSetup_throwsWhenNotOwner() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> setupService.updateSetup(10L, "u@e", request("New", "Desc", List.of(), true)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("not owned");
+        verify(setupRepository, never()).save(any());
+    }
+
+    @Test
+    void publishSetup_throwsWhenSetupNotFound() {
+        User user = User.builder().id(1L).email("u@e").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.findByIdAndUserId(99L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> setupService.publishSetup(99L, "u@e"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("not owned");
+    }
+
+    @Test
+    void copySetup_fallsBackToNumberedNameWhenBaseAutoNameCollides() {
+        // When the user doesn't supply a custom name, copySetup never throws
+        // DuplicateSetupNameException — generateUniqueCopyName walks
+        // "Copy of X", "Copy of X (2)", "Copy of X (3)", ... until it finds a
+        // free slot (with a timestamp suffix as the pathological fallback).
+        // Here the base "Copy of Orig" is taken, so the copy must land on
+        // "Copy of Orig (2)".
+        User user = User.builder().id(2L).email("u@e").build();
+        Setup original = Setup.builder().id(10L).publicSetup(true).name("Orig").deviceIds("[]").build();
+        when(setupRepository.findById(10L)).thenReturn(Optional.of(original));
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(setupRepository.existsByUserIdAndNameIgnoreCase(2L, "Copy of Orig")).thenReturn(true);
+        when(setupRepository.existsByUserIdAndNameIgnoreCase(2L, "Copy of Orig (2)")).thenReturn(false);
+        when(setupRepository.save(any(Setup.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Setup copy = setupService.copySetup(10L, "u@e", null);
+
+        assertThat(copy.getName()).isEqualTo("Copy of Orig (2)");
+    }
 }

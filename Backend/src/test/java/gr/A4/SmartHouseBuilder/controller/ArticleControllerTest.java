@@ -1,7 +1,6 @@
 package gr.A4.SmartHouseBuilder.controller;
 
 import gr.A4.SmartHouseBuilder.dto.ArticleRequest;
-import gr.A4.SmartHouseBuilder.dto.ArticleResponse;
 import gr.A4.SmartHouseBuilder.entity.Article;
 import gr.A4.SmartHouseBuilder.entity.ArticleStatus;
 import gr.A4.SmartHouseBuilder.entity.User;
@@ -27,7 +26,6 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 

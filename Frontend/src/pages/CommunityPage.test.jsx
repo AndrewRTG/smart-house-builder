@@ -136,12 +136,16 @@ describe('CommunityPage', () => {
       target: { value: '' },
     });
     fireEvent.click(screen.getByText('Most Liked'));
-    const cards = screen.getAllByRole('heading', { level: 3 });
-    expect(cards[0]).toHaveTextContent('Security Pack');
+    await waitFor(() => {
+      const cards = screen.getAllByRole('heading', { level: 3 });
+      expect(cards[0]).toHaveTextContent('Security Pack');
+    });
 
     fireEvent.click(screen.getByText('Saved'));
-    expect(screen.getByText('Kitchen Automation')).toBeInTheDocument();
-    expect(screen.queryByText('Security Pack')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Kitchen Automation')).toBeInTheDocument();
+      expect(screen.queryByText('Security Pack')).not.toBeInTheDocument();
+    });
   });
 
   it('handles setup wishlist, like, copy modal, and detail navigation', async () => {

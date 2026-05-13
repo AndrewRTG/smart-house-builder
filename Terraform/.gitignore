@@ -1,0 +1,15 @@
+# Fișiere cu date sensibile – nu le committa niciodată!
+terraform.tfvars
+*.tfvars
+!*.tfvars.example
+
+# Fișiere generate de Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+
+# OS
+.DS_Store
+Thumbs.db

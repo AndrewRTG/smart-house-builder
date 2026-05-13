@@ -4,6 +4,7 @@ import { authFetch } from './authFetch';
 describe('authFetch', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 

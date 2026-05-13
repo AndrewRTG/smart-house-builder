@@ -147,6 +147,47 @@ class LayoutPersistenceServiceTest {
     }
 
     @Test
+    void saveAsJson_keepsCommaInPayloadWhenPrefixIsNotBase64DataUrl() {
+       
+        SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setThumbnailPngBase64("data:image/png," + Base64.getEncoder().encodeToString(new byte[]{1, 2}));
+
+        when(layoutRepository.save(any(Layout.class)))
+                .thenAnswer(invocation -> {
+                    Layout l = invocation.getArgument(0);
+                    l.setId(4);
+                    return l;
+                });
+
+        service.saveAsJson(dto);
+
+        ArgumentCaptor<Layout> captor = ArgumentCaptor.forClass(Layout.class);
+        org.mockito.Mockito.verify(layoutRepository).save(captor.capture());
+        assertNull(captor.getValue().getThumbnailPng());
+    }
+
+    @Test
+    void saveAsJson_returnsNullThumbnailWhenOverMaxSize() {
+       
+        byte[] tooBig = new byte[6 * 1024 * 1024 + 1];
+        SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setThumbnailPngBase64(Base64.getEncoder().encodeToString(tooBig));
+
+        when(layoutRepository.save(any(Layout.class)))
+                .thenAnswer(invocation -> {
+                    Layout l = invocation.getArgument(0);
+                    l.setId(99);
+                    return l;
+                });
+
+        service.saveAsJson(dto);
+
+        ArgumentCaptor<Layout> captor = ArgumentCaptor.forClass(Layout.class);
+        org.mockito.Mockito.verify(layoutRepository).save(captor.capture());
+        assertNull(captor.getValue().getThumbnailPng());
+    }
+
+    @Test
     void saveAsJson_wrapsJsonProcessingExceptionInRuntime() throws Exception {
         ObjectMapper failingMapper = org.mockito.Mockito.mock(ObjectMapper.class);
         when(failingMapper.writeValueAsString(any()))

@@ -30,6 +30,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final SetupRepository setupRepository;
     private final ArticleRepository articleRepository;
+    private final ActivityEmailService activityEmailService;
 
     @Transactional
     public CommentResponse createSetupComment(Long setupId, String email, CommentRequest req) {
@@ -63,6 +64,24 @@ public class CommentService {
 
         Comment saved = commentRepository.save(comment);
         log.info("Comment created on setup: {} by user: {}", setupId, email);
+
+        String excerpt = saved.getContent().length() > 120
+                ? saved.getContent().substring(0, 120) + "…"
+                : saved.getContent();
+
+        // Notify setup owner (unless they commented on their own post).
+        User setupOwner = setup.getUser();
+        if (setupOwner != null && !setupOwner.getId().equals(user.getId())) {
+            activityEmailService.onComment(setupOwner, user.getUsername(), setup.getName(), "SETUP", excerpt);
+        }
+
+        // Notify parent comment author on a reply (unless they are the same person).
+        if (comment.getParentComment() != null) {
+            User parentAuthor = comment.getParentComment().getUser();
+            if (parentAuthor != null && !parentAuthor.getId().equals(user.getId())) {
+                activityEmailService.onReply(parentAuthor, user.getUsername(), setup.getName(), "SETUP", excerpt);
+            }
+        }
 
         return toResponseTree(saved, user.getId());
     }
@@ -99,6 +118,22 @@ public class CommentService {
 
         Comment saved = commentRepository.save(comment);
         log.info("Comment created on article: {} by user: {}", articleId, email);
+
+        String excerpt = saved.getContent().length() > 120
+                ? saved.getContent().substring(0, 120) + "…"
+                : saved.getContent();
+
+        User articleOwner = article.getUser();
+        if (articleOwner != null && !articleOwner.getId().equals(user.getId())) {
+            activityEmailService.onComment(articleOwner, user.getUsername(), article.getTitle(), "ARTICLE", excerpt);
+        }
+
+        if (comment.getParentComment() != null) {
+            User parentAuthor = comment.getParentComment().getUser();
+            if (parentAuthor != null && !parentAuthor.getId().equals(user.getId())) {
+                activityEmailService.onReply(parentAuthor, user.getUsername(), article.getTitle(), "ARTICLE", excerpt);
+            }
+        }
 
         return toResponseTree(saved, user.getId());
     }

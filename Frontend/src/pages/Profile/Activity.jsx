@@ -9,6 +9,7 @@ import {
   Bookmark,
   Clock,
 } from "lucide-react";
+import { authFetch } from "../../utils/authFetch";
 import "./Activity.css";
 
 const API_BASE = "http://localhost:20025/api/v1";
@@ -94,16 +95,12 @@ export default function Activity() {
 
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        // The Profile layout already gates on auth, but if someone lands here
-        // without a token we want a clear message instead of a blank list.
         setError("Please log in to see your activity.");
         setItems([]);
         return;
       }
 
-      const response = await fetch(`${API_BASE}/activity`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await authFetch(`${API_BASE}/feed`);
 
       if (response.ok) {
         const data = await response.json();

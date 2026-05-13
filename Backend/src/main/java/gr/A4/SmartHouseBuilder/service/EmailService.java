@@ -55,6 +55,100 @@ public class EmailService {
         }
     }
 
+    public void sendCommentNotificationEmail(String to, String actorUsername,
+                                              String targetTitle, String targetType,
+                                              String excerpt) {
+        String typeLabel = "ARTICLE".equalsIgnoreCase(targetType) ? "article" : "setup";
+        String html = """
+                <html>
+                <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                  <h2 style="color: #2d4e6c;">New comment on your %s</h2>
+                  <p><strong>%s</strong> commented on your %s <em>"%s"</em>:</p>
+                  <blockquote style="border-left: 4px solid #5092ce; padding: 10px 16px; color: #555; font-style: italic; margin: 16px 0;">
+                    %s
+                  </blockquote>
+                  <p style="color: #888; font-size: 12px; margin-top: 24px;">
+                    Visit Smart House Builder to reply.
+                  </p>
+                </body>
+                </html>
+                """.formatted(typeLabel, actorUsername, typeLabel, targetTitle,
+                excerpt != null && !excerpt.isBlank() ? excerpt : "(no content)");
+
+        sendHtml(to, actorUsername + " commented on your " + typeLabel + " — Smart House Builder", html);
+    }
+
+    public void sendReplyNotificationEmail(String to, String actorUsername,
+                                            String targetTitle, String targetType,
+                                            String excerpt) {
+        String typeLabel = "ARTICLE".equalsIgnoreCase(targetType) ? "article" : "setup";
+        String html = """
+                <html>
+                <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                  <h2 style="color: #2d4e6c;">%s replied to your comment</h2>
+                  <p><strong>%s</strong> replied to your comment on <em>"%s"</em>:</p>
+                  <blockquote style="border-left: 4px solid #5092ce; padding: 10px 16px; color: #555; font-style: italic; margin: 16px 0;">
+                    %s
+                  </blockquote>
+                  <p style="color: #888; font-size: 12px; margin-top: 24px;">
+                    Visit Smart House Builder to continue the conversation.
+                  </p>
+                </body>
+                </html>
+                """.formatted(actorUsername, actorUsername, targetTitle,
+                excerpt != null && !excerpt.isBlank() ? excerpt : "(no content)");
+
+        sendHtml(to, actorUsername + " replied to your comment — Smart House Builder", html);
+    }
+
+    public void sendLikeNotificationEmail(String to, String actorUsername,
+                                           String targetTitle, String targetType) {
+        String typeLabel = "ARTICLE".equalsIgnoreCase(targetType) ? "article" : "setup";
+        String html = """
+                <html>
+                <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                  <h2 style="color: #2d4e6c;">Someone liked your %s</h2>
+                  <p><strong>%s</strong> liked your %s <em>"%s"</em>.</p>
+                  <p style="color: #888; font-size: 12px; margin-top: 24px;">
+                    Keep building great smart home setups on Smart House Builder.
+                  </p>
+                </body>
+                </html>
+                """.formatted(typeLabel, actorUsername, typeLabel, targetTitle);
+
+        sendHtml(to, actorUsername + " liked your " + typeLabel + " — Smart House Builder", html);
+    }
+
+    public void sendWishlistNotificationEmail(String to, String actorUsername, String targetTitle) {
+        String html = """
+                <html>
+                <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                  <h2 style="color: #2d4e6c;">Someone saved your setup</h2>
+                  <p><strong>%s</strong> saved your setup <em>"%s"</em> to their wishlist.</p>
+                  <p style="color: #888; font-size: 12px; margin-top: 24px;">
+                    Your setup is gaining traction on Smart House Builder.
+                  </p>
+                </body>
+                </html>
+                """.formatted(actorUsername, targetTitle);
+
+        sendHtml(to, actorUsername + " saved your setup — Smart House Builder", html);
+    }
+
+    private void sendHtml(String to, String subject, String html) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (MessagingException | MailException e) {
+            throw new RuntimeException("Failed to send email to " + to, e);
+        }
+    }
+
     public void sendResetPasswordEmail(String to, String token) {
         // Link that directs the user to the Reset Password page in the Frontend (React)
         String link = "http://localhost:5173/reset-password?token=" + token;

@@ -49,7 +49,7 @@ public class Article {
      * a Postgres ENUM type would require manual SQL.
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "varchar(20) not null default 'PUBLISHED'")
+    @Column(nullable = false, length = 20)
     @Builder.Default
     private ArticleStatus status = ArticleStatus.PUBLISHED;
 

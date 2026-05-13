@@ -1,0 +1,67 @@
+.notif-bell-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #383b3d;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.18s, background 0.18s;
+}
+
+.notif-bell-btn:hover {
+  color: #2d4e6c;
+  background: rgba(45, 78, 108, 0.08);
+}
+
+.notif-bell-btn.dark-mode {
+  color: #a8c2d8;
+}
+
+.notif-bell-btn.dark-mode:hover {
+  color: #eaf0ff;
+  background: rgba(189, 211, 231, 0.08);
+}
+
+.notif-bell-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.notif-bell-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  border-radius: 8px;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(231, 76, 60, 0.5);
+}
+
+/* On smaller viewports the bell icon shrinks slightly with the rest of the navbar. */
+@media (max-width: 480px) {
+  .notif-bell-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .notif-bell-icon {
+    width: 17px;
+    height: 17px;
+  }
+}

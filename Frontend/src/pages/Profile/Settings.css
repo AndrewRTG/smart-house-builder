@@ -393,6 +393,86 @@
   transform: translateX(22px);
 }
 
+/* Notification Preferences */
+.section-description {
+  font-size: 13px;
+  color: #888;
+  margin: -8px 0 8px;
+}
+
+.dark-mode .section-description {
+  color: #aaa;
+}
+
+.notif-pref-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.notif-pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dark-mode .notif-pref-row {
+  border-bottom-color: #3a3a4a;
+}
+
+.notif-pref-row:last-child {
+  border-bottom: none;
+}
+
+.notif-pref-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-pref-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.notif-pref-description {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.4;
+}
+
+.dark-mode .notif-pref-description {
+  color: #aaa;
+}
+
+.notif-pref-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+@media (max-width: 480px) {
+  .notif-pref-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .notif-pref-actions {
+    justify-content: stretch;
+  }
+
+  .notif-pref-actions .edit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Divider */
 .settings-divider {
   height: 1px;

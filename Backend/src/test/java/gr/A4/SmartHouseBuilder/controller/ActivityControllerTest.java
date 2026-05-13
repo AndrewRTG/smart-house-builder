@@ -51,19 +51,18 @@ class ActivityControllerTest {
         when(activityService.getActivity("alexandra")).thenReturn(expectedActivities);
 
 
-        mockMvc.perform(get("/api/v1/activity"))
+        mockMvc.perform(get("/api/v1/feed"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1)); // Verificăm că lista primită are un element
+                .andExpect(jsonPath("$.length()").value(1));
 
 
         verify(activityService).getActivity("alexandra");
     }
 
     @Test
-
     void getMyActivity_UnauthenticatedUser_ReturnsUnauthorized() throws Exception {
 
-        mockMvc.perform(get("/api/v1/activity"))
-                .andExpect(status().isUnauthorized()); // Ne așteptăm la 401 Unauthorized conform if-ului tău
+        mockMvc.perform(get("/api/v1/feed"))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -6,6 +6,9 @@ export default function CatalogPage({ darkMode }) {
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [sortBy, setSortBy] = useState("Price");
+    const [sortOrder, setSortOrder] = useState('asc');
+    const [selectedSortLabel, setSelectedSortLabel] = useState("Price");
     const [filters, setFilters] = useState({
         minPrice: 0,
         maxPrice: 1000,
@@ -67,6 +70,31 @@ export default function CatalogPage({ darkMode }) {
         fetchDevices();
     }, [filters, searchTerm]);
 
+    const getSortedDevices = () => {
+        return [...devices].sort((a, b) => {
+            let comparison = 0;
+            switch (sortBy) {
+                case 'Price':
+                    comparison  =  a.bestPrice - b.bestPrice;
+                    break;
+                case 'Name':
+                    comparison = (a.name || "").localeCompare(b.name || "");
+                    break;
+                case 'Brand':
+                    comparison = (a.brand || "").localeCompare(b.brand || "");
+                    break;
+                case 'Date added':
+                    comparison = new Date(a.createdAt || a.id) - new Date(b.createdAt || b.id);
+                    break;
+                default:
+                    comparison = 0;
+            }
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    };
+
+    const sortedDevices = getSortedDevices();
+
     return (
         <div className="min-vh-100" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-main)', transition: 'background-color 0.3s ease, color 0.3s ease' }}>
             <div className="container-fluid mt-4 px-4 d-flex flex-column d-md-block clearfix">
@@ -93,12 +121,67 @@ export default function CatalogPage({ darkMode }) {
                         </div>
 
                         <div className="d-flex align-items-center gap-2 align-self-end align-self-md-auto">
-                            <span className="fw-bold small text-nowrap" style={{ color: 'var(--text-main)' }}>Sort by:</span>
+                            <div className="dropdown">
+                                <button
+                                    className="btn bg-white border shadow-sm d-flex align-items-center justify-content-between rounded-3 fw-bold"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    style={{ width: '180px', height: '42px', color: 'black', fontSize: '0.9rem' }}
+                                >
+                                    <div className="d-flex align-items-center">
+                                        <span className="text-muted fw-normal me-2">Sort:</span>
+                                        <span>{selectedSortLabel}</span>
+                                    </div>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                </button>
 
-                            <select className="form-select border-0 shadow-sm rounded-2 fw-bold" style={{ color: 'var(--text-main)', backgroundColor: 'var(--section-bg)', width: '160px', cursor: 'pointer'}}>
-                                <option>Lowest price</option>
-                                <option>Highest price</option>
-                            </select>
+                                <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2"
+                                    style={{
+                                        minWidth: '100%',
+                                        width: '100%',
+                                        maxWidth: '100%'
+                                    }}>
+                                    <li>
+                                        <button className="dropdown-item py-2 fw-semibold" type="button" style={{ fontSize: '0.85rem' }} onClick={() => {setSelectedSortLabel("Price"); setSortBy("Price");} }>
+                                            <i className="bi bi-sort-numeric-down me-2"></i>Price
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button className="dropdown-item py-2 fw-semibold" type="button" style={{ fontSize: '0.8rem' }} onClick={() => {setSelectedSortLabel("Name"); setSortBy("Name"); }}>
+                                            <span className="text-muted me-2">A-Z</span> Name
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button className="dropdown-item py-2 fw-semibold" type="button" style={{ fontSize: '0.8rem' }} onClick={() => {setSelectedSortLabel("Brand"); setSortBy("Brand");}}>
+                                            <span className="text-muted me-2">★</span> Brand
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button className="dropdown-item py-2 fw-semibold" type="button" style={{ fontSize: '0.8rem' }} onClick={() => {setSelectedSortLabel("Date added"); setSortBy("Date added");}}>
+                                            <span className="text-muted me-2">🕒</span> Date added
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <button
+                                className="btn bg-white border shadow-sm d-flex align-items-center justify-content-center rounded-3"
+                                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                                title={sortOrder === 'asc' ? "Sort Ascending" : "Sort Descending"}
+                                style={{ height: '42px', width: '42px' }}
+                            >
+                                {sortOrder === 'asc' ? (
+                                    /* Iconiță pentru Ascending (A-Z / 1-9) */
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5092CE" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 5h10M11 9h7M11 13h4M3 17l3 3 3-3M6 18V4"/>
+                                    </svg>
+                                ) : (
+                                    /* Iconiță pentru Descending (Z-A / 9-1) */
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5092CE" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 5h10M11 9h7M11 13h4M3 7l3-3 3 3M6 6v14"/>
+                                    </svg>
+                                )}
+                            </button>
+
 
                             <div className="btn-group shadow-sm rounded-2 overflow-hidden ms-2" style={{ backgroundColor: 'var(--section-bg)', height: '38px'}}>
                                 <button
@@ -128,7 +211,7 @@ export default function CatalogPage({ darkMode }) {
                         ) : devices.length === 0 ? (
                             <div className="col-12 text-center">Nu s-a găsit niciun produs.</div>
                         ) : (
-                            devices.map((device) => (
+                            sortedDevices.map((device) => (
                                 <div className="col" key={device.id}>
                                     <ProductCard device={device} viewMode={viewMode} />
                                 </div>

@@ -259,4 +259,93 @@ describe('CommunityPage', () => {
     fireEvent.click(screen.getByText('New Article'));
     expect(screen.getByText('Create article route')).toBeInTheDocument();
   });
+
+  it('sorts articles oldest first and clears an empty tag-filter result', async () => {
+    const articleDatesAsStrings = [
+      { ...articles[0], createdAt: '2026-05-11T12:00:00' },
+      { ...articles[1], createdAt: '2026-05-08T12:00:00' },
+    ];
+    global.fetch = vi.fn((url) => {
+      const target = String(url);
+      if (target.includes('/setups?page=')) return Promise.resolve(jsonResponse({ content: setups }));
+      if (target.includes('/articles?page=')) return Promise.resolve(jsonResponse({ content: articleDatesAsStrings }));
+      if (target.includes('/wishlists')) return Promise.resolve(jsonResponse({ content: [{ setupId: 1 }] }));
+      if (target.includes('/setups/user/published')) return Promise.resolve(jsonResponse({ content: [setups[0]] }));
+      if (target.includes('/articles/user/my-articles')) return Promise.resolve(jsonResponse([{ id: 99, likeCount: 6 }]));
+      return Promise.resolve(jsonResponse({}));
+    });
+
+    renderCommunity();
+    expect(await screen.findByText('Kitchen Automation')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Articles'));
+    fireEvent.click(screen.getByText('Oldest'));
+
+    await waitFor(() => {
+      const cards = Array.from(document.querySelectorAll('.articles-grid h3'));
+      expect(cards[0]).toHaveTextContent('Zigbee basics');
+    });
+
+    fireEvent.click(screen.getAllByText('Guide')[0]);
+    expect(screen.getByText('Showing:')).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/Search setups and articles/), {
+      target: { value: 'not-present' },
+    });
+
+    expect(await screen.findByText(/No articles tagged/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Clear filter'));
+    expect(screen.getByText(/No articles found/)).toBeInTheDocument();
+  });
+
+  it('handles missing token, failed fetches, and fallback display values', async () => {
+    localStorage.removeItem('accessToken');
+    getCurrentUser.mockResolvedValueOnce({ id: 8, username: '', avatarUrl: 'broken.png' });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    global.fetch = vi.fn((url) => {
+      const target = String(url);
+      if (target.includes('/setups?page=')) {
+        return Promise.resolve(jsonResponse({
+          content: [{
+            id: 7,
+            name: 'Fallback Setup',
+            description: 'Missing author fields',
+            createdAt: 'bad-date',
+            likeCount: 0,
+            commentCount: 0,
+            user: { avatarUrl: 'bad-avatar.png' },
+          }],
+        }));
+      }
+      if (target.includes('/articles?page=')) {
+        return Promise.resolve(jsonResponse({
+          content: [{
+            id: 70,
+            title: 'Fallback Article',
+            content: 'No author name',
+            createdAt: null,
+            likeCount: 0,
+            commentCount: 0,
+            authorAvatarUrl: 'bad-article-avatar.png',
+            tags: [],
+          }],
+        }));
+      }
+      return Promise.reject(new Error('network down'));
+    });
+
+    renderCommunity();
+    expect(await screen.findByText('Fallback Setup')).toBeInTheDocument();
+    expect(screen.getAllByText((content) => content.includes('necunoscut')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('User').length).toBeGreaterThan(0);
+
+    const setupCard = screen.getByText('Fallback Setup').closest('.setup-card');
+    fireEvent.click(within(setupCard).getByLabelText('Save to wishlist'));
+    expect(await screen.findByText('Session expired. Please login again.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Articles'));
+    expect(screen.getByText('Fallback Article')).toBeInTheDocument();
+    const images = screen.getAllByRole('img');
+    images.forEach((img) => fireEvent.error(img));
+    expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('Failed to fetch setups'));
+  });
 });

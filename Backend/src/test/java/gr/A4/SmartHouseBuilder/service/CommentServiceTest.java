@@ -151,6 +151,53 @@ class CommentServiceTest {
     }
 
     @Test
+    void createArticleComment_attachesParentReply() {
+        User u = user(1L, "u@e");
+        Article article = Article.builder().id(11L).user(u).title("A").content("body").build();
+        Comment parent = Comment.builder().id(51L).article(article).user(u).content("parent").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(u));
+        when(articleRepository.findById(11L)).thenReturn(Optional.of(article));
+        when(commentRepository.findById(51L)).thenReturn(Optional.of(parent));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        commentService.createArticleComment(11L, "u@e", new CommentRequest("reply", 51L));
+
+        ArgumentCaptor<Comment> captor = ArgumentCaptor.forClass(Comment.class);
+        verify(commentRepository).save(captor.capture());
+        assertThat(captor.getValue().getParentComment()).isEqualTo(parent);
+    }
+
+    @Test
+    void createArticleComment_rejectsParentFromAnotherArticle() {
+        User u = user(1L, "u@e");
+        Article article = Article.builder().id(11L).user(u).title("A").content("body").build();
+        Article otherArticle = Article.builder().id(12L).user(u).title("B").content("body").build();
+        Comment parent = Comment.builder().id(51L).article(otherArticle).user(u).content("parent").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(u));
+        when(articleRepository.findById(11L)).thenReturn(Optional.of(article));
+        when(commentRepository.findById(51L)).thenReturn(Optional.of(parent));
+
+        assertThatThrownBy(() -> commentService.createArticleComment(11L, "u@e", new CommentRequest("reply", 51L)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Parent comment does not belong");
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void createSetupComment_throwsWhenParentMissing() {
+        User u = user(1L, "u@e");
+        Setup setup = Setup.builder().id(10L).user(u).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(u));
+        when(setupRepository.findById(10L)).thenReturn(Optional.of(setup));
+        when(commentRepository.findById(50L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", new CommentRequest("reply", 50L)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Parent comment not found");
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
     void createArticleComment_throwsWhenArticleMissing() {
         User u = user(1L, "u@e");
         when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(u));
@@ -205,6 +252,26 @@ class CommentServiceTest {
     }
 
     @Test
+    void deleteComment_throwsWhenUserMissingOrCommentHasNoAuthor() {
+        User author = user(1L, "author@e");
+        Comment c = Comment.builder().id(5L).user(author).content("x").build();
+        when(commentRepository.findById(5L)).thenReturn(Optional.of(c));
+        when(userRepository.findByEmail("missing@e")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.deleteComment(5L, "missing@e"))
+                .isInstanceOf(UsernameNotFoundException.class);
+
+        User u = user(2L, "u@e");
+        Comment orphan = Comment.builder().id(6L).user(null).content("x").build();
+        when(commentRepository.findById(6L)).thenReturn(Optional.of(orphan));
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(u));
+
+        assertThatThrownBy(() -> commentService.deleteComment(6L, "u@e"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Only comment author");
+    }
+
+    @Test
     void deleteComment_throwsWhenAlreadyDeleted() {
         User u = user(1L, "u@e");
         Comment c = Comment.builder().id(5L).user(u).content("x").deleted(true).build();
@@ -254,6 +321,33 @@ class CommentServiceTest {
     }
 
     @Test
+    void getSetupComments_mapsDeletedCommentTree() {
+        User author = user(1L, "u@e");
+        Comment reply = Comment.builder().id(51L).user(author).content("reply").replies(new ArrayList<>()).build();
+        Comment deletedRoot = Comment.builder()
+                .id(50L)
+                .user(null)
+                .content(null)
+                .deleted(true)
+                .replies(List.of(reply))
+                .build();
+        reply.setParentComment(deletedRoot);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Comment> page = new PageImpl<>(List.of(deletedRoot), pageable, 1);
+
+        when(commentRepository.findBySetupIdAndParentCommentIsNull(10L, pageable)).thenReturn(page);
+
+        Page<CommentResponse> result = commentService.getSetupComments(10L, pageable, null);
+
+        CommentResponse response = result.getContent().get(0);
+        assertThat(response.isDeleted()).isTrue();
+        assertThat(response.getContent()).isEqualTo("[deleted]");
+        assertThat(response.getUsername()).isEqualTo("User");
+        assertThat(response.getReplies()).hasSize(1);
+        assertThat(response.getReplies().get(0).getParentCommentId()).isEqualTo(50L);
+    }
+
+    @Test
     void getArticleComments_returnsPageEvenWhenAnonymousReader() {
         User author = user(1L, "author@e");
         Comment root = Comment.builder().id(50L).user(author).content("body").replies(new ArrayList<>()).build();
@@ -266,6 +360,21 @@ class CommentServiceTest {
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).isOwner()).isFalse();
+    }
+
+    @Test
+    void getArticleComments_setsOwnerWhenReaderExists() {
+        User author = user(1L, "author@e");
+        Comment root = Comment.builder().id(50L).user(author).content("body").replies(new ArrayList<>()).build();
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Comment> page = new PageImpl<>(List.of(root), pageable, 1);
+
+        when(userRepository.findByEmail("author@e")).thenReturn(Optional.of(author));
+        when(commentRepository.findByArticleIdAndParentCommentIsNull(11L, pageable)).thenReturn(page);
+
+        Page<CommentResponse> result = commentService.getArticleComments(11L, pageable, "author@e");
+
+        assertThat(result.getContent().get(0).isOwner()).isTrue();
     }
 
     @Test
@@ -288,6 +397,43 @@ class CommentServiceTest {
         commentService.deleteCommentTreeForArticle(11L);
 
         verify(commentRepository).delete(root);
+    }
+
+    @Test
+    void deleteComment_hardDeleteAlsoCleansDeletedAncestorsWithoutChildren() {
+        User u = user(1L, "u@e");
+        Comment grandparent = Comment.builder().id(1L).deleted(true).build();
+        Comment parent = Comment.builder().id(2L).deleted(true).parentComment(grandparent).build();
+        Comment leaf = Comment.builder().id(3L).user(u).content("leaf").parentComment(parent).build();
+
+        when(commentRepository.findById(3L)).thenReturn(Optional.of(leaf));
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(u));
+        when(commentRepository.countByParentCommentId(3L)).thenReturn(0L);
+        when(commentRepository.countByParentCommentId(2L)).thenReturn(0L);
+        when(commentRepository.countByParentCommentId(1L)).thenReturn(0L);
+
+        commentService.deleteComment(3L, "u@e");
+
+        verify(commentRepository).delete(leaf);
+        verify(commentRepository).delete(parent);
+        verify(commentRepository).delete(grandparent);
+    }
+
+    @Test
+    void deleteComment_hardDeleteStopsAncestorCleanupWhenChildrenRemain() {
+        User u = user(1L, "u@e");
+        Comment parent = Comment.builder().id(2L).deleted(true).build();
+        Comment leaf = Comment.builder().id(3L).user(u).content("leaf").parentComment(parent).build();
+
+        when(commentRepository.findById(3L)).thenReturn(Optional.of(leaf));
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(u));
+        when(commentRepository.countByParentCommentId(3L)).thenReturn(0L);
+        when(commentRepository.countByParentCommentId(2L)).thenReturn(1L);
+
+        commentService.deleteComment(3L, "u@e");
+
+        verify(commentRepository).delete(leaf);
+        verify(commentRepository, never()).delete(parent);
     }
 
     @Test

@@ -1,0 +1,374 @@
+.my-articles-container {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.articles-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.articles-header h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.create-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  background: #5092ce;
+  color: white;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.create-btn:hover {
+  background: #4280bd;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  border-radius: 8px;
+  background: var(--empty-bg, #f5f5f5);
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  color: var(--text-secondary, #666);
+  margin-bottom: 1.5rem;
+}
+
+.cta-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: #5092ce;
+  color: white;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cta-btn:hover {
+  background: #4280bd;
+}
+
+/* ============================================================
+   Drafts / Published tabs (mirrors the MySetups tab layout for
+   visual consistency across the profile area). The little count
+   chip next to the label is only rendered when count > 0, so an
+   empty Drafts tab shows just "Drafts" without trailing zero.
+   ============================================================ */
+.articles-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.articles-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary, #666);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s;
+  margin-bottom: -1px;
+}
+
+.articles-tab:hover {
+  color: #5092ce;
+}
+
+.articles-tab.active {
+  color: #5092ce;
+  border-bottom-color: #5092ce;
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(80, 146, 206, 0.15);
+  color: #5092ce;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.articles-tab.active .tab-count {
+  background: #5092ce;
+  color: #fff;
+}
+
+.my-articles-container.dark .articles-tab {
+  color: #aaa;
+}
+
+.my-articles-container.dark .articles-tab:hover,
+.my-articles-container.dark .articles-tab.active {
+  color: #6ba5d9;
+}
+
+.my-articles-container.dark .articles-tab.active {
+  border-bottom-color: #6ba5d9;
+}
+
+.my-articles-container.dark .tab-count {
+  background: rgba(107, 165, 217, 0.18);
+  color: #6ba5d9;
+}
+
+.my-articles-container.dark .articles-tab.active .tab-count {
+  background: #6ba5d9;
+  color: #1a2236;
+}
+
+.articles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.article-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--card-bg, white);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.article-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+
+.article-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary, #333);
+  word-break: break-word;
+}
+
+.article-preview {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.article-meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.meta-item .label {
+  font-weight: 500;
+  color: var(--text-primary, #333);
+}
+
+.created-at {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Article card — action buttons (mirrors MySetups for visual
+   consistency across the profile pages). Edit is primary filled
+   blue, View is a ghost outline button, Delete is icon-only and
+   hidden until the card is hovered (mouse devices only).
+   ============================================================ */
+.card-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.card-buttons .btn-edit,
+.card-buttons .btn-view,
+.card-buttons .btn-publish,
+.card-buttons .btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.card-buttons .btn-edit {
+  background-color: #5092ce;
+  color: #ffffff;
+}
+
+.card-buttons .btn-edit:hover {
+  background-color: #4280bd;
+}
+
+.card-buttons .btn-view {
+  background-color: transparent;
+  border-color: #5092ce;
+  color: #5092ce;
+}
+
+.card-buttons .btn-view:hover {
+  background-color: rgba(80, 146, 206, 0.12);
+}
+
+.my-articles-container.dark .card-buttons .btn-view {
+  border-color: #6ba5d9;
+  color: #bdd3e7;
+}
+
+.my-articles-container.dark .card-buttons .btn-view:hover {
+  background-color: rgba(189, 211, 231, 0.12);
+}
+
+.card-buttons .btn-publish {
+  background-color: #2da774;
+  color: #ffffff;
+}
+
+.card-buttons .btn-publish:hover {
+  background-color: #258f63;
+}
+
+.card-buttons .btn-delete {
+  padding: 7px 10px;
+  background-color: transparent;
+  color: #c0392b;
+  margin-left: auto;
+}
+
+.card-buttons .btn-delete:hover {
+  background-color: rgba(192, 57, 43, 0.12);
+}
+
+.my-articles-container.dark .card-buttons .btn-delete {
+  color: #e57368;
+}
+
+.my-articles-container.dark .card-buttons .btn-delete:hover {
+  background-color: rgba(229, 115, 104, 0.16);
+}
+
+@media (hover: hover) {
+  .card-buttons .btn-delete {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .article-card:hover .card-buttons .btn-delete,
+  .card-buttons .btn-delete:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Dark mode */
+.my-articles-container.dark {
+  --border-color: #444;
+  --empty-bg: #2a2a2a;
+  --card-bg: #1e1e1e;
+  --text-primary: #fff;
+  --text-secondary: #aaa;
+}
+
+.my-articles-container.dark .article-title {
+  color: #fff;
+}
+
+.my-articles-container.dark .empty-state p {
+  color: #aaa;
+}
+
+@media (max-width: 600px) {
+  .articles-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .card-buttons {
+    margin-left: 0;
+  }
+
+  .created-at {
+    margin-left: 0;
+  }
+
+  .article-meta {
+    width: 100%;
+  }
+}
+
+.my-article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.my-article-tag {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: #e8f0fe;
+  color: #0052a3;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.my-articles-container.dark .my-article-tag {
+  background: rgba(74, 158, 255, 0.15);
+  color: #4a9eff;
+}

@@ -1,0 +1,268 @@
+.activity-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.activity-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 24px 0;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  /* The row is now a <button> so it can be clicked with keyboard/screen
+     readers, so we have to unstyle the browser's default button chrome. */
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background-color: white;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.activity-item:focus-visible {
+  outline: 2px solid #5092ce;
+  outline-offset: 2px;
+}
+
+.dark-mode .activity-item {
+  background-color: #2d2d38;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.activity-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.activity-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5092ce, #4a8bc9);
+  color: white;
+  flex-shrink: 0;
+}
+
+/* Per-type icon tints. Keeps the same size/shape but changes the hue so the
+   user can scan the list and tell at a glance which activities are comments,
+   which are likes, etc. The default (blue) stays for comment-related rows. */
+.activity-icon-incoming {
+  background: linear-gradient(135deg, #f5a623, #e8981a); /* amber: someone pinged you */
+}
+.activity-icon-publish {
+  background: linear-gradient(135deg, #27ae60, #219a54); /* green: you shipped something */
+}
+.activity-icon-copy {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad); /* purple: you forked a setup */
+}
+.activity-icon-like {
+  background: linear-gradient(135deg, #e74c3c, #c0392b); /* red: like */
+}
+.activity-icon-wishlist {
+  background: linear-gradient(135deg, #5092ce, #34668f); /* deeper blue: save */
+}
+
+/* Loading stub while we wait for /api/v1/activity. Styled to match the
+   empty state so there's no layout shift when it swaps in. */
+.activity-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
+  font-size: 14px;
+}
+
+/* Comment excerpt ("...what you actually said..."). Indented, italic, and
+   slightly dimmer than the main text so it reads as a secondary annotation
+   rather than competing with the action phrase. */
+.activity-excerpt {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+  line-height: 1.4;
+  /* Clamp to two lines so a wall-of-text comment doesn't blow up a row.
+     -webkit-line-clamp is the widely-supported way to do this today. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dark-mode .activity-excerpt {
+  color: #bbb;
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.activity-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.activity-action {
+  font-weight: 600;
+  color: #5092ce;
+}
+
+.activity-setup {
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.activity-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.dark-mode .activity-date {
+  color: #aaa;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 16px;
+}
+
+@media (max-width: 1024px) {
+  .activity-container {
+    max-width: 100%;
+  }
+
+  .activity-title {
+    font-size: 22px;
+  }
+
+  .activity-item {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .activity-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .activity-text {
+    font-size: 13px;
+  }
+
+  .activity-date {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .activity-container {
+    max-width: 100%;
+  }
+
+  .activity-title {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .activity-list {
+    gap: 14px;
+  }
+
+  .activity-item {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .activity-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .activity-text {
+    font-size: 12px;
+  }
+
+  .activity-date {
+    font-size: 10px;
+  }
+
+  .empty-state {
+    padding: 40px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .activity-title {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  .activity-list {
+    gap: 12px;
+  }
+
+  .activity-item {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .activity-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .activity-content {
+    gap: 2px;
+  }
+
+  .activity-text {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .activity-action {
+    font-weight: 500;
+  }
+
+  .activity-setup {
+    font-weight: 400;
+  }
+
+  .activity-date {
+    font-size: 9px;
+    margin-top: 2px;
+  }
+
+  .empty-state {
+    padding: 30px 12px;
+    font-size: 12px;
+  }
+}

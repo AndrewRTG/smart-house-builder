@@ -1,0 +1,392 @@
+/* Profile Page - Modern Design */
+
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* HEADER */
+.profile-header {
+  background: linear-gradient(135deg, #5092ce 0%, #4a8bc9 100%);
+  padding: 40px 32px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .profile-header {
+  background: linear-gradient(135deg, #4a7fb8 0%, #3d6fa3 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.user-intro {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.user-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #00d4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.user-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+}
+
+.user-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-name {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+}
+
+.user-email {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.settings-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* TABS */
+.profile-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 20px 32px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #eee;
+  overflow-x: auto;
+}
+
+.dark-mode .profile-tabs {
+  background-color: #2d2d38;
+  border-color: #444;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Montserrat', sans-serif;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background-color: rgba(80, 146, 206, 0.08);
+  color: #5092ce;
+}
+
+.tab-btn.active {
+  background-color: #5092ce;
+  color: white;
+}
+
+.dark-mode .tab-btn:hover {
+  background-color: rgba(80, 146, 206, 0.2);
+}
+
+.dark-mode .tab-btn.active {
+  background-color: #5092ce;
+  color: white;
+}
+
+/* CONTENT */
+.profile-content {
+  flex: 1;
+  padding: 40px 32px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* FOOTER */
+.profile-footer {
+  background-color: var(--navbar-bg);
+  padding: 24px;
+  text-align: center;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: auto;
+}
+
+.dark-mode .profile-footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.footer-links a {
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 13px;
+  transition: opacity 0.2s ease;
+}
+
+.footer-links a:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+.footer-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  .profile-header {
+    padding: 32px 24px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .settings-btn {
+    align-self: flex-end;
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .profile-content {
+    padding: 32px 24px;
+  }
+
+  .profile-tabs {
+    padding: 16px;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .tab-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    padding: 24px 16px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .user-intro {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .user-avatar-large {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .user-name {
+    font-size: 24px;
+  }
+
+  .user-email {
+    font-size: 13px;
+  }
+
+  .settings-btn {
+    align-self: flex-start;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+
+  .profile-content {
+    padding: 20px 16px;
+  }
+
+  .profile-tabs {
+    padding: 12px;
+    gap: 4px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+
+  .tab-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-header {
+    padding: 16px 12px;
+  }
+
+  .header-content {
+    gap: 12px;
+  }
+
+  .user-intro {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .user-avatar-large {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .user-name {
+    font-size: 18px;
+  }
+
+  .user-email {
+    font-size: 12px;
+  }
+
+  .settings-btn {
+    align-self: center;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+
+  .profile-content {
+    padding: 12px;
+  }
+
+  .profile-tabs {
+    padding: 10px 8px;
+    gap: 2px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .tab-btn {
+    padding: 6px 10px;
+    font-size: 10px;
+    flex-shrink: 0;
+    min-height: 40px;
+  }
+
+  .tab-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .profile-footer {
+    padding: 16px 12px;
+  }
+
+  .footer-links {
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .footer-links a {
+    font-size: 12px;
+  }
+
+  .footer-text {
+    font-size: 11px;
+  }
+}

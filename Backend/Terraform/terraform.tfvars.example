@@ -1,0 +1,8 @@
+aws_region        = "eu-north-1"
+bucket_name       = "smart-house-images-dev"
+environment       = "dev"
+enable_versioning = false
+
+allowed_origins = [
+  "http://localhost:5173",
+]

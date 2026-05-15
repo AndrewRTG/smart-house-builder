@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+:root {
+  font-family: "Montserrat", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.builder-scope,
+.builder-scope *,
+.builder-scope *::before,
+.builder-scope *::after {
+  box-sizing: border-box;
+}
+
+.builder-scope h1,
+.builder-scope h2,
+.builder-scope h3,
+.builder-scope h4,
+.builder-scope h5,
+.builder-scope h6,
+.builder-scope p,
+.builder-scope figure,
+.builder-scope blockquote,
+.builder-scope dl,
+.builder-scope dd {
+  margin: 0;
+}
+
+.builder-scope h1,
+.builder-scope h2,
+.builder-scope h3,
+.builder-scope h4,
+.builder-scope h5,
+.builder-scope h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.builder-scope a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+.builder-scope ol,
+.builder-scope ul,
+.builder-scope menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.builder-scope button,
+.builder-scope input,
+.builder-scope select,
+.builder-scope optgroup,
+.builder-scope textarea {
+  font: inherit;
+  font-feature-settings: inherit;
+  font-variation-settings: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  border: 0 solid;
+  border-radius: 0;
+  background-color: transparent;
+  opacity: 1;
+}
+
+.builder-scope button,
+.builder-scope input:where([type='button'], [type='reset'], [type='submit']) {
+  appearance: button;
+}
+
+.builder-scope input::placeholder,
+.builder-scope textarea::placeholder {
+  color: currentColor;
+  opacity: 1;
+}
+
+.builder-scope img,
+.builder-scope svg,
+.builder-scope video,
+.builder-scope canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.builder-scope .custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.builder-scope .custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.builder-scope .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+.builder-scope.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+.builder-scope .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.builder-scope .no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.builder-scope .no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

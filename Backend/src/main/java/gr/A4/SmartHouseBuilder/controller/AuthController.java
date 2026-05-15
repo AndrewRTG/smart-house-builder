@@ -1,0 +1,105 @@
+package gr.A4.SmartHouseBuilder.controller;
+
+import gr.A4.SmartHouseBuilder.dto.*;
+import gr.A4.SmartHouseBuilder.service.AuthService;
+import gr.A4.SmartHouseBuilder.service.MfaService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+
+@RestController
+@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class AuthController {
+
+    private final AuthService authService;
+    private final MfaService mfaService;
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Object> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+        authService.verifyEmail(token);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/verify-mfa")
+    public ResponseEntity<AuthResponse> verifyMfa(@Valid @RequestBody MfaVerifyRequest request) {
+        return ResponseEntity.ok(authService.verifyMfa(request));
+    }
+
+    @PostMapping("/mfa/setup")
+    public ResponseEntity<MfaSetupResponse> setupMfa(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(authService.setupMfa(userDetails.getUsername()));
+    }
+
+    @PostMapping("/mfa/confirm")
+    public ResponseEntity<Void> confirmMfa(@AuthenticationPrincipal UserDetails userDetails,
+                                           @Valid @RequestBody MfaSetupConfirmRequest request) {
+        authService.confirmMfa(userDetails.getUsername(), request.getCode());
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/mfa/disable")
+    public ResponseEntity<Void> disableMfa(@AuthenticationPrincipal UserDetails userDetails) {
+        authService.disableMfa(userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody TokenRefreshRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request.getRefreshToken()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody TokenRefreshRequest request) {
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.processForgotPassword(request.getEmail());
+        return ResponseEntity.ok("If an account exists with this email, a reset link has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok("Password has been successfully reset.");
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+        // If the JWT filter didn't authenticate us (missing / expired / invalid token),
+        // userDetails will be null under /api/v1/auth/** because SecurityConfig marks the
+        // whole auth namespace as permitAll. Return 401 instead of NPE-ing into a 500.
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(authService.getCurrentUser(userDetails.getUsername()));
+    }
+
+    @PostMapping("/check-username")
+    public ResponseEntity<Map<String, Boolean>> checkUsername(@RequestBody Map<String, String> request) {
+        String username = request.get("username");
+        boolean available = !authService.usernameExists(username);
+        return ResponseEntity.ok(Map.of("available", available));
+    }
+
+}

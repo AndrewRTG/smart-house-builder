@@ -1,0 +1,584 @@
+.create-article-page {
+  min-height: calc(100vh - 80px);
+  padding: 2rem 1rem;
+}
+
+.create-article-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+/* ----- Image upload box ----- */
+.image-section {
+  width: 100%;
+}
+
+.image-upload-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem 1.5rem;
+  border: 2px dashed #b3b3b3;
+  border-radius: 10px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.05s;
+  text-align: center;
+}
+
+.image-upload-box:hover,
+.image-upload-box.drag-active {
+  border-color: #0066cc;
+  background: #f0f6ff;
+}
+
+.image-upload-box:active {
+  transform: translateY(1px);
+}
+
+.upload-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.upload-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.image-preview {
+  position: relative;
+  width: 100%;
+  max-height: 420px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #000;
+}
+
+.image-preview img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  display: block;
+}
+
+.remove-image {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.remove-image:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+/* ----- Inputs ----- */
+.title-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+  color: inherit;
+}
+
+.title-input:focus {
+  border-color: #0066cc;
+}
+
+.title-input::placeholder {
+  color: #999;
+  font-weight: 500;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: -0.25rem;
+}
+
+.content-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-family: inherit;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+  color: inherit;
+}
+
+.content-input:focus {
+  border-color: #0066cc;
+}
+
+.content-input::placeholder {
+  color: #999;
+}
+
+/* ----- Errors / banners ----- */
+.form-error {
+  padding: 0.75rem 1rem;
+  background: #ffe0e0;
+  color: #d32f2f;
+  border-left: 4px solid #d32f2f;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.mock-banner {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: #856404;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ----- Actions ----- */
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-draft,
+.btn-danger {
+  padding: 0.65rem 1.4rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.btn-primary {
+  background: #5092ce;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #4280bd;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-draft:disabled,
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #efefef;
+  color: #333;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e2e2e2;
+}
+
+/* Save as Draft — ghost outlined version of the primary button so the
+   eye reads "secondary action" but it still belongs to the brand. */
+.btn-draft {
+  background: transparent;
+  color: #5092ce;
+  border: 1.5px solid #5092ce;
+  padding: calc(0.65rem - 1.5px) calc(1.4rem - 1.5px);
+}
+
+.btn-draft:hover:not(:disabled) {
+  background: rgba(80, 146, 206, 0.1);
+}
+
+/* Used inside the Cancel-confirmation modal for the "Discard" button. */
+.btn-danger {
+  background: transparent;
+  color: #c0392b;
+  border: 1.5px solid #c0392b;
+  padding: calc(0.65rem - 1.5px) calc(1.4rem - 1.5px);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.create-article-page.dark .btn-draft {
+  color: #6ba5d9;
+  border-color: #6ba5d9;
+}
+
+.create-article-page.dark .btn-draft:hover:not(:disabled) {
+  background: rgba(107, 165, 217, 0.15);
+}
+
+.create-article-page.dark .btn-danger {
+  color: #e57368;
+  border-color: #e57368;
+}
+
+.create-article-page.dark .btn-danger:hover:not(:disabled) {
+  background: rgba(229, 115, 104, 0.12);
+}
+
+/* ============================================================
+   Cancel confirmation modal — appears when the user tries to
+   leave an editor that has unsaved changes. Three explicit
+   choices (Save Draft / Discard / Keep Editing).
+   ============================================================ */
+.cancel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+  animation: cancel-fade-in 0.18s ease-out;
+}
+
+@keyframes cancel-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cancel-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cancel-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  padding: 2rem 1.75rem 1.75rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  animation: cancel-slide-up 0.22s ease-out;
+  text-align: left;
+}
+
+.cancel-modal-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.cancel-modal-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+}
+
+.cancel-modal-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a2236;
+  margin: 0 0 0.35rem 0;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.cancel-modal-subtitle {
+  color: #555;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  margin: 0 0 1.5rem 0;
+}
+
+.cancel-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cancel-modal-btn {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+.create-article-page.dark .cancel-modal {
+  background: #1e1e1e;
+}
+
+.create-article-page.dark .cancel-modal-title {
+  color: #fff;
+}
+
+.create-article-page.dark .cancel-modal-subtitle {
+  color: #bbb;
+}
+
+.create-article-page.dark .cancel-modal-close {
+  color: #aaa;
+}
+
+.create-article-page.dark .cancel-modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* ----- Spinner ----- */
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #cce0ff;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ----- Dark mode ----- */
+.create-article-page.dark .image-upload-box {
+  background: #1f1f1f;
+  border-color: #444;
+  color: #ddd;
+}
+
+.create-article-page.dark .image-upload-box:hover,
+.create-article-page.dark .image-upload-box.drag-active {
+  border-color: #4d9fff;
+  background: #1a2a3a;
+}
+
+.create-article-page.dark .upload-hint {
+  color: #aaa;
+}
+
+.create-article-page.dark .title-input,
+.create-article-page.dark .content-input {
+  background: #1f1f1f;
+  border-color: #444;
+  color: #eee;
+}
+
+.create-article-page.dark .title-input::placeholder,
+.create-article-page.dark .content-input::placeholder {
+  color: #777;
+}
+
+.create-article-page.dark .btn-secondary {
+  background: #2a2a2a;
+  color: #ddd;
+}
+
+.create-article-page.dark .btn-secondary:hover:not(:disabled) {
+  background: #353535;
+}
+
+.create-article-page.dark .image-preview {
+  border-color: #444;
+}
+
+.create-article-page.dark .char-count {
+  color: #aaa;
+}
+
+/* === Tags === */
+.tags-section {
+  margin-bottom: 1rem;
+}
+
+.tags-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.tags-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #888;
+  margin-left: 0.25rem;
+}
+
+.tags-input-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  min-height: 44px;
+  transition: border-color 0.15s;
+}
+
+.tags-input-wrapper:focus-within {
+  border-color: #0066cc;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #e8f0fe;
+  color: #0052a3;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.tag-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+}
+
+.tag-chip button:hover {
+  background: rgba(0, 82, 163, 0.15);
+}
+
+.tag-input {
+  flex: 1;
+  min-width: 140px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+  color: inherit;
+}
+
+.suggested-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.suggested-label {
+  font-size: 0.8rem;
+  color: #888;
+  margin-right: 0.25rem;
+}
+
+.suggested-tag {
+  padding: 0.2rem 0.6rem;
+  border: 1px dashed #bbb;
+  border-radius: 999px;
+  background: transparent;
+  color: #666;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.suggested-tag:hover:not(:disabled) {
+  border-color: #0066cc;
+  color: #0066cc;
+  border-style: solid;
+}
+
+.suggested-tag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark mode for tags */
+.create-article-page.dark .tags-label {
+  color: #ddd;
+}
+
+.create-article-page.dark .tags-hint {
+  color: #888;
+}
+
+.create-article-page.dark .tags-input-wrapper {
+  background: #1f1f1f;
+  border-color: #444;
+}
+
+.create-article-page.dark .tags-input-wrapper:focus-within {
+  border-color: #4a9eff;
+}
+
+.create-article-page.dark .tag-chip {
+  background: rgba(74, 158, 255, 0.15);
+  color: #4a9eff;
+}
+
+.create-article-page.dark .tag-input::placeholder {
+  color: #666;
+}
+
+.create-article-page.dark .suggested-tag {
+  border-color: #555;
+  color: #999;
+}
+
+.create-article-page.dark .suggested-tag:hover:not(:disabled) {
+  border-color: #4a9eff;
+  color: #4a9eff;
+}

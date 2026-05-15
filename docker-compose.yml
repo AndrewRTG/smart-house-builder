@@ -1,0 +1,51 @@
+services:
+  # --- 1. Baza de Date (PostgreSQL) ---
+  db:
+    image: postgres:15-alpine
+    container_name: smart-house-database
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    networks:
+      - smart-house-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: 
+      context: ./Backend
+    container_name: smart-house-backend1
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - smart-house-network
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./Frontend
+    container_name: smart-house-frontend1
+    ports:
+      - "3000:5173"
+    depends_on:
+      - backend
+    networks:
+      - smart-house-network
+
+networks:
+  smart-house-network:
+    driver: bridge

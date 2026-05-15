@@ -1,0 +1,393 @@
+@import "bootstrap/dist/css/bootstrap.min.css" layer(bootstrap);
+@import "bootstrap-icons/font/bootstrap-icons.css" layer(bootstrap);
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.app-wrapper {
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* LIGHT MODE */
+.light-mode {
+  --bg-main: #f3f4f6;
+  --navbar-bg: #bdd3e7;
+  --sidebar-bg:#5092ce;
+  --card-bg: #D9D9D9;
+  --section-bg: #bdd3e7;
+  --text-main: #111827;
+  --text-secondary: #eef4fb;
+  --tab-active-bg: #111827;
+  --tab-active-text: #ffffff;
+  --btn-bg: #ffffff;
+  --btn-text: #1f2937;
+  --toggle-bg: #1f2937;
+  --toggle-text: #ffffff;
+  --input-bg: #ffffff;
+  --input-text: #111827;
+  --divider-color: rgb(255 255 255);
+  --text-instruction: #333333;
+}
+
+/* DARK MODE */
+.dark-mode {
+  --bg-main: #1a1a1e;
+  --navbar-bg: #2f2f41;
+  --sidebar-bg:#2c2c30;
+  --card-bg: #2C2C30;
+  --section-bg: #0d316c;
+  --text-main: #ffffff;
+  --text-secondary: #d1d5db;
+  --tab-active-bg: #5092ce;
+  --tab-active-text: #ffffff;
+  --btn-bg: #374151;
+  --btn-text: #ffffff;
+  --toggle-bg: #facc15;
+  --toggle-text: #111827;
+  --input-bg: #ffffff;
+  --input-text: #111827;
+  --divider-color: rgba(255, 255, 255, 0.15);
+  --text-instruction: #e0e0e0;
+
+}
+
+.page-container {
+  min-height: calc(100vh - 88px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  position: relative;
+}
+
+.page-title {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  background-color: var(--card-bg);
+  color: #ffffff;
+  border-radius: 22px;
+  padding: 30px 28px 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+  transition: background-color 0.3s ease;
+}
+
+.auth-input {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+}
+
+.auth-input::placeholder {
+  color: #6b7280 !important;
+}
+
+.custom-navbar {
+  transition: background-color 0.3s ease;
+}
+
+.navbar-brand,
+.nav-link {
+  transition: color 0.3s ease;
+}
+
+/* Tailwind defines a global `.collapse` utility that conflicts with
+   Bootstrap's `.collapse` navbar behavior. Force the navbar container
+   back to Bootstrap semantics after the builder styles load. */
+.custom-navbar .navbar-collapse {
+  visibility: visible !important;
+}
+
+@media (min-width: 992px) {
+  .custom-navbar .navbar-collapse {
+    display: flex !important;
+  }
+}
+
+.btn {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar-auth-link {
+  color: var(--text-main);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.navbar-auth-link:hover {
+  opacity: 0.8;
+  color: var(--text-main);
+}
+
+.auth-submit-btn {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.auth-submit-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auth-error {
+  color: #ffb4b4;
+  margin-bottom: 12px;
+}
+
+.auth-success {
+  color: #b9f6ca;
+  margin-bottom: 12px;
+}
+
+/* TOGGLE THEME */
+.theme-toggle {
+  width: 58px;
+  height: 30px;
+  border: none;
+  border-radius: 999px;
+  background-color: #4f8fd4;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle-knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  color: #4f8fd4;
+}
+
+.theme-toggle-knob.light {
+  transform: translateX(28px);
+}
+
+.theme-toggle-knob.dark {
+  transform: translateX(0);
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.auth-divider span {
+  padding: 0 12px;
+}
+
+.social-auth-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.social-auth-btn {
+  flex: 1;
+  min-width: 140px;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.social-auth-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.google-btn {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.facebook-btn {
+  background-color: #1877f2;
+  color: #ffffff;
+}
+
+.forgot-password-wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.forgot-password-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+  color: var(--text-secondary);
+}
+.mfa-instruction-text {
+  color: var(--text-instruction);
+  font-size: 16px;
+  margin-bottom: 15px;
+  transition: color 0.3s ease;
+}
+
+/* ===== MOBILE RESPONSIVE =====     cod adaugat pentru pagina de login si register        */
+@media (max-width: 991px) {
+  .custom-navbar {
+    position: relative !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .custom-navbar .container-fluid {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    position: relative !important;
+  }
+
+  .custom-navbar .navbar-brand {
+    margin-right: 0 !important;
+    line-height: 1 !important;
+  }
+
+  .custom-navbar .d-lg-none {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-left: auto !important;
+  }
+
+  .navbar-toggler {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 4px 8px !important;
+  }
+
+  .navbar-toggler:focus {
+    box-shadow: none !important;
+  }
+
+  .navbar-collapse {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background-color: var(--navbar-bg) !important;
+    border-radius: 0 0 12px 12px !important;
+    padding: 8px 0 16px 0 !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+    z-index: 1000 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .navbar-collapse .navbar-nav {
+    flex-direction: column !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+  }
+
+  .navbar-collapse .nav-link {
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    color: var(--text-main) !important;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid var(--divider-color) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .navbar-collapse .navbar-nav .nav-item:last-child .nav-link {
+    border-bottom: none !important;
+  }
+
+  .navbar-collapse .d-flex.align-items-center {
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0 !important;
+    width: 100% !important;
+    border-top: 1px solid var(--divider-color) !important;
+  }
+
+  .navbar-collapse .navbar-auth-link,
+  .navbar-collapse button.navbar-auth-link {
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    color: var(--text-main) !important;
+    display: block !important;
+    padding: 10px 0 !important;
+    width: 50% !important;
+    text-align: center !important;
+    border: none !important;
+    margin: 0 !important;
+    background: none !important;
+  }
+
+  .navbar-collapse .navbar-auth-link:first-child {
+    border-right: 1px solid var(--divider-color) !important;
+  }
+
+  .navbar-collapse .theme-toggle {
+    display: none !important;
+  }
+}

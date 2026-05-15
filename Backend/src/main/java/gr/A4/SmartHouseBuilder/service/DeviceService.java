@@ -1,0 +1,86 @@
+package gr.A4.SmartHouseBuilder.service;
+
+
+import gr.A4.SmartHouseBuilder.dto.DeviceRequest;
+import gr.A4.SmartHouseBuilder.dto.DeviceResponse;
+import gr.A4.SmartHouseBuilder.entity.Category;
+import gr.A4.SmartHouseBuilder.entity.Device;
+import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
+import gr.A4.SmartHouseBuilder.repository.DeviceRepository;
+import gr.A4.SmartHouseBuilder.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class DeviceService {
+    private final DeviceRepository deviceRepository;
+    private final CategoryRepository categoryRepository;
+
+    public DeviceResponse createDevice (DeviceRequest request){
+        Category category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria cu Id-ul: " + request.categoryId() + " nu a fost gasita!"));
+
+        Device device = new Device();
+        device.setCategory(category);
+        device.setName(request.name());
+        device.setBrand(request.brand());
+        device.setDescription(request.description());
+        device.setImageUrl(request.imageUrl());
+        device.setCommunicationProtocol(request.communicationProtocol());
+        device.setSpecifications(request.specifications());
+
+        device = deviceRepository.save(device);
+        return new DeviceResponse(
+                device.getId(),
+                category.getId(),
+                category.getName(),
+                device.getName(),
+                device.getBrand(),
+                device.getDescription(),
+                device.getImageUrl(),
+                device.getCommunicationProtocol(),
+                device.getSpecifications(),
+                device.getBestPrice(),
+                device.getBestPriceUrl());
+    }
+    public List<DeviceResponse> getAllDevices() {
+        return deviceRepository.findAll().stream()
+                .map(d -> new DeviceResponse(
+                        d.getId(), d.getCategory().getId(), d.getCategory().getName(),
+                        d.getName(), d.getBrand(), d.getDescription(),
+                        d.getImageUrl(), d.getCommunicationProtocol(), d.getSpecifications(),
+                        d.getBestPrice(),d.getBestPriceUrl()
+                )).toList();
+    }
+    public List<DeviceResponse> getFilteredDevices(List<Integer> categoryIds, String brand, Double maxPrice, Double minPrice, List<String> protocols, String sortBy, String sortDir){
+        String databaseColumn = switch (sortBy.toLowerCase()) {
+            case "price" -> "best_price";
+            case "name" -> "name";
+            case "brand" -> "brand";
+            case "date" -> "id";
+            default -> "id";
+        };
+
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(databaseColumn).ascending()
+                : Sort.by(databaseColumn).descending();
+
+        List<Device> devices = deviceRepository.findWithFilters(categoryIds, brand, maxPrice, minPrice, protocols, sort);
+
+        return devices.stream()
+                .map(d -> new DeviceResponse(
+                        d.getId(), d.getCategory().getId(), d.getCategory().getName(),
+                        d.getName(), d.getBrand(), d.getDescription(),
+                        d.getImageUrl(), d.getCommunicationProtocol(), d.getSpecifications(),
+                        d.getBestPrice(), d.getBestPriceUrl()
+                )).toList();
+    }
+    public String getSearchSuggestion(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) return null;
+        return deviceRepository.findDidYouMeanSuggestion(keyword);
+    }
+}

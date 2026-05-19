@@ -9,6 +9,7 @@ const mockDeviceList = [
 
 beforeEach(() => {
     vi.clearAllMocks();
+    // Ne asigurăm că fetch-ul este mockuit global
     globalThis.fetch = vi.fn().mockResolvedValue({
         json: async () => mockDeviceList,
     });

@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +52,7 @@ class LayoutServiceTest {
         ValidationResult result = new ValidationResult(true, "INFO", "ok");
 
         when(modelMapper.toEngineModel(dto)).thenReturn(engineModel);
-        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(List.of(result));
+        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(new ArrayList<>(List.of(result)));
 
         SetupBuildDTO returned = layoutService.validateLayout(layout);
 
@@ -67,7 +68,7 @@ class LayoutServiceTest {
     void validateLayout_acceptsEmptyResults() {
         when(modelMapper.toEngineModel(dto)).thenReturn(new SetupBuild());
         when(compatibilityEngine.runAllChecks(org.mockito.ArgumentMatchers.any()))
-                .thenReturn(List.of());
+                .thenReturn(new ArrayList<>());
 
         SetupBuildDTO returned = layoutService.validateLayout(layout);
 

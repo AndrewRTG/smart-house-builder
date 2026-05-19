@@ -83,7 +83,7 @@ class LayoutServiceTest {
         ValidationResult physicalResult = new ValidationResult(false, "ERROR", "Physical issue");
 
         when(modelMapper.toEngineModel(dto)).thenReturn(engineModel);
-        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(List.of(compatResult));
+        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(new ArrayList<>(List.of(compatResult)));
 
         SetupBuildDTO returned = layoutService.validateLayout(layout);
 

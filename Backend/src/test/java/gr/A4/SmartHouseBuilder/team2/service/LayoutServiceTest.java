@@ -76,6 +76,23 @@ class LayoutServiceTest {
     }
 
     @Test
+    void validateLayout_combinesCompatibilityAndPhysicalErrors() {
+        SetupBuild engineModel = new SetupBuild();
+        ValidationResult compatResult = new ValidationResult(false, "ERROR", "Compatibility issue");
+        ValidationResult physicalResult = new ValidationResult(false, "ERROR", "Physical issue");
+
+        when(modelMapper.toEngineModel(dto)).thenReturn(engineModel);
+        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(List.of(compatResult));
+
+        SetupBuildDTO returned = layoutService.validateLayout(layout);
+
+        assertNotNull(returned.getErrors());
+        // Ar trebui să conțină rezultate de la ambele engine-uri
+        assertTrue(returned.getErrors().size() >= 1);
+        verify(compatibilityEngine).runAllChecks(engineModel);
+    }
+
+    @Test
     void saveLayout_assignsIncrementalIds() {
         Long id1 = layoutService.saveLayout(new SetupBuildDTO());
         Long id2 = layoutService.saveLayout(new SetupBuildDTO());

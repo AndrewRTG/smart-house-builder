@@ -42,6 +42,9 @@ class LikeServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private ActivityEmailService activityEmailService;
+
     @InjectMocks
     private LikeService likeService;
 

@@ -190,7 +190,7 @@ describe('Profile area', () => {
   });
 
   it('Activity shows loading, data, empty, and missing-token states', async () => {
-    fetch.mockResolvedValueOnce(jsonResponse([
+    authFetch.mockResolvedValueOnce(jsonResponse([
       {
         type: 'COMMENT_RECEIVED',
         actorUsername: 'Mara',
@@ -210,7 +210,7 @@ describe('Profile area', () => {
     expect(screen.getByText('Setup detail route')).toBeInTheDocument();
     unmount();
 
-    fetch.mockResolvedValueOnce(jsonResponse([]));
+    authFetch.mockResolvedValueOnce(jsonResponse([]));
     renderInShell(<Activity />);
     expect(await screen.findByText(/No activity yet/)).toBeInTheDocument();
     unmount();
@@ -347,7 +347,7 @@ describe('Profile area', () => {
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ newEmail: 'anca@example.com' }) })
     ));
 
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('checkbox', { name: /two-factor/i }));
     await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
       'http://localhost:20025/api/v1/auth/mfa/disable',
       { method: 'DELETE' }
@@ -362,12 +362,13 @@ describe('Profile area', () => {
   it('Settings routes MFA setup, handles save validation, avatar upload success, and keyboard cancel', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     authFetch
+      .mockResolvedValueOnce(jsonResponse({}))                            // notification-preferences GET on mount
       .mockResolvedValueOnce(jsonResponse({ url: '/uploaded-avatar.png' }))
       .mockResolvedValueOnce(jsonResponse({}));
 
     renderInShell(<Settings profile={{ ...profile, mfaEnabled: false, avatarUrl: '' }} />);
 
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('checkbox', { name: /two-factor/i }));
     expect(screen.getByText('MFA setup route')).toBeInTheDocument();
   });
 
@@ -375,6 +376,7 @@ describe('Profile area', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     fetch.mockResolvedValue(jsonResponse({ available: false }));
     authFetch
+      .mockResolvedValueOnce(jsonResponse({}))                            // notification-preferences GET on mount
       .mockResolvedValueOnce(jsonResponse({ url: '/uploaded-avatar.png' }))
       .mockResolvedValueOnce(jsonResponse({}));
 

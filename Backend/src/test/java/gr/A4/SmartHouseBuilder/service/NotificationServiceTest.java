@@ -82,6 +82,12 @@ class NotificationServiceTest {
     }
 
     @Test
+    void countUnread_delegatesToRepository() {
+        when(notificationRepository.countByUsernameAndIsReadFalse("john")).thenReturn(5L);
+        assertThat(notificationService.countUnread("john")).isEqualTo(5L);
+    }
+
+    @Test
     void markAllAsRead_delegatesToRepository() {
         notificationService.markAllAsRead("john");
 

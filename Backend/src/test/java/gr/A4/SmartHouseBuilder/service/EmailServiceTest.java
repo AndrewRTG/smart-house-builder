@@ -63,6 +63,58 @@ class EmailServiceTest {
     }
 
     @Test
+    void sendsCommentNotificationEmail() throws Exception {
+        MimeMessage message = message();
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        service.sendCommentNotificationEmail("owner@example.test", "alice", "My Setup", "SETUP", "Great setup!");
+
+        verify(mailSender).send(message);
+        assertThat(message.getSubject()).isEqualTo("alice commented on your setup — Smart House Builder");
+        assertThat(message.getAllRecipients()[0].toString()).isEqualTo("owner@example.test");
+        assertThat(content(message)).contains("alice").contains("My Setup").contains("Great setup!");
+    }
+
+    @Test
+    void sendsReplyNotificationEmail() throws Exception {
+        MimeMessage message = message();
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        service.sendReplyNotificationEmail("owner@example.test", "bob", "My Article", "ARTICLE", "Interesting point.");
+
+        verify(mailSender).send(message);
+        assertThat(message.getSubject()).isEqualTo("bob replied to your comment — Smart House Builder");
+        assertThat(message.getAllRecipients()[0].toString()).isEqualTo("owner@example.test");
+        assertThat(content(message)).contains("bob").contains("My Article").contains("Interesting point.");
+    }
+
+    @Test
+    void sendsLikeNotificationEmail() throws Exception {
+        MimeMessage message = message();
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        service.sendLikeNotificationEmail("owner@example.test", "carol", "Smart Living Room", "SETUP");
+
+        verify(mailSender).send(message);
+        assertThat(message.getSubject()).isEqualTo("carol liked your setup — Smart House Builder");
+        assertThat(message.getAllRecipients()[0].toString()).isEqualTo("owner@example.test");
+        assertThat(content(message)).contains("carol").contains("Smart Living Room");
+    }
+
+    @Test
+    void sendsWishlistNotificationEmail() throws Exception {
+        MimeMessage message = message();
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        service.sendWishlistNotificationEmail("owner@example.test", "dave", "Dream Setup");
+
+        verify(mailSender).send(message);
+        assertThat(message.getSubject()).isEqualTo("dave saved your setup — Smart House Builder");
+        assertThat(message.getAllRecipients()[0].toString()).isEqualTo("owner@example.test");
+        assertThat(content(message)).contains("dave").contains("Dream Setup");
+    }
+
+    @Test
     void wrapsVerificationMailFailures() {
         MimeMessage message = message();
         when(mailSender.createMimeMessage()).thenReturn(message);

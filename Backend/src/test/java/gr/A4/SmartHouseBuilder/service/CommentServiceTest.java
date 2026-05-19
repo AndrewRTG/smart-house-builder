@@ -40,6 +40,7 @@ class CommentServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private SetupRepository setupRepository;
     @Mock private ArticleRepository articleRepository;
+    @Mock private ActivityEmailService activityEmailService;
 
     @InjectMocks private CommentService commentService;
 

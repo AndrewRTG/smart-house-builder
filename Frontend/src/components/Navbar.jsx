@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { getCurrentUser, invalidateCurrentUser } from "../utils/currentUser";
+import NotificationBell from "./NotificationBell";
 import "./Navbar.css";
 
 function base64UrlDecode(s) {
@@ -166,6 +167,7 @@ function Navbar({ darkMode, setDarkMode }) {
                 <span className="builder-navbar-avatar-fallback">{avatarText}</span>
               )}
             </button>
+            <NotificationBell darkMode={darkMode} />
             <div className="builder-navbar-divider" />
             <Link to="/mfa/settings" className="builder-navbar-link">MFA</Link>
             <div className="builder-navbar-divider" />

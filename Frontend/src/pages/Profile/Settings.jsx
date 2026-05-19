@@ -22,10 +22,49 @@ export default function Settings({ profile }) {
   useEffect(() => { if (profile?.email) setEmail(profile.email); }, [profile?.email]);
   useEffect(() => { setMfaEnabled(!!profile?.mfaEnabled); }, [profile?.mfaEnabled]);
   useEffect(() => { setAvatarUrl(profile?.avatarUrl || ""); }, [profile?.avatarUrl]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await authFetch(`${API_BASE}/user/notification-preferences`);
+        if (r && r.ok) {
+          const data = await r.json();
+          if (data) setNotifPrefs(data);
+        }
+      } catch {
+        // ignore — defaults remain in place
+      }
+    })();
+  }, []);
+
+  const handleSaveNotifPrefs = async () => {
+    setSavingPrefs(true);
+    try {
+      const res = await authFetch(`${API_BASE}/user/notification-preferences`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(notifPrefs),
+      });
+      if (!res.ok) throw new Error("Failed to save preferences");
+      showSuccess("Notification preferences saved.");
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
   const [editingUsername, setEditingUsername] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const [notifPrefs, setNotifPrefs] = useState({
+    emailOnComment: true,
+    emailOnReply: true,
+    emailOnLike: false,
+    emailOnWishlist: false,
+  });
+  const [savingPrefs, setSavingPrefs] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const usernameCheckTimeout = useRef(null);
@@ -513,6 +552,7 @@ export default function Settings({ profile }) {
           <label className="toggle-switch">
             <input
               type="checkbox"
+              aria-label="Toggle two-factor authentication"
               checked={mfaEnabled}
               onChange={handle2FAToggle}
               disabled={loading}
@@ -532,6 +572,67 @@ export default function Settings({ profile }) {
             </ol>
           </div>
         )}
+      </div>
+
+      {/* Notification Preferences Section */}
+      <div className="settings-section">
+        <h2 className="section-title">Email notifications</h2>
+        <p className="section-description">
+          Choose which activities trigger an email to your inbox.
+        </p>
+
+        <div className="notif-pref-list">
+          {[
+            {
+              key: "emailOnComment",
+              label: "Someone comments on your post",
+              description: "Get an email when a user leaves a comment on your setup or article.",
+            },
+            {
+              key: "emailOnReply",
+              label: "Someone replies to your comment",
+              description: "Get an email when another user replies to a comment you wrote.",
+            },
+            {
+              key: "emailOnLike",
+              label: "Someone likes your post",
+              description: "Get an email each time a user likes your setup or article.",
+            },
+            {
+              key: "emailOnWishlist",
+              label: "Someone saves your setup",
+              description: "Get an email when a user adds your setup to their wishlist.",
+            },
+          ].map(({ key, label, description }) => (
+            <div key={key} className="notif-pref-row">
+              <div className="notif-pref-text">
+                <span className="notif-pref-label">{label}</span>
+                <span className="notif-pref-description">{description}</span>
+              </div>
+              <label className="toggle-switch" aria-label={label}>
+                <input
+                  type="checkbox"
+                  checked={notifPrefs[key] ?? false}
+                  onChange={(e) =>
+                    setNotifPrefs((prev) => ({ ...prev, [key]: e.target.checked }))
+                  }
+                  disabled={savingPrefs}
+                />
+                <span className="toggle-slider" />
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <div className="notif-pref-actions">
+          <button
+            className="edit-btn"
+            onClick={handleSaveNotifPrefs}
+            disabled={savingPrefs}
+          >
+            {savingPrefs ? "Saving..." : "Save preferences"}
+          </button>
+        </div>
       </div>
 
       {/* Divider */}

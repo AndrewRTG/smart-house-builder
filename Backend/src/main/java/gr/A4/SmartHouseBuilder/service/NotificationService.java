@@ -38,6 +38,10 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    public long countUnread(String username) {
+        return notificationRepository.countByUsernameAndIsReadFalse(username);
+    }
+
     @Transactional
     public void markAllAsRead(String username) {
         notificationRepository.markAllAsReadByUsername(username);

@@ -21,6 +21,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +37,12 @@ class WishlistServiceTest {
 
     @Mock
     private SetupRepository setupRepository;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
+    private ActivityEmailService activityEmailService;
 
     @InjectMocks
     private WishlistService wishlistService;
@@ -68,6 +76,22 @@ class WishlistServiceTest {
         verify(wishlistRepository).save(captor.capture());
         assertThat(captor.getValue().getUser()).isEqualTo(user);
         assertThat(captor.getValue().getSetup()).isEqualTo(setup);
+    }
+
+    @Test
+    void toggleWishlist_triggersNotificationWhenOtherUserAdds() {
+        User owner = User.builder().id(1L).email("owner@example.com").username("ownerUser").build();
+        User adder = User.builder().id(2L).email("adder@example.com").username("adderUser").build();
+        Setup setup = Setup.builder().id(11L).name("Cool Setup").user(owner).build();
+        when(userRepository.findByEmail("adder@example.com")).thenReturn(Optional.of(adder));
+        when(setupRepository.findById(11L)).thenReturn(Optional.of(setup));
+        when(wishlistRepository.findByUserIdAndSetupId(2L, 11L)).thenReturn(Optional.empty());
+
+        boolean result = wishlistService.toggleWishlist(11L, "adder@example.com");
+
+        assertThat(result).isTrue();
+        verify(notificationService).triggerNotification(eq("ownerUser"), anyString());
+        verify(activityEmailService).onWishlist(eq(owner), eq("adderUser"), eq("Cool Setup"));
     }
 
     @Test

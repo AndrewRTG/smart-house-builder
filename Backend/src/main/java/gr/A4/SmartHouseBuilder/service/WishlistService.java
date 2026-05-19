@@ -21,6 +21,8 @@ public class WishlistService {
     private final WishlistRepository wishlistRepository;
     private final UserRepository userRepository;
     private final SetupRepository setupRepository;
+    private final NotificationService notificationService;
+    private final ActivityEmailService activityEmailService;
 
     @Transactional
     public boolean toggleWishlist(Long setupId, String email) {
@@ -43,6 +45,16 @@ public class WishlistService {
                     .build();
             wishlistRepository.save(wishlist);
             log.info("Setup added to wishlist: {} by user: {}", setupId, email);
+
+            User setupOwner = setup.getUser();
+            if (setupOwner != null && !setupOwner.getId().equals(user.getId())) {
+                notificationService.triggerNotification(
+                        setupOwner.getUsername(),
+                        user.getUsername() + " saved your setup to their wishlist!"
+                );
+                activityEmailService.onWishlist(setupOwner, user.getUsername(), setup.getName());
+            }
+
             return true;
         }
     }

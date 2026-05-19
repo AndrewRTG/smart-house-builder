@@ -23,7 +23,7 @@ import java.util.List;
  * the permitAll block.
  */
 @RestController
-@RequestMapping("/api/v1/activity")
+@RequestMapping("/api/v1/feed")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 public class ActivityController {

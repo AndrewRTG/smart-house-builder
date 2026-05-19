@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
+import { authFetch } from '../../../utils/authFetch';
+import { fetchAgentSuggestions } from '../../../utils/aiApi';
 import './wizard.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
@@ -312,6 +314,11 @@ const SetupWizard = ({ onFinish }) => {
     const s = useWizardStore();
     const [showResults, setShowResults] = useState(false);
 
+    // State-uri noi pentru AI Agent
+    const [agentPrompt, setAgentPrompt] = useState("");
+    const [aiResponse, setAiResponse] = useState("");
+    const [isAgentLoading, setIsAgentLoading] = useState(false);
+
     const ROOM_OPTIONS = [
         { id: 'living',   name: 'Living Room', icon: '🛋️' },
         { id: 'kitchen',  name: 'Kitchen',     icon: '🍳' },
@@ -319,19 +326,82 @@ const SetupWizard = ({ onFinish }) => {
         { id: 'bathroom', name: 'Bathroom',    icon: '🛁' },
     ];
 
+    // Funcția care apelează noul endpoint de AI
+    const handleAgentSearch = async () => {
+        if (!agentPrompt.trim()) return;
+        setIsAgentLoading(true);
+        try {
+            const res = await authFetch('/api/ai/agent-search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: agentPrompt })
+            });
+
+            // PASUL LIPSĂ: Trebuie să transformăm răspunsul brut în JSON
+            if (res.ok) {
+                const data = await res.json();
+                setAiResponse(data.response); // Acum 'data' conține ce a trimis Spring Boot
+            } else {
+                setAiResponse("Eroare de la server. (Status: " + res.status + ")");
+            }
+        } catch (error) {
+            console.error("Eroare AI Agent:", error);
+            setAiResponse("A apărut o eroare la comunicarea cu AI-ul.");
+        } finally {
+            setIsAgentLoading(false);
+        }
+    };
+
     if (showResults) {
         return (
             <div className={`wizard-container w-full max-w-3xl ${s.darkMode ? 'dark-mode' : ''}`}>
                 <div className="wizard-card">
+                    {/* Algoritmul vostru original */}
                     <SuggestedProductsView
                         onBack={() => setShowResults(false)}
                         onConfirm={(selectedProducts) => onFinish(selectedProducts)}
                     />
+
+                    {/* Secțiunea nouă "Domnul Simi" (AI Agent) */}
+                    <div className="ai-agent-section" style={{
+                        marginTop: '30px',
+                        padding: '20px',
+                        borderTop: '2px solid #eee',
+                        textAlign: 'center'
+                    }}>
+                        <h4>🤖 Preferi o recomandare personalizată de la AI?</h4>
+                        <p style={{ fontSize: '0.9rem', color: '#666' }}>Scrie ce îți dorești (ex: "Caut ceva mai ieftin", "Vreau doar branduri de top")</p>
+
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <input
+                                type="text"
+                                value={agentPrompt}
+                                onChange={(e) => setAgentPrompt(e.target.value)}
+                                placeholder="Scrie aici cerința ta..."
+                                style={{ padding: '10px', width: '60%', borderRadius: '5px', border: '1px solid #ccc' }}
+                            />
+                            <button onClick={handleAgentSearch} disabled={isAgentLoading} className="btn-wizard">
+                                {isAgentLoading ? "Se gândește..." : "Trimite"}
+                            </button>
+                        </div>
+
+                        {aiResponse && (
+                            <div className="ai-response-box" style={{
+                                marginTop: '20px',
+                                padding: '15px',
+                                background: '#f0f7ff',
+                                borderRadius: '8px',
+                                textAlign: 'left',
+                                whiteSpace: 'pre-wrap'
+                            }}>
+                                <strong>AI Agent:</strong> {aiResponse}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         );
     }
-
     const renderStep = () => {
         switch (s.step) {
             case 1: return (

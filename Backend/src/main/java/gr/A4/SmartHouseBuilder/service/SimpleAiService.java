@@ -22,24 +22,26 @@ public class SimpleAiService {
     private final AiLayoutService layoutService;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // Constructor simplificat
     public SimpleAiService(ChatClient.Builder chatClientBuilder,
-                           DeviceTools deviceTools,
                            HardwareDeviceRepository deviceRepository,
                            DynamicDeviceRepository dynamicDeviceRepository,
                            AiLayoutService layoutService) {
-        this.chatClient = chatClientBuilder
-                .defaultToolCallbacks(
-                        MethodToolCallbackProvider.builder()
-                                .toolObjects(deviceTools)
-                                .build()
-                                .getToolCallbacks()
-                )
-                .build();
+        // ChatClient-ul știe acum automat de unelte dacă sunt în context
+        this.chatClient = chatClientBuilder.build();
         this.deviceRepository = deviceRepository;
         this.dynamicDeviceRepository = dynamicDeviceRepository;
         this.layoutService = layoutService;
     }
 
+    public String searchWithAgent(String userMessage) {
+        return chatClient.prompt()
+                .system("Ești un asistent inteligent. Folosește uneltele disponibile pentru a ajuta utilizatorul.")
+                .user(userMessage)
+                // Spring AI detectează uneltele cu @Tool automat
+                .call()
+                .content();
+    }
     public String askGemini(String message) {
         // Securizat cu Optional pentru a preveni returnarea unui null
         return Optional.ofNullable(

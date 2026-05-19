@@ -17,10 +17,25 @@ public class DeviceTools {
     }
 
     @Tool(description = """
-            Retrieves ALL smart home devices from the database.
-            Use this when the user wants to browse everything with no filters.
+            Caută dispozitive după categorie. 
+            TREBUIE să primești ca parametru ID-ul categoriei.
+            Folosește următoarea mapare pentru a alege ID-ul corect atunci când utilizatorul cere un produs:
+            1 = Camere Smart, 2 = Prelungitoare, 3 = Console Gaming, 4 = Electrocasnice, 
+            5 = Hub-uri, 6 = Monitoare, 7 = Prize, 8 = Senzori, 9 = Audio, 
+            10 = Televizoare (TV), 11 = Aspiratoare, 12 = Routere.
+            Exemplu: Dacă userul vrea un televizor, apelează cu categoryId = 10.
             """)
-    public List<HardwareDevice> getAllDevices() {
-        return deviceRepository.findAll();
+    public List<HardwareDevice> searchByCategory(Integer categoryId) {
+        return deviceRepository.findByCategoryId(categoryId);
+    }
+
+    @Tool(description = "Caută dispozitive care costă sub prețul maxim specificat (în euro/lei).")
+    public List<HardwareDevice> searchByBudget(Double maxPrice) {
+        return deviceRepository.findByPriceLessThanEqual(maxPrice);
+    }
+
+    @Tool(description = "Caută dispozitive produse de un anumit brand (ex: 'Philips', 'Xiaomi', 'Samsung').")
+    public List<HardwareDevice> searchByBrand(String brand) {
+        return deviceRepository.findByBrandIgnoreCase(brand);
     }
 }

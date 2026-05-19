@@ -11,4 +11,11 @@ import java.util.List;
 public interface HardwareDeviceRepository extends JpaRepository<HardwareDevice, Long> {
     @Query(value = "SELECT * FROM devices ORDER BY RANDOM() LIMIT 5", nativeQuery = true)
     List<HardwareDevice> findRandomDevices();
+    List<HardwareDevice> findByCategoryId(Integer categoryId);
+
+    // Caută după preț
+    List<HardwareDevice> findByPriceLessThanEqual(Double price);
+
+    // Caută după brand
+    List<HardwareDevice> findByBrandIgnoreCase(String brand);
 }

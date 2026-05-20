@@ -4,7 +4,7 @@ import { expect, test, vi } from 'vitest';
 
 test('schimba valorile pentru sliderele de pret', () => {
     const setFiltersMock = vi.fn();
-    const initialFilters = { minPrice: 0, maxPrice: 1000, protocols: [], categories: [], brand: "" };
+    const initialFilters = { minPrice: 0, maxPrice: 10000, protocols: [], categories: [], brand: "" };
 
     render(<Sidebar filters={initialFilters} setFilters={setFiltersMock} />);
 
@@ -23,7 +23,7 @@ test('schimba valorile pentru sliderele de pret', () => {
 
 test('extinde si restrange lista de categorii', () => {
     const setFiltersMock = vi.fn();
-    const initialFilters = { minPrice: 0, maxPrice: 1000, protocols: [], categories: [], brand: "" };
+    const initialFilters = { minPrice: 0, maxPrice: 10000, protocols: [], categories: [], brand: "" };
 
     render(<Sidebar filters={initialFilters} setFilters={setFiltersMock} />);
 

@@ -53,4 +53,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Eroare internă de server: " + ex.getMessage()));
     }
+    @ExceptionHandler(InappropriateContentException.class)
+    public ResponseEntity<Map<String, String>> handleInappropriateContent(InappropriateContentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
 }

@@ -10,6 +10,7 @@ import gr.A4.SmartHouseBuilder.repository.ArticleRepository;
 import gr.A4.SmartHouseBuilder.repository.CommentRepository;
 import gr.A4.SmartHouseBuilder.repository.SetupRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
+import gr.A4.SmartHouseBuilder.exception.InappropriateContentException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,12 +32,14 @@ public class CommentService {
     private final SetupRepository setupRepository;
     private final ArticleRepository articleRepository;
     private final ActivityEmailService activityEmailService;
+    private final BadWordFilterService badWordFilterService;
 
     @Transactional
     public CommentResponse createSetupComment(Long setupId, String email, CommentRequest req) {
         if (req.getContent() == null || req.getContent().isBlank()) {
             throw new RuntimeException("Comment content cannot be empty");
         }
+        validateCommentContent(req.getContent());
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
@@ -91,6 +94,7 @@ public class CommentService {
         if (req.getContent() == null || req.getContent().isBlank()) {
             throw new RuntimeException("Comment content cannot be empty");
         }
+        validateCommentContent(req.getContent());
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
@@ -274,6 +278,11 @@ public class CommentService {
                 .replies(replies)
                 .deleted(false)
                 .build();
+    }
+    private void validateCommentContent(String content) {
+        if (badWordFilterService.containsBadWords(content)) {
+            throw new InappropriateContentException("Comentariul contine limbaj nepotrivit.");
+        }
     }
 
     private Long getUserId(String email) {

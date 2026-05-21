@@ -4,11 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.model.HardwareDevice;
 import gr.A4.SmartHouseBuilder.repository.DynamicDeviceRepository;
 import gr.A4.SmartHouseBuilder.repository.HardwareDeviceRepository;
-import gr.A4.SmartHouseBuilder.tools.DeviceTools;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.stereotype.Service;
-
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -34,13 +32,44 @@ public class SimpleAiService {
         this.layoutService = layoutService;
     }
 
-    public String searchWithAgent(String userMessage) {
-        return chatClient.prompt()
-                .system("Ești un asistent inteligent. Folosește uneltele disponibile pentru a ajuta utilizatorul.")
+    public List<HardwareDevice> searchWithAgent(String userMessage, String existingContext) {
+        String systemPrompt = """
+                Ești un motor de recomandare pentru un magazin Smart Home.
+                TREBUIE SĂ RESPECȚI ACESTE REGULI CU STRICTEȚE:
+                1. Folosește uneltele (tools) pentru a căuta în baza de date.
+                2. Nu inventa absolut niciun produs! Folosește doar ce returnează uneltele.
+                3. Răspunde STRICT cu un array JSON care conține ID-urile produselor alese.
+                4. NU scrie niciun cuvânt, salut sau explicație pe lângă array-ul JSON.
+                
+                Exemplu de răspuns valid: [1, 5, 12]
+                """;
+
+        // Aici implementăm punctul 3 din cerința ta (Istoricul)
+        if (existingContext != null && !existingContext.trim().isEmpty()) {
+            systemPrompt += "\n\nCONTEXT DESPRE UTILIZATOR (ISTORIC):\n" + existingContext +
+                    "\nȚine cont de preferințele lui și oferă alternative față de ce i s-a recomandat deja.";
+        }
+
+        String aiResponse = chatClient.prompt()
+                .system(systemPrompt)
                 .user(userMessage)
-                // Spring AI detectează uneltele cu @Tool automat
                 .call()
                 .content();
+
+        try {
+            // Curățăm răspunsul (uneori AI-ul pune ```json [1, 2] ```)
+            String cleanJson = aiResponse.replace("```json", "").replace("```", "").trim();
+
+            // Transformăm textul "[1, 2]" în listă de numere (Long)
+            List<Long> deviceIds = mapper.readValue(cleanJson, new TypeReference<List<Long>>() {
+            });
+
+            // Luăm produsele REALE din baza de date folosind ID-urile găsite de AI
+            return deviceRepository.findAllById(deviceIds);
+        } catch (Exception e) {
+            System.err.println("Eroare la parsarea răspunsului AI: " + aiResponse);
+            return Collections.emptyList(); // Returnăm listă goală dacă AI-ul nu a respectat formatul
+        }
     }
     public String askGemini(String message) {
         // Securizat cu Optional pentru a preveni returnarea unui null

@@ -18,4 +18,10 @@ public interface HardwareDeviceRepository extends JpaRepository<HardwareDevice, 
 
     // Caută după brand
     List<HardwareDevice> findByBrandIgnoreCase(String brand);
+
+    List<HardwareDevice> findTop50ByCategoryId(Integer categoryId);
+
+    List<HardwareDevice> findTop50ByPriceLessThanEqual(Double price);
+
+    List<HardwareDevice> findTop50ByBrandIgnoreCase(String brand);
 }

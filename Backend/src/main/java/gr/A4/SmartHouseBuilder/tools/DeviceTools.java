@@ -5,7 +5,9 @@ import gr.A4.SmartHouseBuilder.repository.HardwareDeviceRepository;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 
 @Component
 public class DeviceTools {
@@ -17,25 +19,28 @@ public class DeviceTools {
     }
 
     @Tool(description = """
-            Caută dispozitive după categorie. 
-            TREBUIE să primești ca parametru ID-ul categoriei.
-            Folosește următoarea mapare pentru a alege ID-ul corect atunci când utilizatorul cere un produs:
-            1 = Camere Smart, 2 = Prelungitoare, 3 = Console Gaming, 4 = Electrocasnice, 
+            Caută dispozitive după categorie. TREBUIE să primești ID-ul categoriei.
+            1 = Camere Smart, 2 = Prelungitoare, 3 = Console, 4 = Electrocasnice, 
             5 = Hub-uri, 6 = Monitoare, 7 = Prize, 8 = Senzori, 9 = Audio, 
             10 = Televizoare (TV), 11 = Aspiratoare, 12 = Routere.
-            Exemplu: Dacă userul vrea un televizor, apelează cu categoryId = 10.
             """)
     public List<HardwareDevice> searchByCategory(Integer categoryId) {
-        return deviceRepository.findByCategoryId(categoryId);
+        List<HardwareDevice> devices = new ArrayList<>(deviceRepository.findTop50ByCategoryId(categoryId));
+        Collections.shuffle(devices);
+        return devices.stream().limit(10).toList();
     }
 
-    @Tool(description = "Caută dispozitive care costă sub prețul maxim specificat (în euro/lei).")
+    @Tool(description = "Caută dispozitive sub prețul maxim specificat.")
     public List<HardwareDevice> searchByBudget(Double maxPrice) {
-        return deviceRepository.findByPriceLessThanEqual(maxPrice);
+        List<HardwareDevice> devices = new ArrayList<>(deviceRepository.findTop50ByPriceLessThanEqual(maxPrice));
+        Collections.shuffle(devices);
+        return devices.stream().limit(10).toList();
     }
 
-    @Tool(description = "Caută dispozitive produse de un anumit brand (ex: 'Philips', 'Xiaomi', 'Samsung').")
+    @Tool(description = "Caută dispozitive produse de un anumit brand.")
     public List<HardwareDevice> searchByBrand(String brand) {
-        return deviceRepository.findByBrandIgnoreCase(brand);
+        List<HardwareDevice> devices = new ArrayList<>(deviceRepository.findTop50ByBrandIgnoreCase(brand));
+        Collections.shuffle(devices);
+        return devices.stream().limit(10).toList();
     }
 }

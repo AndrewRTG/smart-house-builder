@@ -42,7 +42,8 @@ public class HardwareDeviceController {
             }
         }
 
-        return aiService.getSmartSuggestions(request, layoutIds);
+        return null;
+       // return aiService.getSmartSuggestions(request, layoutIds);
     }
 
     @GetMapping("/algorithmSuggestions")

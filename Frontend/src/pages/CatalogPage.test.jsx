@@ -1,6 +1,7 @@
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import CatalogPage from './CatalogPage';
 import { expect, test, vi, beforeEach } from 'vitest';
+import { renderWithRouter } from '../test/renderWithRouter';
 
 const mockDeviceList = [
     { id: 1, name: "Z-Wave Sensor", bestPrice: 100, brand: "Samsung", createdAt: "2023-01-01" },
@@ -16,9 +17,9 @@ beforeEach(() => {
 });
 
 test('randeaza loaderul apoi lista de dispozitive din backend', async () => {
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
 
-    expect(screen.getByText(/Se caută produsele/i)).toBeInTheDocument();
+    expect(screen.getByText(/Searching products/i)).toBeInTheDocument();
 
     await waitFor(() => {
         expect(screen.getByText("Priza Smart")).toBeInTheDocument();
@@ -30,17 +31,17 @@ test('afiseaza mesaj de eroare cand pica conexiunea la DB', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     globalThis.fetch.mockRejectedValueOnce(new Error("Database connection failed"));
 
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
 
     await waitFor(() => {
-        expect(screen.getByText(/Nu s-a găsit niciun produs/i)).toBeInTheDocument();
+        expect(screen.getByText(/No products found/i)).toBeInTheDocument();
     });
 
     consoleSpy.mockRestore();
 });
 
 test('bara de cautare actualizeaza starea si filtreaza', async () => {
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
 
     await waitFor(() => {
         expect(screen.getByText("Priza Smart")).toBeInTheDocument();
@@ -55,7 +56,7 @@ test('bara de cautare actualizeaza starea si filtreaza', async () => {
 });
 
 test('aplica filtrele pentru categorii si protocoale cand sunt selectate', async () => {
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
 
     await waitFor(() => {
         expect(screen.getByText("Priza Smart")).toBeInTheDocument();
@@ -79,7 +80,7 @@ test('aplica filtrele pentru categorii si protocoale cand sunt selectate', async
 });
 
 test('schimba intre vizualizarea Grid si List', async () => {
-    const { container } = render(<CatalogPage darkMode={false} />);
+    const { container } = renderWithRouter(<CatalogPage darkMode={false} />);
 
     await waitFor(() => {
         expect(screen.getByText("Priza Smart")).toBeInTheDocument();
@@ -98,7 +99,7 @@ test('schimba intre vizualizarea Grid si List', async () => {
 
 
 test('sorteaza produsele dupa Nume (A-Z)', async () => {
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
     await waitFor(() => expect(screen.getByText("Priza Smart")).toBeInTheDocument());
 
     const sortButton = screen.getByRole('button', { name: /Sort:/i });
@@ -114,7 +115,7 @@ test('sorteaza produsele dupa Nume (A-Z)', async () => {
 });
 
 test('sorteaza produsele dupa Brand (A-Z)', async () => {
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
     await waitFor(() => expect(screen.getByText("Priza Smart")).toBeInTheDocument());
 
     const sortButton = screen.getByRole('button', { name: /Sort:/i });
@@ -130,7 +131,7 @@ test('sorteaza produsele dupa Brand (A-Z)', async () => {
 });
 
 test('sorteaza produsele dupa Date added (Cel mai vechi primul - asc)', async () => {
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
     await waitFor(() => expect(screen.getByText("Priza Smart")).toBeInTheDocument());
 
     const sortButton = screen.getByRole('button', { name: /Sort:/i });
@@ -146,7 +147,7 @@ test('sorteaza produsele dupa Date added (Cel mai vechi primul - asc)', async ()
 });
 
 test('inverseaza ordinea de sortare apasand butonul de Ascendent/Descendent', async () => {
-    render(<CatalogPage darkMode={false} />);
+    renderWithRouter(<CatalogPage darkMode={false} />);
     await waitFor(() => expect(screen.getByText("Priza Smart")).toBeInTheDocument());
 
     let productNames = screen.getAllByRole('heading', { level: 6 }).map(h => h.textContent);

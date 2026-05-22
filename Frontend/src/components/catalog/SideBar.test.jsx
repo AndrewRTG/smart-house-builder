@@ -1,12 +1,13 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import Sidebar from './SideBar';
 import { expect, test, vi } from 'vitest';
+import { renderWithRouter } from '../../test/renderWithRouter';
 
 test('schimba valorile pentru sliderele de pret', () => {
     const setFiltersMock = vi.fn();
     const initialFilters = { minPrice: 0, maxPrice: 10000, protocols: [], categories: [], brand: "" };
 
-    render(<Sidebar filters={initialFilters} setFilters={setFiltersMock} />);
+    renderWithRouter(<Sidebar filters={initialFilters} setFilters={setFiltersMock} />);
 
     fireEvent.click(screen.getByText("Price"));
 
@@ -25,7 +26,7 @@ test('extinde si restrange lista de categorii', () => {
     const setFiltersMock = vi.fn();
     const initialFilters = { minPrice: 0, maxPrice: 10000, protocols: [], categories: [], brand: "" };
 
-    render(<Sidebar filters={initialFilters} setFilters={setFiltersMock} />);
+    renderWithRouter(<Sidebar filters={initialFilters} setFilters={setFiltersMock} />);
 
     fireEvent.click(screen.getByText("Category"));
 

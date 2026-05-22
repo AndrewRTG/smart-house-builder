@@ -129,12 +129,12 @@ describe('shared UI components', () => {
     const setFilters = vi.fn();
     const filters = {
       minPrice: 100,
-      maxPrice: 700,
+      maxPrice: 9000,
       categories: [],
       protocols: [],
       brand: '',
     };
-    render(<Sidebar filters={filters} setFilters={setFilters} />);
+    renderWithRouter(<Sidebar filters={filters} setFilters={setFilters} />);
 
     fireEvent.click(screen.getByText('Price'));
     fireEvent.change(screen.getAllByRole('slider')[0], { target: { value: '250' } });

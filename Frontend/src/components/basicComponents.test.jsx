@@ -154,7 +154,7 @@ describe('shared UI components', () => {
     fireEvent.click(screen.getByText('Reset Filters'));
     expect(setFilters).toHaveBeenCalledWith({
       minPrice: 0,
-      maxPrice: 1000,
+      maxPrice: 10000,
       categories: [],
       protocols: [],
       brand: '',

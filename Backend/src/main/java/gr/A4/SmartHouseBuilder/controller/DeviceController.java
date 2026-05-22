@@ -2,6 +2,7 @@ package gr.A4.SmartHouseBuilder.controller;
 
 import gr.A4.SmartHouseBuilder.dto.DeviceRequest;
 import gr.A4.SmartHouseBuilder.dto.DeviceResponse;
+import gr.A4.SmartHouseBuilder.dto.OfferResponse;
 import gr.A4.SmartHouseBuilder.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -63,5 +64,13 @@ public class DeviceController {
     public ResponseEntity<Map<String, String>> getSearchSuggestion(@RequestParam("q") String keyword) {
         String suggestion = deviceService.getSearchSuggestion(keyword);
         return ResponseEntity.ok(Map.of("suggestion", suggestion != null ? suggestion : ""));
+    }
+    @Operation(
+            summary = "Get all store offers for a device",
+            description = "Returns the latest prices from all available stores for a specific device, ordered by price ASC."
+    )
+    @GetMapping("/{id}/offers")
+    public ResponseEntity<List<OfferResponse>> getDeviceOffers(@PathVariable Integer id) {
+        return ResponseEntity.ok(deviceService.getDeviceOffers(id));
     }
 }

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './SideBar.css';
 
 export default function Sidebar({ filters, setFilters }) {
+    const navigate = useNavigate();
 
     const [isPriceOpen, setIsPriceOpen] = useState(false);
     const [isProtocolOpen, setIsProtocolOpen] = useState(false);
@@ -42,7 +44,7 @@ export default function Sidebar({ filters, setFilters }) {
     const handleReset = () => {
         setFilters({
             minPrice: 0,
-            maxPrice: 1000,
+            maxPrice: 10000,
             categories: [],
             protocols: [],
             brand: ""
@@ -62,27 +64,17 @@ export default function Sidebar({ filters, setFilters }) {
 
     return (
         <div className="catalog-sidebar p-3 rounded-4" style={wrapperStyle}>
-            <div className="rounded-3 p-3 mb-3 d-flex justify-content-center align-items-center shadow-sm" style={{ ...cardStyle, cursor: 'pointer' }}>
+            <div
+                className="rounded-3 p-3 mb-3 d-flex justify-content-center align-items-center shadow-sm"
+                style={{ ...cardStyle, cursor: 'pointer' }}
+                onClick={() => navigate('/builder')}
+            >
                 <span className="fw-bold d-flex align-items-center gap-2" style={{ color: 'var(--text-main)' }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                     </svg>
                     New Setup
                 </span>
-            </div>
-
-            <div className="rounded-3 p-3 mb-3" style={cardStyle}>
-                <h6 className="fw-bold text-center mb-3" style={{ color: 'var(--text-main)' }}>Summary</h6>
-                <div className="d-flex justify-content-around small">
-                    <div className="text-center">
-                        <div className="mb-1" style={{ color: 'var(--text-main)', opacity: 0.6 }}>Devices</div>
-                        <div className="fw-bold fs-5" style={{ color: 'var(--text-main)' }}>4</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="mb-1" style={{ color: 'var(--text-main)', opacity: 0.6 }}>Total</div>
-                        <div className="fw-bold fs-5" style={{ color: 'var(--text-main)' }}>€40.73</div>
-                    </div>
-                </div>
             </div>
 
             <div className="rounded-3 p-3 mb-3 text-dark" style={cardStyle}>
@@ -108,30 +100,30 @@ export default function Sidebar({ filters, setFilters }) {
                             <div
                                 className="slider-range-highlight"
                                 style={{
-                                    left: `${(filters.minPrice / 1000) * 100}%`,
-                                    width: `${((filters.maxPrice - filters.minPrice) / 1000) * 100}%`
+                                    left: `${(filters.minPrice / 10000) * 100}%`,
+                                    width: `${((filters.maxPrice - filters.minPrice) / 10000) * 100}%`
                                 }}
                             ></div>
 
                             <input
                                 type="range"
                                 min="0"
-                                max="1000"
+                                max="10000"
                                 className="thumb thumb-left"
                                 value={filters.minPrice}
                                 onChange={(e) => {
-                                    const value = Math.min(Number(e.target.value), filters.maxPrice - 50);
+                                    const value = Math.min(Number(e.target.value), filters.maxPrice - 500);
                                     setFilters({...filters, minPrice: value});
                                 }}
                             />
                             <input
                                 type="range"
                                 min="0"
-                                max="1000"
+                                max="10000"
                                 className="thumb thumb-right"
                                 value={filters.maxPrice}
                                 onChange={(e) => {
-                                    const value = Math.max(Number(e.target.value), filters.minPrice + 50);
+                                    const value = Math.max(Number(e.target.value), filters.minPrice + 500);
                                     setFilters({...filters, maxPrice: value});
                                 }}
                             />

@@ -11,7 +11,7 @@ export default function CatalogPage({ darkMode }) {
     const [selectedSortLabel, setSelectedSortLabel] = useState("Price");
     const [filters, setFilters] = useState({
         minPrice: 0,
-        maxPrice: 1000,
+        maxPrice: 10000,
         protocols: [],
         categories: [],
         brand: ""
@@ -19,30 +19,22 @@ export default function CatalogPage({ darkMode }) {
     const [viewMode, setViewMode] = useState('grid');
 
     useEffect(() => {
-        const fetchDevices = () => {
-            setLoading(true);
+        let isMounted = true;
 
+        const fetchDevices = () => {
             let url = new URL('http://localhost:20025/api/devices');
 
             url.searchParams.append('minPrice', filters.minPrice);
             url.searchParams.append('maxPrice', filters.maxPrice);
             if (searchTerm) url.searchParams.append('brand', searchTerm);
+
             if (filters.categories.length > 0) {
                 const categoryMapping = {
-                    "Smart Cameras": 1,
-                    "Smart Power Strips": 2,
-                    "Gaming Consoles": 3,
-                    "Smart Appliances": 4,
-                    "Smart Hubs": 5,
-                    "Smart Monitors": 6,
-                    "Smart Outlets": 7,
-                    "Smart Sensors": 8,
-                    "Smart Audio": 9,
-                    "Smart TVs": 10,
-                    "Robot Vacuums": 11,
-                    "Smart Routers": 12
+                    "Smart Cameras": 1, "Smart Power Strips": 2, "Gaming Consoles": 3,
+                    "Smart Appliances": 4, "Smart Hubs": 5, "Smart Monitors": 6,
+                    "Smart Outlets": 7, "Smart Sensors": 8, "Smart Audio": 9,
+                    "Smart TVs": 10, "Robot Vacuums": 11, "Smart Routers": 12
                 };
-
                 filters.categories.forEach(catName => {
                     const id = categoryMapping[catName];
                     if (id) url.searchParams.append('categoryIds', id);
@@ -58,16 +50,26 @@ export default function CatalogPage({ darkMode }) {
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    setDevices(data);
-                    setLoading(false);
+                    if (isMounted) {
+                        setDevices(data);
+                        setLoading(false); // Oprim loading-ul doar când au venit datele noi
+                    }
                 })
                 .catch(error => {
                     console.error("Eroare la preluarea dispozitivelor:", error);
-                    setLoading(false);
+                    if (isMounted) setLoading(false);
                 });
         };
 
-        fetchDevices();
+        setLoading(true);
+        const debounceTimer = setTimeout(() => {
+            fetchDevices();
+        }, 200);
+
+        return () => {
+            isMounted = false;
+            clearTimeout(debounceTimer);
+        };
     }, [filters, searchTerm]);
 
     const getSortedDevices = () => {
@@ -205,11 +207,21 @@ export default function CatalogPage({ darkMode }) {
                 </div>
 
                 <div className="col-12 col-md-9 float-md-end order-3">
-                    <div className={`row ${viewMode === 'grid' ? 'row-cols-1 row-cols-md-2 row-cols-lg-3' : 'row-cols-1'} g-4`}>
-                        {loading ? (
-                            <div className="col-12 text-center">Se caută produsele...</div>
+                    <div
+                        className={`row ${viewMode === 'grid' ? 'row-cols-1 row-cols-md-2 row-cols-lg-3' : 'row-cols-1'} g-4`}
+                        style={{
+                            opacity: loading ? 0.5 : 1,
+                            transition: 'opacity 0.15s ease-in-out'
+                        }}
+                    >
+                        {devices.length === 0 && loading ? (
+                            <div className="col-12 text-center py-5 fw-bold" style={{ color: 'var(--text-main)' }}>
+                                Searching products...
+                            </div>
                         ) : devices.length === 0 ? (
-                            <div className="col-12 text-center">Nu s-a găsit niciun produs.</div>
+                            <div className="col-12 text-center py-5 fw-bold" style={{ color: 'var(--text-main)' }}>
+                                No products found.
+                            </div>
                         ) : (
                             sortedDevices.map((device) => (
                                 <div className="col" key={device.id}>

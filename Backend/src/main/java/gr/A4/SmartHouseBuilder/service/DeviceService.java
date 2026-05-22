@@ -3,11 +3,13 @@ package gr.A4.SmartHouseBuilder.service;
 
 import gr.A4.SmartHouseBuilder.dto.DeviceRequest;
 import gr.A4.SmartHouseBuilder.dto.DeviceResponse;
+import gr.A4.SmartHouseBuilder.dto.OfferResponse;
 import gr.A4.SmartHouseBuilder.entity.Category;
 import gr.A4.SmartHouseBuilder.entity.Device;
 import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
 import gr.A4.SmartHouseBuilder.repository.DeviceRepository;
 import gr.A4.SmartHouseBuilder.repository.CategoryRepository;
+import gr.A4.SmartHouseBuilder.repository.PriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.List;
 public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final CategoryRepository categoryRepository;
+    private final PriceHistoryRepository priceHistoryRepository;
 
     public DeviceResponse createDevice (DeviceRequest request){
         Category category = categoryRepository.findById(request.categoryId())
@@ -82,5 +85,18 @@ public class DeviceService {
     public String getSearchSuggestion(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) return null;
         return deviceRepository.findDidYouMeanSuggestion(keyword);
+    }
+
+    public List<OfferResponse> getDeviceOffers(Integer deviceId) {
+        deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Device-ul cu ID " + deviceId + " nu a fost găsit!"));
+
+        return priceHistoryRepository.findLatestOffersForDevice(deviceId).stream()
+                .map(ph -> new OfferResponse(
+                        ph.getStoreName(),
+                        ph.getPrice(),
+                        ph.getProductUrl(),
+                        ph.getScrapedAt()
+                )).toList();
     }
 }

@@ -251,4 +251,40 @@ describe('LayoutCanvas - Suita de Testare', () => {
     if (saveBtn) fireEvent.click(saveBtn);
     expect(await screen.findByText('Eroare la salvare')).toBeInTheDocument();
   });
+
+  test('Filtrează corect lista de device-uri folosind bara de search', async () => {
+    render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Philips Hue E27')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search devices...');
+
+    fireEvent.change(searchInput, { target: { value: 'Hue' } });
+    await waitFor(() => {
+      expect(screen.getByText('Philips Hue E27')).toBeInTheDocument();
+    });
+
+    fireEvent.change(searchInput, { target: { value: 'Senzor_Inexistent' } });
+    await waitFor(() => {
+      expect(screen.queryByText('Philips Hue E27')).not.toBeInTheDocument();
+    });
+  });
+
+  test('Afișează mesajul de empty state când căutarea nu are rezultate', async () => {
+    render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search devices...')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search devices...');
+
+    fireEvent.change(searchInput, { target: { value: 'termen_de_cautare_inexistent_123' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Niciun produs găsit pentru această căutare.')).toBeInTheDocument();
+    });
+  });
 });

@@ -10,6 +10,7 @@ import WizardSidebar from '../wizard/components/WizardSidebar';
 import {authFetch} from '../../utils/authFetch';
 import {captureLayoutThumbnailRoot} from './captureLayoutThumbnail';
 import useFilterStore from '../../store/useFilterStore';
+import { fuzzyFilter } from '../../utils/fuzzySearch';
 
 // --- INTERFACES ---
 interface Wall { x1: number; y1: number; x2: number; y2: number; }
@@ -105,6 +106,13 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const [isCatalogLoading, setIsCatalogLoading] = useState(true);
 
     const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
+
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredDevices = useMemo(() => {
+        if (!searchQuery.trim()) return fetchedDevices;
+        return fuzzyFilter(fetchedDevices, searchQuery, (d: any) => [d.name, d.brand]);
+    }, [fetchedDevices, searchQuery]);
 
     const getIconTypeForCategory = (categoryId: number) => {
         const iconMapping: Record<number, string> = {
@@ -841,6 +849,8 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                             <input
                                 type="text"
                                 placeholder="Search devices..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%', padding: '10px 16px 10px 36px',
                                     borderRadius: '12px', border: '1px solid transparent',
@@ -855,10 +865,12 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                         <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', padding: '2px'}}>
                             {isCatalogLoading ? (
                                 <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Se caută produse...</div>
-                            ) : fetchedDevices.length === 0 ? (
-                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Niciun produs găsit.</div>
+                            ) : filteredDevices.length === 0 ? (
+                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>
+                                    {searchQuery ? 'Niciun produs găsit pentru această căutare.' : 'Niciun produs găsit.'}
+                                </div>
                             ) : (
-                                fetchedDevices.map((d) => {
+                                filteredDevices.map((d) => {
                                     const IconComponent = ICON_MAP[d.type] || ControllerIcon;
                                     const isSelected = selectedDevice?.id === d.id;
                                     return (

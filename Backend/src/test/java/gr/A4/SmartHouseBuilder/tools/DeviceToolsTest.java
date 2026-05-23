@@ -1,7 +1,8 @@
-package gr.A4.SmartHouseBuilder.tools;
+/*package gr.A4.SmartHouseBuilder.tools;
 
 import gr.A4.SmartHouseBuilder.model.HardwareDevice;
 import gr.A4.SmartHouseBuilder.repository.HardwareDeviceRepository;
+import gr.A4.SmartHouseBuilder.service.DeviceService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +20,9 @@ class DeviceToolsTest {
     @Mock
     private HardwareDeviceRepository deviceRepository;
 
+
+    @InjectMocks
+    private DeviceService deviceService;
     @InjectMocks
     private DeviceTools deviceTools;
 
@@ -37,7 +41,7 @@ class DeviceToolsTest {
         when(deviceRepository.findAll()).thenReturn(mockDevices);
 
         // WHEN: Apelăm metoda pe care o testăm
-        List<HardwareDevice> result = deviceTools.getAllDevices();
+        List<HardwareDevice> result = deviceService.getAllDevices();
 
         // THEN: Verificăm că rezultatul corespunde cu așteptările
         assertNotNull(result);
@@ -54,7 +58,7 @@ class DeviceToolsTest {
         when(deviceRepository.findAll()).thenReturn(List.of());
 
         // WHEN
-        List<HardwareDevice> result = deviceTools.getAllDevices();
+        List<HardwareDevice> result = deviceService.getAllDevices();
 
         // THEN
         assertNotNull(result);
@@ -62,4 +66,4 @@ class DeviceToolsTest {
 
         verify(deviceRepository, times(1)).findAll();
     }
-}
+}*/

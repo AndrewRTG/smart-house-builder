@@ -1,5 +1,6 @@
 package gr.A4.SmartHouseBuilder.repository;
 
+import org.springframework.data.repository.query.Param;
 import gr.A4.SmartHouseBuilder.model.HardwareDevice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +25,8 @@ public interface HardwareDeviceRepository extends JpaRepository<HardwareDevice, 
     List<HardwareDevice> findTop50ByPriceLessThanEqual(Double price);
 
     List<HardwareDevice> findTop50ByBrandIgnoreCase(String brand);
+
+    @Query("SELECT d FROM HardwareDevice d WHERE d.categoryId IN :categoryIds AND (d.price IS NULL OR d.price <= :maxAllowedPrice)")
+    List<HardwareDevice> findCandidatesForAlgorithm(@Param("categoryIds") List<Integer> categoryIds, @Param("maxAllowedPrice") double maxAllowedPrice);
+
 }

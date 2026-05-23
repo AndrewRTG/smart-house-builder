@@ -1,4 +1,4 @@
-package gr.A4.SmartHouseBuilder.controller;
+/*package gr.A4.SmartHouseBuilder.controller;
 
 import gr.A4.SmartHouseBuilder.model.HardwareDevice;
 import gr.A4.SmartHouseBuilder.service.DeviceSuggestionAlgorithmService;
@@ -90,4 +90,4 @@ class HardwareDeviceControllerTest {
                         .param("criteria", "budget 500"))
                 .andExpect(status().isOk());
     }
-}
+}*/

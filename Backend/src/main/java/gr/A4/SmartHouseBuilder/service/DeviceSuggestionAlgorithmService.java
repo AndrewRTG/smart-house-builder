@@ -37,13 +37,57 @@ public class DeviceSuggestionAlgorithmService {
         String ecosystem = criteria.getOrDefault("Ecosistem", ORICARE);
         String level = criteria.getOrDefault("Nivel", ORICARE);
 
-        List<HardwareDevice> allDevices = deviceRepository.findAll();
+        // NOU: Aflam exact ce categorii ii trebuie inainte sa mergem la baza de date
+        List<Integer> allowedCategoryIds = determineAllowedCategoryIds(desiredCategoriesStr);
 
-        List<HardwareDevice> filteredByEcosystem = filterByEcosystem(allDevices, ecosystem);
+        // NOU: Bugetul cu tot cu marja ta de toleranta de 5%
+        double maxAllowedPrice = budget > 0 ? budget + (budget * 0.05) : 0.0;
+
+        // NOU: Interogarea inteligenta in loc de findAll()
+        List<HardwareDevice> dbCandidates = deviceRepository.findCandidatesForAlgorithm(allowedCategoryIds, maxAllowedPrice);
+
+        // Continuam cu filtrarea fina in memorie pe setul redus de date
+        List<HardwareDevice> filteredByEcosystem = filterByEcosystem(dbCandidates, ecosystem);
         List<HardwareDevice> filteredByLevel = filterByLevel(filteredByEcosystem, level);
         List<HardwareDevice> filteredByCategory = filterByTargetCategories(filteredByLevel, desiredCategoriesStr, ecosystem);
 
         return buildBalancedSetupWithinBudget(filteredByCategory, budget);
+    }
+
+    // --- METODA NOUA ---
+    // Transforma cuvintele in ID-uri pentru baza de date
+    private List<Integer> determineAllowedCategoryIds(String categoriesStr) {
+        if (categoriesStr.equalsIgnoreCase("Toate") || categoriesStr.equalsIgnoreCase(ORICARE)) {
+            // Daca vrea toate, returnam toate cele 12 ID-uri posibile (sau cate ai in total)
+            return Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+        }
+
+        List<String> requestedCats = Arrays.stream(categoriesStr.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .toList();
+
+        List<Integer> ids = new ArrayList<>();
+
+        // Hub-urile (5) si Routerele (12) sunt fundatia oricarei case smart, le cerem mereu
+        ids.add(5);
+        ids.add(12);
+
+        if (requestedCats.contains("security")) {
+            ids.addAll(Arrays.asList(1, 8)); // Camere si Senzori
+        }
+        if (requestedCats.contains("comfort")) {
+            ids.addAll(Arrays.asList(4, 11, 8)); // Electrocasnice, Aspiratoare, Senzori
+        }
+        if (requestedCats.contains("energy")) {
+            ids.addAll(Arrays.asList(2, 7, 8)); // Prelungitoare, Prize, Senzori
+        }
+        if (requestedCats.contains("entertainment")) {
+            ids.addAll(Arrays.asList(3, 6, 9, 10)); // Console, Monitoare, Boxe, TV
+        }
+
+        // Eliminam duplicatele in caz ca a cerut si security si comfort (amandoi folosesc senzori = 8)
+        return ids.stream().distinct().collect(Collectors.toList());
     }
 
     private Map<String, String> parseCriteriaString(String text) {

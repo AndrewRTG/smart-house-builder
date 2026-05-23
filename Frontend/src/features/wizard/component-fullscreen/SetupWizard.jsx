@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
 import { authFetch } from '../../../utils/authFetch';
-import { fetchAgentSuggestions } from '../../../utils/aiApi';
 import './wizard.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
@@ -143,26 +142,6 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
             // 1. Construim string-ul cu criterii
             const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}. Protocoale preferate: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
             const encodedCriteria = encodeURIComponent(criterii);
-
-            // 2. Fetch catre backend (AI Gemini)
-            fetch(`${API_BASE}/api/devices/suggestions?criteria=${encodedCriteria}`)
-                .then(res => res.json())
-                .then(data => {
-                    setAiProducts(data.map(item => ({
-                        id: item.id.toString(),
-                        name: item.name,
-                        brand: item.brand,
-                        price: item.bestPrice ?? item.price ?? 0,
-                        icon: getCategoryIcon(item.categoryId),
-                        protocol: item.communicationProtocol || item.protocol || 'Unknown',
-                        categoryId: item.categoryId,
-                    })));
-                })
-                .catch(err => {
-                    console.error("Failed to fetch AI products:", err);
-                    setAiProducts([]);
-                })
-                .finally(() => setLoadingAI(false));
 
             // 3. Fetch catre backend (Local Algorithm)
             fetch(`${API_BASE}/api/devices/algorithmSuggestions?criteria=${encodedCriteria}`)

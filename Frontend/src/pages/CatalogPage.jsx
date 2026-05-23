@@ -43,7 +43,19 @@ export default function CatalogPage({ darkMode }) {
 
             if (filters.protocols.length > 0) {
                 filters.protocols.forEach(prot => {
-                    url.searchParams.append('protocols', prot);
+                    const protocolMapping = {
+                        "WiFi": ["WiFi", "WIFI", "wifi", "Wi-Fi"],
+                        "Zigbee": ["Zigbee", "ZIGBEE"],
+                        "Z-Wave": ["Z-Wave", "Z-WAVE", "ZWave", "ZWAVE"],
+                        "Bluetooth": ["Bluetooth", "BLUETOOTH", "bluetooth"],
+                        "Matter": ["Matter", "MATTER"]
+                    };
+
+                    const variants = protocolMapping[prot] || [prot];
+
+                    variants.forEach(variant => {
+                        url.searchParams.append('protocols', variant);
+                    });
                 });
             }
 
@@ -52,7 +64,7 @@ export default function CatalogPage({ darkMode }) {
                 .then(data => {
                     if (isMounted) {
                         setDevices(data);
-                        setLoading(false); // Oprim loading-ul doar când au venit datele noi
+                        setLoading(false);
                     }
                 })
                 .catch(error => {

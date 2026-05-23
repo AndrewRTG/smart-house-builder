@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.dto.ArticleRequest;
 import gr.A4.SmartHouseBuilder.dto.ArticleResponse;
+import org.springframework.data.domain.Sort;
 import gr.A4.SmartHouseBuilder.entity.Article;
 import gr.A4.SmartHouseBuilder.repository.CommentRepository;
 import gr.A4.SmartHouseBuilder.repository.LikeRepository;
@@ -63,8 +64,10 @@ public class ArticleController {
     @GetMapping
     public ResponseEntity<Page<ArticleResponse>> getAllArticles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<Article> articles = articleService.getAllArticles(PageRequest.of(page, size));
+            @RequestParam(defaultValue = "9") int size) {
+        Page<Article> articles = articleService.getAllArticles(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
         return ResponseEntity.ok(articles.map(this::toResponse));
     }
 

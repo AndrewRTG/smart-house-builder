@@ -11,6 +11,7 @@ import gr.A4.SmartHouseBuilder.repository.CommentRepository;
 import gr.A4.SmartHouseBuilder.repository.SetupRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
 import gr.A4.SmartHouseBuilder.exception.InappropriateContentException;
+import gr.A4.SmartHouseBuilder.exception.TooManyCommentsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,13 +34,16 @@ public class CommentService {
     private final ArticleRepository articleRepository;
     private final ActivityEmailService activityEmailService;
     private final BadWordFilterService badWordFilterService;
+    private final CommentRateLimiterService commentRateLimiterService;
 
     @Transactional
     public CommentResponse createSetupComment(Long setupId, String email, CommentRequest req) {
         if (req.getContent() == null || req.getContent().isBlank()) {
             throw new RuntimeException("Comment content cannot be empty");
         }
+        commentRateLimiterService.checkLimit(email);
         validateCommentContent(req.getContent());
+
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
@@ -94,6 +98,7 @@ public class CommentService {
         if (req.getContent() == null || req.getContent().isBlank()) {
             throw new RuntimeException("Comment content cannot be empty");
         }
+        commentRateLimiterService.checkLimit(email);
         validateCommentContent(req.getContent());
 
         User user = userRepository.findByEmail(email)

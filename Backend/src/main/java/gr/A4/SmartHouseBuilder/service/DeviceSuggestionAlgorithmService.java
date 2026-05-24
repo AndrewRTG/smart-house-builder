@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.stream.Collectors;
+import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
+import gr.A4.SmartHouseBuilder.model.Layout;
 
 @Service
 public class DeviceSuggestionAlgorithmService {
@@ -23,10 +25,12 @@ public class DeviceSuggestionAlgorithmService {
     private static final String AMAZON="amazon";
     private static final String MATTER="MATTER";
     private final HardwareDeviceRepository deviceRepository;
+    private final LayoutRepository layoutRepository;
 
 
-    public DeviceSuggestionAlgorithmService(HardwareDeviceRepository deviceRepository) {
+    public DeviceSuggestionAlgorithmService(HardwareDeviceRepository deviceRepository, LayoutRepository layoutRepository) {
         this.deviceRepository = deviceRepository;
+        this.layoutRepository = layoutRepository;
     }
 
     public List<HardwareDevice> getSmartSuggestions(String criteriaString) {
@@ -37,16 +41,32 @@ public class DeviceSuggestionAlgorithmService {
         String ecosystem = criteria.getOrDefault("Ecosistem", ORICARE);
         String level = criteria.getOrDefault("Nivel", ORICARE);
 
-        // NOU: Aflam exact ce categorii ii trebuie inainte sa mergem la baza de date
-        List<Integer> allowedCategoryIds = determineAllowedCategoryIds(desiredCategoriesStr);
+        // NOU: Extragem ID-ul layout-ului curent (daca frontend-ul il trimite)
+        String layoutIdStr = criteria.getOrDefault("Layout", "");
 
-        // NOU: Bugetul cu tot cu marja ta de toleranta de 5%
+        List<Integer> allowedCategoryIds = determineAllowedCategoryIds(desiredCategoriesStr);
         double maxAllowedPrice = budget > 0 ? budget + (budget * 0.05) : 0.0;
 
-        // NOU: Interogarea inteligenta in loc de findAll()
-        List<HardwareDevice> dbCandidates = deviceRepository.findCandidatesForAlgorithm(allowedCategoryIds, maxAllowedPrice);
+        // Folosim lista mutabila pentru a putea sterge elemente din ea
+        List<HardwareDevice> dbCandidates = new ArrayList<>(deviceRepository.findCandidatesForAlgorithm(allowedCategoryIds, maxAllowedPrice));
 
-        // Continuam cu filtrarea fina in memorie pe setul redus de date
+        // NOU: Filtram device-urile care sunt deja in acest layout
+        // NOU: Filtram device-ul care este deja in acest layout
+        if (!layoutIdStr.isEmpty()) {
+            try {
+                Integer layoutId = Integer.parseInt(layoutIdStr);
+                layoutRepository.findById(layoutId).ifPresent(layout -> {
+                    Integer existingDeviceId = layout.getDevicesId();
+                    // Daca layout-ul are un device salvat, il scoatem din lista de sugestii
+                    if (existingDeviceId != null) {
+                        dbCandidates.removeIf(device -> device.getId().equals(existingDeviceId.longValue()));
+                    }
+                });
+            } catch (NumberFormatException e) {
+                // Daca frontend-ul trimite un layout invalid, ignoram si mergem mai departe
+            }
+        }
+
         List<HardwareDevice> filteredByEcosystem = filterByEcosystem(dbCandidates, ecosystem);
         List<HardwareDevice> filteredByLevel = filterByLevel(filteredByEcosystem, level);
         List<HardwareDevice> filteredByCategory = filterByTargetCategories(filteredByLevel, desiredCategoriesStr, ecosystem);
@@ -340,4 +360,5 @@ public class DeviceSuggestionAlgorithmService {
         }
         return price - basePricePerCategory.get(catId); // Cost de upgrade
     }
+
 }

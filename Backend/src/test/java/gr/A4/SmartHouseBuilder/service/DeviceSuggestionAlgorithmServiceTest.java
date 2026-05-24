@@ -11,6 +11,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
+import gr.A4.SmartHouseBuilder.model.Layout;
+import java.util.Optional;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -22,6 +26,9 @@ class DeviceSuggestionAlgorithmServiceTest {
 
     @Mock
     private HardwareDeviceRepository deviceRepository;
+
+    @Mock
+    private LayoutRepository layoutRepository; // NOU
 
     @InjectMocks
     private DeviceSuggestionAlgorithmService algorithmService;
@@ -193,5 +200,37 @@ class DeviceSuggestionAlgorithmServiceTest {
         assertFalse(res.contains(zeroPrice));
         assertFalse(res.contains(c4));
         assertFalse(res.contains(expensive));
+    }
+
+    @Test
+    void testLayoutFiltering_RemovesExistingDevice() {
+        // Cream doua device-uri
+        HardwareDevice dev1 = createDevice(1L, 1, "Cam 1", "Brand", 10.0, "WIFI", "", "");
+        HardwareDevice dev2 = createDevice(2L, 1, "Cam 2", "Brand", 10.0, "WIFI", "", "");
+
+        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble()))
+                .thenReturn(Arrays.asList(dev1, dev2));
+
+        // Simulam un layout care are deja dev1 in el
+        Layout mockLayout = new Layout();
+        mockLayout.setId(100);
+        mockLayout.setDevicesId(1); // Setam id-ul lui dev1 (care este 1L)
+
+        // Doar cand cineva cauta layout-ul 100, ii returnam mockLayout
+        when(layoutRepository.findById(100)).thenReturn(Optional.of(mockLayout));
+
+        // 1. Testam cautarea cu un layout valid
+        List<HardwareDevice> result = algorithmService.getSmartSuggestions("Buget: 1000 EUR. Categorii dorite: Toate. Layout: 100");
+
+        // dev1 ar trebui sa fie eliminat, deci ramane doar dev2
+        assertFalse(result.contains(dev1));
+        assertTrue(result.contains(dev2));
+
+        // 2. Testam cautarea cand trimitem un layout care arunca NumberFormatException
+        List<HardwareDevice> resultInvalid = algorithmService.getSmartSuggestions("Buget: 1000 EUR. Categorii dorite: Toate. Layout: text_invalid");
+
+        // Niciunul nu e eliminat, sistemul a mers mai departe in siguranta
+        assertTrue(resultInvalid.contains(dev1));
+        assertTrue(resultInvalid.contains(dev2));
     }
 }

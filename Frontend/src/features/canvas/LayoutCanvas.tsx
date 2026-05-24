@@ -77,9 +77,51 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const [layout, setLayout] = useState({offsetX: 0, offsetY: 0, dotSpacing: 0});
     const [undoStack, setUndoStack] = useState<HistorySnapshot[]>([]);
     const [redoStack, setRedoStack] = useState<HistorySnapshot[]>([]);
-    const [exportData, setExportData] = useState<{ devices: Device[]; rooms: Room[]; }>({devices: [], rooms: []});
-
     const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const validationRequestIdRef = useRef(0);
+    const exportData = useMemo<{ devices: Device[]; rooms: Room[]; }>(() => {
+        const scale = layout.dotSpacing || 1;
+        const walls = lines.filter(l => l.type === 'wall').map(l => ({
+            x1: Math.trunc(l.start.col * scale), y1: Math.trunc(l.start.row * scale),
+            x2: Math.trunc(l.end.col * scale), y2: Math.trunc(l.end.row * scale)
+        }));
+        const windows = lines.filter(l => l.type === 'window').map(l => ({
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale),
+            width: Math.trunc(Math.abs(l.end.col - l.start.col) * scale) || Math.trunc(scale),
+            height: Math.trunc(Math.abs(l.end.row - l.start.row) * scale) || Math.trunc(scale),
+            distanceFromFloor: 0
+        }));
+        const doors = lines.filter(l => l.type === 'door').map(l => ({
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale)
+        }));
+        const plugs = placedIcons.filter(i => i.type === 'priza').map(i => ({
+            x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)
+        }));
+        const roomSquareMeters = (() => {
+            if (!walls.length) return 10;
+            const xs = walls.flatMap(w => [w.x1, w.x2]);
+            const ys = walls.flatMap(w => [w.y1, w.y2]);
+            return Math.max(1, Math.trunc(((Math.max(...xs) - Math.min(...xs)) / 100) * ((Math.max(...ys) - Math.min(...ys)) / 100)));
+        })();
+        const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
+        const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
+            coordinates: {x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)},
+            rotationAngle: 0,
+            device: {
+                id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
+                protocol: i.type === 'router' ? 'WiFi' : 'Zigbee',
+                lumens: i.type === 'bec' ? 800 : 0, requiresPlug: i.type !== 'bec',
+                rangeRadius: i.type === 'senzor' ? 10 : 0, deviceType: i.type,
+                mountType: i.type === 'tv' ? 'wall' : 'table',
+                fieldOfView: i.type === 'interfon' ? 120 : 0,
+                powerConsumption: i.type === 'bec' ? 10 : 5,
+                communicationFrequency: i.type === 'router' ? '2.4GHz' : '868MHz', width: 10
+            }
+        }));
+        return {devices, rooms};
+    }, [placedIcons, lines, layout.dotSpacing]);
     const exportDataRef = useRef(exportData);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [validationInfos, setValidationInfos] = useState<string[]>([]);
@@ -353,61 +395,18 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         else { setActiveTool(tool); setSelectedDevice(null); setShowFurnitureMenu(false); }
     };
 
-    // --- EXPORT LOGIC ---
-    useEffect(() => {
-        const scale = layout.dotSpacing || 1;
-        const walls = lines.filter(l => l.type === 'wall').map(l => ({
-            x1: Math.trunc(l.start.col * scale), y1: Math.trunc(l.start.row * scale),
-            x2: Math.trunc(l.end.col * scale), y2: Math.trunc(l.end.row * scale)
-        }));
-        const windows = lines.filter(l => l.type === 'window').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale),
-            width: Math.trunc(Math.abs(l.end.col - l.start.col) * scale) || Math.trunc(scale),
-            height: Math.trunc(Math.abs(l.end.row - l.start.row) * scale) || Math.trunc(scale),
-            distanceFromFloor: 0
-        }));
-        const doors = lines.filter(l => l.type === 'door').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale)
-        }));
-        const plugs = placedIcons.filter(i => i.type === 'priza').map(i => ({
-            x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)
-        }));
-        const roomSquareMeters = (() => {
-            if (!walls.length) return 10;
-            const xs = walls.flatMap(w => [w.x1, w.x2]);
-            const ys = walls.flatMap(w => [w.y1, w.y2]);
-            return Math.max(1, Math.trunc(((Math.max(...xs) - Math.min(...xs)) / 100) * ((Math.max(...ys) - Math.min(...ys)) / 100)));
-        })();
-        const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
-        const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
-            coordinates: {x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)},
-            rotationAngle: 0,
-            device: {
-                id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
-                protocol: i.type === 'router' ? 'WiFi' : 'Zigbee',
-                lumens: i.type === 'bec' ? 800 : 0, requiresPlug: i.type !== 'bec',
-                rangeRadius: i.type === 'senzor' ? 10 : 0, deviceType: i.type,
-                mountType: i.type === 'tv' ? 'wall' : 'table',
-                fieldOfView: i.type === 'interfon' ? 120 : 0,
-                powerConsumption: i.type === 'bec' ? 10 : 5,
-                communicationFrequency: i.type === 'router' ? '2.4GHz' : '868MHz', width: 10
-            }
-        }));
-        setExportData({devices, rooms});
-    }, [placedIcons, lines, layout.dotSpacing]);
-
     useEffect(() => {
         exportDataRef.current = exportData;
     }, [exportData]);
 
     const requestValidation = () => {
         if (validateTimerRef.current) return;
+        const requestId = ++validationRequestIdRef.current;
         validateTimerRef.current = setTimeout(() => {
             validateTimerRef.current = null;
 
             if (!placedIconsRef.current.length && !linesRef.current.length) {
+                if (requestId !== validationRequestIdRef.current) return;
                 setValidationErrors([]);
                 setValidationInfos([]);
                 return;
@@ -430,6 +429,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             })
                 .then(async (r) => {
                     const json = await r.json().catch(() => ({}));
+                    if (requestId !== validationRequestIdRef.current) return;
                     if (!r.ok) {
                         setValidationErrors(['Eroare la validare']);
                         setValidationInfos([]);
@@ -451,11 +451,16 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                     setValidationErrors(blocking);
                 })
                 .catch(() => {
+                    if (requestId !== validationRequestIdRef.current) return;
                     setValidationErrors(['Eroare la validare']);
                     setValidationInfos([]);
                 });
         }, 0);
     };
+
+    useEffect(() => {
+        requestValidation();
+    }, [exportData]);
 
     const handleSaveToDb = async () => {
         if (isSaving) return;
@@ -668,7 +673,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                     setPlacedIcons={setPlacedIcons} checkCollision={checkUniversalCollision}
                                     saveHistory={saveHistory} undo={handleUndo}
                                     redo={handleRedo} canUndo={undoStack.length > 0} canRedo={redoStack.length > 0}
-                                    onCommitValidate={requestValidation}
                                 />
 
                                 {/* Placed icons */}
@@ -715,7 +719,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                                                             saveHistory();
                                                             setPlacedIcons(placedIcons.filter((_, i) => i !== index));
                                                             setHoveredIconIndex(null);
-                                                            requestValidation();
                                                         }}
                                                         style={{
                                                             position: 'absolute', top: '-8px', right: '-8px',

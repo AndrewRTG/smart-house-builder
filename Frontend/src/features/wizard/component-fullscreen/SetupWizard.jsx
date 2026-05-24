@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
+import { authFetch } from '../../../utils/authFetch';
 import './wizard.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
@@ -141,26 +142,6 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
             // 1. Construim string-ul cu criterii
             const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}. Protocoale preferate: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
             const encodedCriteria = encodeURIComponent(criterii);
-
-            // 2. Fetch catre backend (AI Gemini)
-            fetch(`${API_BASE}/api/devices/suggestions?criteria=${encodedCriteria}`)
-                .then(res => res.json())
-                .then(data => {
-                    setAiProducts(data.map(item => ({
-                        id: item.id.toString(),
-                        name: item.name,
-                        brand: item.brand,
-                        price: item.bestPrice ?? item.price ?? 0,
-                        icon: getCategoryIcon(item.categoryId),
-                        protocol: item.communicationProtocol || item.protocol || 'Unknown',
-                        categoryId: item.categoryId,
-                    })));
-                })
-                .catch(err => {
-                    console.error("Failed to fetch AI products:", err);
-                    setAiProducts([]);
-                })
-                .finally(() => setLoadingAI(false));
 
             // 3. Fetch catre backend (Local Algorithm)
             fetch(`${API_BASE}/api/devices/algorithmSuggestions?criteria=${encodedCriteria}`)
@@ -312,6 +293,11 @@ const SetupWizard = ({ onFinish }) => {
     const s = useWizardStore();
     const [showResults, setShowResults] = useState(false);
 
+    // State-uri noi pentru AI Agent
+    const [agentPrompt, setAgentPrompt] = useState("");
+    const [aiProducts, setAiProducts] = useState([]);
+    const [isAgentLoading, setIsAgentLoading] = useState(false);
+
     const ROOM_OPTIONS = [
         { id: 'living',   name: 'Living Room', icon: '🛋️' },
         { id: 'kitchen',  name: 'Kitchen',     icon: '🍳' },
@@ -319,19 +305,96 @@ const SetupWizard = ({ onFinish }) => {
         { id: 'bathroom', name: 'Bathroom',    icon: '🛁' },
     ];
 
+    // Funcția care apelează noul endpoint de AI
+    const handleAgentSearch = async () => {
+        if (!agentPrompt.trim()) return;
+        setIsAgentLoading(true);
+
+        // Aici trimitem ISTORICUL dorit de tine!
+        const userContext = `
+            Buget rămas/setat: ${s.priceRange[1]} Euro.
+            Nivel tehnic: ${s.techLevel}.
+            Ecosistem dorit: ${s.ecosystem}.
+            Categorii de interes: ${s.categories.join(', ')}.
+            Algoritmul standard deja a returnat produse pe aceste criterii. Dacă utilizatorul cere altceva, oferă opțiuni diferite.
+        `;
+
+        try {
+            const res = await authFetch('/api/ai/agent-search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: agentPrompt, context: userContext })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Salvăm produsele în state
+                setAiProducts(data.devices || []);
+            } else {
+                console.error("Eroare server");
+            }
+        } catch (error) {
+            console.error("Eroare AI Agent:", error);
+        } finally {
+            setIsAgentLoading(false);
+        }
+    };
     if (showResults) {
         return (
             <div className={`wizard-container w-full max-w-3xl ${s.darkMode ? 'dark-mode' : ''}`}>
                 <div className="wizard-card">
+                    {/* Algoritmul vostru original */}
                     <SuggestedProductsView
                         onBack={() => setShowResults(false)}
                         onConfirm={(selectedProducts) => onFinish(selectedProducts)}
                     />
+
+                    {/* Secțiunea nouă "Domnul Simi" (AI Agent) */}
+                    <div className="ai-agent-section" style={{ marginTop: '30px', padding: '20px', borderTop: '2px solid #eee', textAlign: 'center' }}>
+                        <h4>🤖 Asistent Smart Home AI</h4>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <input
+                                type="text"
+                                value={agentPrompt}
+                                onChange={(e) => setAgentPrompt(e.target.value)}
+                                placeholder="Ex: Vreau un televizor diferit..."
+                                style={{ padding: '10px', width: '60%', borderRadius: '5px', border: '1px solid #ccc' }}
+                            />
+                            <button onClick={handleAgentSearch} disabled={isAgentLoading} className="btn-wizard">
+                                {isAgentLoading ? "Caută în DB..." : "Trimite"}
+                            </button>
+                        </div>
+
+                        {/* Aici randăm produsele găsite exact cum arată ele în site */}
+                        {aiProducts.length > 0 && (
+                            <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                                <h5>Rezultatele găsite de AI:</h5>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                    gap: '15px'
+                                }}>
+                                    {aiProducts.map(device => (
+                                        <div key={device.id} style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '8px' }}>
+                                            {/* Afișăm imaginea, numele și prețul, din baza de date */}
+                                            {device.imageUrl && <img src={device.imageUrl} alt={device.name} style={{width: '100%', height: '150px', objectFit: 'contain'}}/>}
+                                            <h6 style={{ margin: '10px 0 5px 0' }}>{device.name}</h6>
+                                            <p style={{ color: 'gray', fontSize: '0.8rem', margin: 0 }}>{device.brand}</p>
+                                            <p style={{ fontWeight: 'bold', margin: '5px 0' }}>{device.price} RON</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {aiProducts.length === 0 && agentPrompt && !isAgentLoading && (
+                            <p style={{marginTop: '15px', color: 'gray'}}>Niciun produs găsit pentru această cerință.</p>
+                        )}
+                    </div>
                 </div>
             </div>
         );
     }
-
     const renderStep = () => {
         switch (s.step) {
             case 1: return (

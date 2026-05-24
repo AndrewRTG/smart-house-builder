@@ -13,6 +13,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +41,8 @@ class DeviceSuggestionAlgorithmServiceTest {
 
     @Test
     void testParseCriteriaAndBudget_AllEdgeCases() {
-        when(deviceRepository.findAll()).thenReturn(Collections.emptyList());
+        // NOU: Inlocuim findAll() cu findCandidatesForAlgorithm()
+        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Collections.emptyList());
 
         assertTrue(algorithmService.getSmartSuggestions(null).isEmpty());
         assertTrue(algorithmService.getSmartSuggestions("").isEmpty());
@@ -53,7 +56,7 @@ class DeviceSuggestionAlgorithmServiceTest {
         String criteria3 = "Buget: 100.5.5 EUR. Categorii dorite: Toate";
         assertTrue(algorithmService.getSmartSuggestions(criteria3).isEmpty());
 
-        // Test pentru "Oricare" (pentru a acoperi `categoriesStr.equalsIgnoreCase("Oricare")`)
+        // Test pentru "Oricare"
         assertTrue(algorithmService.getSmartSuggestions("Buget: 1000 EUR. Categorii dorite: Oricare").isEmpty());
     }
 
@@ -70,7 +73,6 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice appleThread = createDevice(6L, 1, "Thr", "Any", 10.0, "THREAD", "", "");
         HardwareDevice appleBrand = createDevice(7L, 1, "App", "Apple", 10.0, "ZIGBEE", "", "");
 
-        // Combinațiile pentru homekit/airplay (Short-circuit testing pt specificatii si descriere)
         HardwareDevice appleSpecHomekit = createDevice(8L, 1, "SH", "Any", 10.0, "BLUETOOTH", "homekit", "");
         HardwareDevice appleSpecAirplay = createDevice(9L, 1, "SA", "Any", 10.0, "WIFI", "airplay", "");
         HardwareDevice appleDescHomekit = createDevice(10L, 1, "DH", "Any", 10.0, "WIFI", "none", "homekit");
@@ -85,7 +87,8 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice gZigbee = createDevice(17L, 1, "GZig", "Any", 10.0, "ZIGBEE", "", "");
         HardwareDevice gReject = createDevice(18L, 1, "GRej", "Any", 10.0, "THREAD", "", "");
 
-        when(deviceRepository.findAll()).thenReturn(Arrays.asList(
+        // NOU: Inlocuim findAll()
+        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(
                 nullPropsDev,
                 appleAmazon, appleGoogle, appleSamsung, appleMatter, appleThread, appleBrand,
                 appleSpecHomekit, appleSpecAirplay, appleDescHomekit, appleDescAirplay, appleReject,
@@ -107,9 +110,9 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice relay = createDevice(6L, 1, "R", "B", 10.0, "WIFI", "relay", "");
         HardwareDevice okPnP = createDevice(7L, 1, "OK", "B", 10.0, "WIFI", "battery", "");
 
-        when(deviceRepository.findAll()).thenReturn(Arrays.asList(nullSpec, poe, wired, nvr, inWall, relay, okPnP));
+        // NOU: Inlocuim findAll()
+        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(nullSpec, poe, wired, nvr, inWall, relay, okPnP));
 
-        // Acoperim ambele moduri de a exprima incepator (Plug & Play vs beginner)
         algorithmService.getSmartSuggestions("Buget: 1000. Nivel: beginner. Categorii dorite: Toate");
         algorithmService.getSmartSuggestions("Buget: 1000. Nivel: Plug & Play. Categorii dorite: Toate");
         algorithmService.getSmartSuggestions("Buget: 1000. Nivel: Intermediate. Categorii dorite: Toate");
@@ -125,7 +128,6 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice cid9Google = createDevice(5L, 9, "G", "Google", 10.0, "WIFI", "", "");
         HardwareDevice cid9Amazon = createDevice(6L, 9, "Am", "Amazon", 10.0, "WIFI", "", "");
 
-        // Scurt-circuite Security (1 si 8-uri specifice)
         HardwareDevice sec1 = createDevice(7L, 1, "S1", "B", 10.0, "WIFI", "", "");
         HardwareDevice sec8smoke = createDevice(8L, 8, "S8s", "B", 10.0, "WIFI", "smoke", "");
         HardwareDevice sec8gas = createDevice(9L, 8, "S8g", "B", 10.0, "WIFI", "gas", "");
@@ -133,24 +135,22 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice sec8motion = createDevice(11L, 8, "S8m", "B", 10.0, "WIFI", "motion", "");
         HardwareDevice sec8leak = createDevice(12L, 8, "S8l", "B", 10.0, "WIFI", "water_leak", "");
 
-        // Scurt-circuite Comfort (4, 11, 8-uri specifice)
         HardwareDevice com4 = createDevice(13L, 4, "C4", "B", 10.0, "WIFI", "", "");
         HardwareDevice com11 = createDevice(14L, 11, "C11", "B", 10.0, "WIFI", "", "");
         HardwareDevice com8temp = createDevice(15L, 8, "C8t", "B", 10.0, "WIFI", "temperature", "");
         HardwareDevice com8hum = createDevice(16L, 8, "C8h", "B", 10.0, "WIFI", "humidity", "");
         HardwareDevice com8lum = createDevice(17L, 8, "C8l", "B", 10.0, "WIFI", "luminance", "");
-        HardwareDevice com8motion = createDevice(18L, 8, "C8m", "B", 10.0, "WIFI", "motion", ""); // Motion inclus in comfort
+        HardwareDevice com8motion = createDevice(18L, 8, "C8m", "B", 10.0, "WIFI", "motion", "");
 
-        // Scurt-circuite Energy
         HardwareDevice ene2 = createDevice(19L, 2, "E2", "B", 10.0, "WIFI", "", "");
         HardwareDevice ene7 = createDevice(20L, 7, "E7", "B", 10.0, "WIFI", "", "");
 
-        // Scurt-circuite Entertainment (3, 6, 9, 10)
         HardwareDevice ent3 = createDevice(21L, 3, "E3", "B", 10.0, "WIFI", "", "");
         HardwareDevice ent6 = createDevice(22L, 6, "E6", "B", 10.0, "WIFI", "", "");
         HardwareDevice ent10 = createDevice(23L, 10, "E10", "B", 10.0, "WIFI", "", "");
 
-        when(deviceRepository.findAll()).thenReturn(Arrays.asList(
+        // NOU: Inlocuim findAll()
+        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(
                 cid5, cid12, cid9Oricare, cid9Apple, cid9Google, cid9Amazon,
                 sec1, sec8smoke, sec8gas, sec8contact, sec8motion, sec8leak,
                 com4, com11, com8temp, com8hum, com8lum, com8motion,
@@ -180,7 +180,8 @@ class DeviceSuggestionAlgorithmServiceTest {
 
         HardwareDevice expensive = createDevice(9L, 3, "Exp", "B", 2000.0, "WIFI", "", "");
 
-        when(deviceRepository.findAll()).thenReturn(Arrays.asList(
+        // NOU: Inlocuim findAll()
+        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(
                 hub1, hub2, nullPrice, zeroPrice, c1, c2, c3, c4, expensive
         ));
 

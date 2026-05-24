@@ -9,6 +9,8 @@
     --sh-muted: #507ADC;
     --sh-warn-bg: #E8F1FA;
     --sh-t: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Drawer transition — slightly slower for the slide-in feel */
+    --sh-drawer-t: 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark-mode .wizard-sidebar {
@@ -20,8 +22,12 @@
     --sh-muted: #8a9dc0;
 }
 
+/* ══════════════════════════════════════════════════════════
+   DESKTOP SIDEBAR (unchanged from original)
+   ══════════════════════════════════════════════════════════ */
+
 .wizard-sidebar {
-    width: 270px; /* Mai compact conform designului */
+    width: 270px;
     background-color: var(--sh-bg);
     border-radius: 40px;
     padding: 25px 18px;
@@ -32,96 +38,154 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     margin: 15px;
     max-height: calc(100vh - 30px);
-    transition: background-color var(--sh-t), color var(--sh-t), box-shadow var(--sh-t);
+    transition:
+            background-color var(--sh-t),
+            color var(--sh-t),
+            box-shadow var(--sh-t);
 }
 
-.sb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.sb-title { font-weight: 800; font-size: 1.3rem; margin: 0; color: var(--sh-text); }
-.sb-mode-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+.sb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
 
+.sb-title {
+    font-weight: 800;
+    font-size: 1.3rem;
+    margin: 0;
+    color: var(--sh-text);
+}
+
+.sb-mode-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+/* Close button — hidden on desktop, shown on mobile via media query */
+.sb-close-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--sh-border);
+    background: var(--sh-card);
+    color: var(--sh-text);
+    cursor: pointer;
+    transition: background var(--sh-t), color var(--sh-t);
+    flex-shrink: 0;
+}
+
+.sb-close-btn:hover {
+    background: var(--sh-accent);
+    color: white;
+    border-color: var(--sh-accent);
+}
+
+/* Mobile toggle button — hidden on desktop */
+.sb-mobile-toggle {
+    display: none;
+}
+
+/* Backdrop — hidden on desktop */
+.sb-backdrop {
+    display: none;
+}
+
+/* ── Scroll body ──────────────────────────────────── */
 .sb-body-scroll {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 4px;
+    /* Smooth momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
 }
+
 .sb-body-scroll::-webkit-scrollbar { width: 3px; }
-.sb-body-scroll::-webkit-scrollbar-thumb { background: var(--sh-border); border-radius: 10px; }
+.sb-body-scroll::-webkit-scrollbar-thumb {
+    background: var(--sh-border);
+    border-radius: 10px;
+}
 
+/* ── Labels ───────────────────────────────────────── */
 .sb-label {
-    font-weight: 700; font-size: 0.62rem;
-    margin: 15px 0 8px 0; display: block;
-    text-transform: uppercase; letter-spacing: 0.08em; color: var(--sh-muted);
+    font-weight: 700;
+    font-size: 0.62rem;
+    margin: 15px 0 8px 0;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--sh-muted);
 }
 
-.sb-ecosystem-group { display: flex; flex-wrap: wrap; gap: 5px; }
+/* ── Ecosystem pills ──────────────────────────────── */
+.sb-ecosystem-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
 .eco-pill {
-    background: var(--sh-card); border: 1px solid var(--sh-border);
-    border-radius: 50px; padding: 4px 12px;
-    font-size: 0.68rem; font-weight: 600; color: var(--sh-muted); cursor: pointer;
+    background: var(--sh-card);
+    border: 1px solid var(--sh-border);
+    border-radius: 50px;
+    padding: 4px 12px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--sh-muted);
+    cursor: pointer;
+    transition: background var(--sh-t), color var(--sh-t);
+    /* Meets 44px tap target via line-height + padding on mobile */
+    line-height: 1.6;
 }
-.eco-pill.active { background: var(--sh-accent); color: white; border-color: var(--sh-accent); }
 
-.sb-price-info { display: flex; justify-content: space-between; font-size: 0.65rem; font-weight: 700; opacity: 0.6; }
-.range-input { width: 100%; -webkit-appearance: none; background: var(--sh-card); height: 4px; border-radius: 10px; margin: 8px 0; }
+.eco-pill.active {
+    background: var(--sh-accent);
+    color: white;
+    border-color: var(--sh-accent);
+}
+
+/* ── Price range ──────────────────────────────────── */
+.sb-price-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    font-weight: 700;
+    opacity: 0.6;
+}
+
+.range-input {
+    width: 100%;
+    -webkit-appearance: none;
+    background: var(--sh-card);
+    height: 4px;
+    border-radius: 10px;
+    margin: 8px 0;
+}
+
 .range-input::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 14px; height: 14px;
-    border-radius: 50%; background: #fff; border: 2px solid var(--sh-accent);
-}
-.sb-price-current { text-align: center; font-size: 0.75rem; font-weight: 800; color: var(--sh-accent); }
-
-.sb-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
-.checkbox-container { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; margin-bottom: 4px; cursor: pointer; }
-.custom-check-circle {
-    width: 14px; height: 14px; border-radius: 50%;
-    border: 1.5px solid var(--sh-border); background: var(--sh-card);
-    display: flex; align-items: center; justify-content: center;
-}
-.checkbox-container input:checked + .custom-check-circle { background: var(--sh-accent); border-color: var(--sh-accent); }
-
-.brand-input-field {
-    width: 100%; padding: 8px 12px; border-radius: 10px;
-    border: 1px solid var(--sh-border); background: var(--sh-card);
-    color: var(--sh-text); font-size: 0.7rem; outline: none;
-}
-.brand-suggestions {
-    position: absolute; width: 100%; background: var(--sh-card);
-    border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    z-index: 10; max-height: 80px; overflow-y: auto;
-}
-.suggestion-item { padding: 6px 10px; font-size: 0.65rem; cursor: pointer; }
-.suggestion-item:hover { background: var(--sh-bg); }
-
-/* --- Status Zone: Branduri Orizontale / Warning --- */
-.sb-status-zone { margin-top: 15px; }
-
-.brand-tags-horizontal {
-    display: flex; overflow-x: auto; gap: 6px; padding: 10px;
-    background: var(--sh-warn-bg); border-radius: 20px; border: 1px solid var(--sh-border);
-}
-.brand-tags-horizontal::-webkit-scrollbar { display: none; }
-
-.brand-pill {
-    display: flex; align-items: center; background: var(--sh-card);
-    padding: 3px 10px; border-radius: 50px; border: 1px solid var(--sh-border);
-    gap: 5px; flex-shrink: 0; font-size: 0.62rem; font-weight: 600;
-}
-.brand-pill button { background: none; border: none; cursor: pointer; color: #ff4d4d; font-weight: 800; font-size: 0.8rem; }
-
-.warning-box {
-    background: var(--sh-warn-bg); border-radius: 25px; padding: 10px;
-    text-align: center; font-weight: 700; font-size: 0.72rem;
-    color: var(--sh-text); border: 1px solid var(--sh-border);
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--sh-accent);
 }
 
-.reset-btn {
-    background-color: #314a6d; color: white; border: none;
-    border-radius: 15px; padding: 12px; font-weight: 700;
-    font-size: 0.75rem; width: 100%; display: flex;
-    align-items: center; justify-content: center; gap: 8px; cursor: pointer;
-    margin-top: 10px;
+.sb-price-current {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--sh-accent);
 }
 
+/* ── Dual-thumb slider ────────────────────────────── */
 .wizard-sidebar .price-slider-wrapper {
     position: relative;
     width: 100%;
@@ -135,7 +199,7 @@
     position: absolute;
     width: 100%;
     height: 4px;
-    background-color: var(--divider-color);
+    background-color: var(--divider-color, rgba(0,0,0,0.12));
     border-radius: 2px;
     z-index: 1;
 }
@@ -143,7 +207,7 @@
 .wizard-sidebar .slider-range-highlight {
     position: absolute;
     height: 4px;
-    background-color: var(--btn-text);
+    background-color: var(--sh-accent);
     border-radius: 2px;
     z-index: 2;
 }
@@ -164,34 +228,386 @@
     height: 20px;
     width: 20px;
     border-radius: 6px;
-    background: var(--btn-text);
+    background: var(--sh-accent);
     cursor: pointer;
     pointer-events: auto;
     appearance: none;
     -webkit-appearance: none;
-    border: 2px solid var(--bg-main);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: 2px solid var(--sh-card);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .wizard-sidebar .thumb::-moz-range-thumb {
     height: 20px;
     width: 20px;
     border-radius: 6px;
-    background: var(--btn-text);
+    background: var(--sh-accent);
     cursor: pointer;
     pointer-events: auto;
-    border: 2px solid var(--bg-main);
+    border: 2px solid var(--sh-card);
 }
 
 .wizard-sidebar .thumb::-webkit-slider-runnable-track {
     background: transparent;
     border: none;
 }
+
 .wizard-sidebar .thumb::-moz-range-track {
     background: transparent;
     border: none;
 }
 
-.wizard-sidebar .thumb-left {
-    z-index: 4;
+.wizard-sidebar .thumb-left { z-index: 4; }
+
+/* ── Categories grid ──────────────────────────────── */
+.sb-cat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+}
+
+/* ── Checkbox items ───────────────────────────────── */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.68rem;
+    margin-bottom: 4px;
+    cursor: pointer;
+    /* Minimum tap target */
+    min-height: 28px;
+    padding: 2px 0;
+}
+
+.custom-check-circle {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid var(--sh-border);
+    background: var(--sh-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background var(--sh-t), border-color var(--sh-t);
+}
+
+.checkbox-container input:checked + .custom-check-circle {
+    background: var(--sh-accent);
+    border-color: var(--sh-accent);
+}
+
+/* ── Brand input ──────────────────────────────────── */
+.brand-input-field {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--sh-border);
+    background: var(--sh-card);
+    color: var(--sh-text);
+    font-size: 0.7rem;
+    font-family: 'Montserrat', sans-serif;
+    outline: none;
+    transition: border-color var(--sh-t), box-shadow var(--sh-t);
+}
+
+.brand-input-field:focus {
+    border-color: var(--sh-accent);
+    box-shadow: 0 0 0 3px rgba(30, 76, 210, 0.1);
+}
+
+.brand-suggestions {
+    position: absolute;
+    width: 100%;
+    background: var(--sh-card);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.suggestion-item {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: background var(--sh-t);
+}
+
+.suggestion-item:hover { background: var(--sh-bg); }
+
+/* ── Status zone ──────────────────────────────────── */
+.sb-status-zone { margin-top: 15px; }
+
+.brand-tags-horizontal {
+    display: flex;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 10px;
+    background: var(--sh-warn-bg);
+    border-radius: 20px;
+    border: 1px solid var(--sh-border);
+    -webkit-overflow-scrolling: touch;
+}
+
+.brand-tags-horizontal::-webkit-scrollbar { display: none; }
+
+.brand-pill {
+    display: flex;
+    align-items: center;
+    background: var(--sh-card);
+    padding: 3px 10px;
+    border-radius: 50px;
+    border: 1px solid var(--sh-border);
+    gap: 5px;
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-weight: 600;
+}
+
+.brand-pill button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ff4d4d;
+    font-weight: 800;
+    font-size: 0.8rem;
+    /* Adequate tap target */
+    padding: 0 2px;
+    line-height: 1;
+}
+
+.warning-box {
+    background: var(--sh-warn-bg);
+    border-radius: 25px;
+    padding: 10px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.72rem;
+    color: var(--sh-text);
+    border: 1px solid var(--sh-border);
+}
+
+/* ── Reset button ─────────────────────────────────── */
+.reset-btn {
+    background-color: #314a6d;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 12px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    font-family: 'Montserrat', sans-serif;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background var(--sh-t), transform var(--sh-t);
+    /* Always meets 44px tap target */
+    min-height: 44px;
+}
+
+.reset-btn:hover {
+    background-color: #1e3a5f;
+    transform: translateY(-1px);
+}
+
+/* ── Filter count badge (on mobile toggle button) ─── */
+.sb-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 50px;
+    background: white;
+    color: var(--sh-accent);
+    font-size: 0.6rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE  ≤ 768px  — Off-canvas drawer
+   ══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* ── Floating Filters toggle button ──────────── */
+    .sb-mobile-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 900;
+        padding: 13px 28px;
+        border-radius: 50px;
+        border: none;
+        background: var(--sh-accent, #1E4CD2);
+        color: white;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 6px 24px rgba(30, 76, 210, 0.45);
+        /* Meets 44px tap target */
+        min-height: 48px;
+        white-space: nowrap;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .sb-mobile-toggle:active {
+        transform: translateX(-50%) scale(0.97);
+    }
+
+    /* ── Backdrop ─────────────────────────────────── */
+    .sb-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(2, 17, 75, 0.5);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        animation: backdropIn 0.28s ease both;
+    }
+
+    @keyframes backdropIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* ── Sidebar: hidden by default, slides in from left ── */
+    .wizard-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 1100;
+        width: min(300px, 85vw);
+        max-height: 100dvh;      /* dynamic viewport height — respects browser chrome */
+        border-radius: 0 32px 32px 0;
+        margin: 0;
+        padding: 28px 20px 20px;
+
+        /* Slide-out (hidden) state */
+        transform: translateX(-100%);
+        transition: transform var(--sh-drawer-t);
+
+        /* Elevate above backdrop */
+        box-shadow: 6px 0 40px rgba(2, 17, 75, 0.18);
+    }
+
+    /* Slide-in (open) state */
+    .wizard-sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    /* ── Show close button on mobile ─────────────── */
+    .sb-close-btn {
+        display: flex;
+    }
+
+    /* ── Enlarge touch targets for checkboxes ─────── */
+    .checkbox-container {
+        font-size: 0.78rem;
+        min-height: 36px;
+        gap: 10px;
+    }
+
+    .custom-check-circle {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+    }
+
+    .custom-check-circle svg {
+        width: 10px !important;
+        height: 10px !important;
+    }
+
+    /* ── Larger eco pills ─────────────────────────── */
+    .eco-pill {
+        padding: 8px 16px;
+        font-size: 0.78rem;
+    }
+
+    /* ── Larger slider thumbs ─────────────────────── */
+    .wizard-sidebar .thumb::-webkit-slider-thumb {
+        height: 26px;
+        width: 26px;
+        border-radius: 8px;
+    }
+
+    .wizard-sidebar .thumb::-moz-range-thumb {
+        height: 26px;
+        width: 26px;
+        border-radius: 8px;
+    }
+
+    .wizard-sidebar .price-slider-wrapper {
+        height: 40px;
+        margin: 24px 0;
+    }
+
+    /* ── Larger brand input ───────────────────────── */
+    .brand-input-field {
+        padding: 12px 14px;
+        font-size: 0.82rem;
+        border-radius: 12px;
+    }
+
+    .suggestion-item {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* ── Brand pills ─────────────────────────────── */
+    .brand-pill {
+        font-size: 0.72rem;
+        padding: 5px 12px;
+    }
+
+    .brand-pill button {
+        font-size: 1rem;
+        padding: 0 4px;
+    }
+
+    /* ── Reset button ─────────────────────────────── */
+    .reset-btn {
+        font-size: 0.85rem;
+        padding: 14px;
+        border-radius: 18px;
+        margin-top: 16px;
+    }
+
+    /* ── Scrollable body fills remaining height ───── */
+    .sb-body-scroll {
+        padding-right: 6px;
+        /* Let it fill available vertical space */
+        flex: 1;
+        min-height: 0;
+    }
+}
+
+/* ── Very small phones ────────────────────────────── */
+@media (max-width: 380px) {
+    .wizard-sidebar {
+        width: 92vw;
+    }
+
+    .sb-mobile-toggle {
+        padding: 12px 22px;
+        font-size: 0.82rem;
+    }
 }

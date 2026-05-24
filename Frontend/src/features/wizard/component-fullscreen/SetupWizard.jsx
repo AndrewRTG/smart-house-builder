@@ -54,15 +54,7 @@ const RecommendationPanel = ({ title, subtitle, icon, accentColor, products, sel
         background: `${accentColor}06`,
         minWidth: 0,
     }}>
-        {/* Panel Header */}
-        <div style={{
-            padding: '16px 20px 14px',
-            borderBottom: `1px solid ${accentColor}20`,
-            background: `${accentColor}0e`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-        }}>
+        <div style={{ padding: '16px 20px 14px', borderBottom: `1px solid ${accentColor}20`, background: `${accentColor}0e`, display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '1.3rem' }}>{icon}</span>
             <div style={{ textAlign: 'left' }}>
                 <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--wz-text)' }}>{title}</div>
@@ -70,17 +62,10 @@ const RecommendationPanel = ({ title, subtitle, icon, accentColor, products, sel
             </div>
         </div>
 
-        {/* Panel Body */}
         <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '14px', maxHeight: '320px' }}>
             {loading ? (
                 <div style={{ padding: '30px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                    <div style={{
-                        width: '26px', height: '26px',
-                        border: `3px solid ${accentColor}30`,
-                        borderTop: `3px solid ${accentColor}`,
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite'
-                    }} />
+                    <div style={{ width: '26px', height: '26px', border: `3px solid ${accentColor}30`, borderTop: `3px solid ${accentColor}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                     <span style={{ fontSize: '0.78rem', color: 'var(--wz-muted)' }}>Searching...</span>
                 </div>
             ) : products.length === 0 ? (
@@ -89,49 +74,29 @@ const RecommendationPanel = ({ title, subtitle, icon, accentColor, products, sel
                 </div>
             ) : (
                 products.map(p => (
-                    <ProductCard
-                        key={p.id}
-                        p={p}
-                        isSelected={selectedIds.includes(p.id)}
-                        onToggle={onToggle}
-                    />
+                    <ProductCard key={p.id} p={p} isSelected={selectedIds.includes(p.id)} onToggle={onToggle} />
                 ))
             )}
         </div>
 
-        {/* Panel Footer - total */}
-        <div style={{
-            padding: '10px 20px',
-            borderTop: `1px solid ${accentColor}20`,
-            background: `${accentColor}0e`,
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            textAlign: 'right',
-            color: 'var(--wz-muted)'
-        }}>
+        <div style={{ padding: '10px 20px', borderTop: `1px solid ${accentColor}20`, background: `${accentColor}0e`, fontSize: '0.78rem', fontWeight: 700, textAlign: 'right', color: 'var(--wz-muted)' }}>
             Selected: <span style={{ color: accentColor }}>
-                {products
-                    .filter(p => selectedIds.includes(p.id))
-                    .reduce((sum, p) => sum + p.price, 0)
-                    .toFixed(2)}€
+                {products.filter(p => selectedIds.includes(p.id)).reduce((sum, p) => sum + p.price, 0).toFixed(2)}€
             </span>
         </div>
     </div>
 );
 
 // ── COMPONENT: Suggested Products View ──────────────────────────────────────
-const SuggestedProductsView = ({ onConfirm, onBack }) => {
+// ATENȚIE: Am adăugat `selectedSetup` ca parametru pentru a-l folosi în algoritm
+const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
     const s = useWizardStore();
 
-    // Loading states for each panel independently
     const [loadingAI, setLoadingAI]       = useState(true);
     const [loadingAlgo, setLoadingAlgo]   = useState(true);
 
-    // Produse filtrate per panou
     const [aiProducts, setAiProducts]     = useState([]);
     const [algoProducts, setAlgoProducts] = useState([]);
-
-    // Selectii unificate — userul poate selecta din ambele panouri
     const [selectedIds, setSelectedIds]   = useState([]);
 
     useEffect(() => {
@@ -139,11 +104,12 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
             setLoadingAI(true);
             setLoadingAlgo(true);
 
-            // 1. Construim string-ul cu criterii
-            const criterii = `Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii dorite: ${s.categories.join(', ')}. Protocoale preferate: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
+            // 1. Includem numele camerei/proiectului în criteriile algoritmului!
+            const setupName = selectedSetup ? selectedSetup.name : 'Nespecificat';
+            const criterii = `Proiect/Cameră: ${setupName}. Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii: ${s.categories.join(', ')}. Protocoale: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
             const encodedCriteria = encodeURIComponent(criterii);
 
-            // 3. Fetch catre backend (Local Algorithm)
+            // Fetch catre backend (Local Algorithm)
             fetch(`${API_BASE}/api/devices/algorithmSuggestions?criteria=${encodedCriteria}`)
                 .then(res => res.json())
                 .then(data => {
@@ -165,13 +131,10 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         };
 
         fetchSuggestions();
-    }, [s.priceRange, s.ecosystem, s.techLevel, s.categories, s.protocols]);
+    }, [s.priceRange, s.ecosystem, s.techLevel, s.categories, s.protocols, selectedSetup]);
 
-    const toggleProduct = (id) => {
-        setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-    };
+    const toggleProduct = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-    // Toate produsele unice selectate (din oricare panou)
     const allUnique = [...new Map([...aiProducts, ...algoProducts].map(p => [p.id, p])).values()];
     const selectedProducts = allUnique.filter(p => selectedIds.includes(p.id));
     const totalPrice = selectedProducts.reduce((sum, p) => sum + p.price, 0);
@@ -180,143 +143,88 @@ const SuggestedProductsView = ({ onConfirm, onBack }) => {
         <div className="step-content">
             <h2>Recommended Devices</h2>
             <p>
-                Two recommendation engines analyzed your preferences.
-                Pick the ones you like from either list!
+                Two recommendation engines analyzed your preferences for <strong>{selectedSetup ? selectedSetup.name : "your project"}</strong>.
+                Pick the ones you like!
             </p>
 
-            {/* ── Cele 2 panouri side-by-side ── */}
-            <div style={{
-                display: 'flex',
-                gap: '16px',
-                alignItems: 'stretch',
-                flexWrap: 'wrap',
-            }}>
-                {/* Panoul 1: AI */}
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch', flexWrap: 'wrap' }}>
                 <RecommendationPanel
-                    title="AI Recommendations"
-                    subtitle="Powered by Gemini"
-                    icon="🤖"
-                    accentColor="#00b4d8"
-                    products={aiProducts}
-                    selectedIds={selectedIds}
-                    onToggle={toggleProduct}
-                    loading={loadingAI}
+                    title="AI Recommendations" subtitle="Powered by Gemini" icon="🤖" accentColor="#00b4d8"
+                    products={aiProducts} selectedIds={selectedIds} onToggle={toggleProduct} loading={loadingAI}
                     emptyMessage="AI found no matches. Try a higher budget!"
                 />
-
-                {/* Panoul 2: Algorithm */}
                 <RecommendationPanel
-                    title="Algorithm Pick"
-                    subtitle="Smart filter by our engine"
-                    icon="⚙️"
-                    accentColor="#7c3aed"
-                    products={algoProducts}
-                    selectedIds={selectedIds}
-                    onToggle={toggleProduct}
-                    loading={loadingAlgo}
+                    title="Algorithm Pick" subtitle="Smart filter by our engine" icon="⚙️" accentColor="#7c3aed"
+                    products={algoProducts} selectedIds={selectedIds} onToggle={toggleProduct} loading={loadingAlgo}
                     emptyMessage="Algorithm found no matches."
                 />
             </div>
 
-            {/* ── Footer ── */}
             <div className="nav-footer">
                 <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>
-                    Total selected ({selectedProducts.length} items):{' '}
-                    <span style={{ color: 'var(--wz-accent)' }}>{totalPrice.toFixed(2)}€</span>
+                    Total selected ({selectedProducts.length} items): <span style={{ color: 'var(--wz-accent)' }}>{totalPrice.toFixed(2)}€</span>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button className="btn-wizard btn-prev" onClick={onBack}>Back</button>
-                    <button
-                        className="btn-wizard btn-next"
-                        onClick={() => onConfirm(selectedProducts)}
-                    >
-                        Start Project 〉
-                    </button>
+                    <button className="btn-wizard btn-next" onClick={() => onConfirm(selectedProducts)}>Start Project 〉</button>
                 </div>
             </div>
-
             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
         </div>
     );
 };
-
-// ── COMPONENT: Room Image Card (WITH PLACEHOLDERS FOR TEAM) ────────────────
-const RoomImageCard = ({ name, icon, isSelected, onClick }) => (
-    <div
-        className={`room-image-card ${isSelected ? 'selected' : ''}`}
-        onClick={onClick}
-        style={{
-            cursor: 'pointer',
-            padding: '10px',
-            borderRadius: '16px',
-            border: isSelected ? '2px solid var(--wz-accent)' : '2px solid transparent',
-            backgroundColor: isSelected ? 'var(--wz-accent)' : 'var(--wz-bg)',
-            transition: 'all 0.2s ease',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-        }}
-    >
-        <div className="room-image-placeholder" style={{
-            width: '100%',
-            height: '110px',
-            border: '2px dashed var(--wz-border)',
-            borderRadius: '10px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--wz-card)',
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
-            <span style={{ fontSize: '2.5rem', opacity: 0.5, marginBottom: '5px' }}>{icon}</span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--wz-muted)', fontWeight: '600' }}>Image Placeholder</span>
-
-            {isSelected && (
-                <div style={{
-                    position: 'absolute', top: '8px', right: '8px',
-                    backgroundColor: 'var(--wz-accent)', color: 'white',
-                    width: '24px', height: '24px', borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 'bold', fontSize: '12px'
-                }}>
-                    ✓
-                </div>
-            )}
-        </div>
-    </div>
-);
 
 // ── MAIN COMPONENT: SetupWizard ────────────────────────────────────────────
 const SetupWizard = ({ onFinish }) => {
     const s = useWizardStore();
     const [showResults, setShowResults] = useState(false);
 
-    // State-uri noi pentru AI Agent
+    // Stări pentru setarile (proiectele) utilizatorului
+    const [savedLayouts, setSavedLayouts] = useState([]);
+    const [loadingLayouts, setLoadingLayouts] = useState(false);
+
+    // NOU: Aici stocăm ce Setup a selectat utilizatorul
+    const [selectedSetup, setSelectedSetup] = useState(null);
+
+    // Stări pentru AI Agent
     const [agentPrompt, setAgentPrompt] = useState("");
     const [aiProducts, setAiProducts] = useState([]);
     const [isAgentLoading, setIsAgentLoading] = useState(false);
 
-    const ROOM_OPTIONS = [
-        { id: 'living',   name: 'Living Room', icon: '🛋️' },
-        { id: 'kitchen',  name: 'Kitchen',     icon: '🍳' },
-        { id: 'bedroom',  name: 'Bedroom',     icon: '🛏️' },
-        { id: 'bathroom', name: 'Bathroom',    icon: '🛁' },
-    ];
+    useEffect(() => {
+        if (s.step === 1) {
+            const fetchSetups = async () => {
+                setLoadingLayouts(true);
+                try {
+                    const response = await authFetch('/api/v1/setups/user/drafts?page=0&size=20');
+                    if (response.ok) {
+                        const data = await response.json();
+                        const setupsArray = data.content ? data.content : (Array.isArray(data) ? data : []);
+                        setSavedLayouts(setupsArray);
+                    }
+                } catch (error) {
+                    console.error("Eroare la încărcarea Setups în wizard:", error);
+                } finally {
+                    setLoadingLayouts(false);
+                }
+            };
+            fetchSetups();
+        }
+    }, [s.step]);
 
-    // Funcția care apelează noul endpoint de AI
     const handleAgentSearch = async () => {
         if (!agentPrompt.trim()) return;
         setIsAgentLoading(true);
 
-        // Aici trimitem ISTORICUL dorit de tine!
+        // NOU: Trimitem numele setup-ului catre AI pentru context!
+        const setupName = selectedSetup ? selectedSetup.name : 'Nespecificat';
         const userContext = `
+            Proiect/Cameră vizată: ${setupName}.
             Buget rămas/setat: ${s.priceRange[1]} Euro.
             Nivel tehnic: ${s.techLevel}.
             Ecosistem dorit: ${s.ecosystem}.
             Categorii de interes: ${s.categories.join(', ')}.
-            Algoritmul standard deja a returnat produse pe aceste criterii. Dacă utilizatorul cere altceva, oferă opțiuni diferite.
+            Oferă opțiuni noi și relevante pentru această cameră.
         `;
 
         try {
@@ -328,10 +236,7 @@ const SetupWizard = ({ onFinish }) => {
 
             if (res.ok) {
                 const data = await res.json();
-                // Salvăm produsele în state
                 setAiProducts(data.devices || []);
-            } else {
-                console.error("Eroare server");
             }
         } catch (error) {
             console.error("Eroare AI Agent:", error);
@@ -339,44 +244,36 @@ const SetupWizard = ({ onFinish }) => {
             setIsAgentLoading(false);
         }
     };
+
     if (showResults) {
         return (
             <div className={`wizard-container w-full max-w-3xl ${s.darkMode ? 'dark-mode' : ''}`}>
                 <div className="wizard-card">
-                    {/* Algoritmul vostru original */}
+                    {/* Trimitem selectedSetup mai departe catre componenta de Sugestii */}
                     <SuggestedProductsView
+                        selectedSetup={selectedSetup}
                         onBack={() => setShowResults(false)}
                         onConfirm={(selectedProducts) => onFinish(selectedProducts)}
                     />
 
-                    {/* Secțiunea nouă "Domnul Simi" (AI Agent) */}
                     <div className="ai-agent-section" style={{ marginTop: '30px', padding: '20px', borderTop: '2px solid #eee', textAlign: 'center' }}>
                         <h4>🤖 Asistent Smart Home AI</h4>
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                             <input
-                                type="text"
-                                value={agentPrompt}
-                                onChange={(e) => setAgentPrompt(e.target.value)}
+                                type="text" value={agentPrompt} onChange={(e) => setAgentPrompt(e.target.value)}
                                 placeholder="Ex: Vreau un televizor diferit..."
                                 style={{ padding: '10px', width: '60%', borderRadius: '5px', border: '1px solid #ccc' }}
                             />
                             <button onClick={handleAgentSearch} disabled={isAgentLoading} className="btn-wizard">
-                                {isAgentLoading ? "Caută în DB..." : "Trimite"}
+                                {isAgentLoading ? "Caută..." : "Trimite"}
                             </button>
                         </div>
-
-                        {/* Aici randăm produsele găsite exact cum arată ele în site */}
                         {aiProducts.length > 0 && (
                             <div style={{ marginTop: '20px', textAlign: 'left' }}>
                                 <h5>Rezultatele găsite de AI:</h5>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                                    gap: '15px'
-                                }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
                                     {aiProducts.map(device => (
                                         <div key={device.id} style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '8px' }}>
-                                            {/* Afișăm imaginea, numele și prețul, din baza de date */}
                                             {device.imageUrl && <img src={device.imageUrl} alt={device.name} style={{width: '100%', height: '150px', objectFit: 'contain'}}/>}
                                             <h6 style={{ margin: '10px 0 5px 0' }}>{device.name}</h6>
                                             <p style={{ color: 'gray', fontSize: '0.8rem', margin: 0 }}>{device.brand}</p>
@@ -386,39 +283,80 @@ const SetupWizard = ({ onFinish }) => {
                                 </div>
                             </div>
                         )}
-
-                        {aiProducts.length === 0 && agentPrompt && !isAgentLoading && (
-                            <p style={{marginTop: '15px', color: 'gray'}}>Niciun produs găsit pentru această cerință.</p>
-                        )}
                     </div>
                 </div>
             </div>
         );
     }
+
     const renderStep = () => {
         switch (s.step) {
-            case 1: return (
-                <div className="step-content">
-                    <h2>Which rooms are you equipping?</h2>
-                    <p>Select the spaces you want to configure. (Images will be integrated by the design team via API)</p>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '15px',
-                        marginTop: '20px'
-                    }}>
-                        {ROOM_OPTIONS.map(room => (
-                            <RoomImageCard
-                                key={room.id}
-                                name={room.name}
-                                icon={room.icon}
-                                isSelected={s.rooms.includes(room.id)}
-                                onClick={() => s.toggleRoom(room.id)}
-                            />
-                        ))}
+            case 1:
+                return (
+                    <div className="wizard-step animate-fade-in">
+                        <h2 className="text-xl font-bold mb-2">Select Your Project</h2>
+                        <p className="text-sm text-gray-500 mb-6">Choose one of your existing setups to start configuring.</p>
+
+                        <div className="mb-8" style={{ textAlign: 'left' }}>
+                            <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '15px', color: 'var(--wz-text)' }}>Your Saved Setups</h3>
+
+                            {loadingLayouts ? (
+                                <p style={{ fontSize: '0.8rem', color: 'var(--wz-muted)' }}>Loading your projects...</p>
+                            ) : savedLayouts.length === 0 ? (
+                                <div style={{ padding: '40px 20px', backgroundColor: 'var(--wz-accent-soft)', borderRadius: '16px', border: '2px dashed var(--wz-border)', textAlign: 'center', fontSize: '0.9rem', color: 'var(--wz-muted)' }}>
+                                    You don't have any setups yet.
+                                </div>
+                            ) : (
+                                <div className="custom-scrollbar" style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px' }}>
+                                    {savedLayouts.map((setup) => {
+                                        const isSelected = selectedSetup?.id === setup.id;
+                                        return (
+                                            <div
+                                                key={setup.id}
+                                                // La click, setam setup-ul in starea locala
+                                                onClick={() => setSelectedSetup(setup)}
+                                                style={{
+                                                    position: 'relative',
+                                                    flexShrink: 0,
+                                                    width: '200px',
+                                                    cursor: 'pointer',
+                                                    borderRadius: '20px',
+                                                    border: isSelected ? '2px solid var(--wz-accent)' : '2px solid var(--wz-border)',
+                                                    backgroundColor: 'var(--wz-bg)',
+                                                    transition: 'all 0.2s ease',
+                                                    overflow: 'hidden',
+                                                    boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.05)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    transform: isSelected ? 'translateY(-3px)' : 'none'
+                                                }}
+                                            >
+                                                {/* Badge vizual daca e selectat */}
+                                                {isSelected && (
+                                                    <div style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'var(--wz-accent)', color: 'white', width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', zIndex: 2 }}>
+                                                        ✓
+                                                    </div>
+                                                )}
+
+                                                <div style={{ height: '90px', backgroundColor: isSelected ? '#cce0f5' : '#a8c2d8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease' }}>
+                                                    <span style={{ fontSize: '2rem' }}>🏠</span>
+                                                </div>
+                                                <div style={{ padding: '12px', textAlign: 'left' }}>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--wz-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {setup.name || "Untitled Setup"}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--wz-muted)', marginTop: '4px' }}>
+                                                        Status: {setup.status || "Draft"}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            );
+                );
             case 2: return (
                 <div className="step-content">
                     <h2>What is your total budget?</h2>
@@ -511,6 +449,8 @@ const SetupWizard = ({ onFinish }) => {
                     <button
                         className="btn-wizard btn-next"
                         onClick={s.step === 4 ? () => setShowResults(true) : s.nextStep}
+                        // NOU: Nu lăsăm utilizatorul să meargă mai departe de pasul 1 dacă nu a ales un proiect
+                        disabled={s.step === 1 && selectedSetup === null}
                     >
                         {s.step === 4 ? 'Get Suggestions 〉' : 'Next 〉'}
                     </button>

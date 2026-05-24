@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useWizardStore from '../../../store/wizardStore.js';
+import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../../../utils/authFetch';
 import './wizard.css';
 
@@ -176,6 +177,7 @@ const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
 
 // ── MAIN COMPONENT: SetupWizard ────────────────────────────────────────────
 const SetupWizard = ({ onFinish }) => {
+    const navigate = useNavigate();
     const s = useWizardStore();
     const [showResults, setShowResults] = useState(false);
 
@@ -190,6 +192,25 @@ const SetupWizard = ({ onFinish }) => {
     const [agentPrompt, setAgentPrompt] = useState("");
     const [aiProducts, setAiProducts] = useState([]);
     const [isAgentLoading, setIsAgentLoading] = useState(false);
+
+    const handleStartProject = (selectedProducts) => {
+        // 1. Extragem doar ID-urile ca numere
+        const deviceIds = selectedProducts.map(p => Number(p.id));
+
+        // 2. Le salvăm în sessionStorage-ul browserului
+        sessionStorage.setItem('wizard_selected_devices', JSON.stringify(deviceIds));
+
+        // 3. Navigăm către pagina colegului (Builder/Canvas)
+        if (selectedSetup && selectedSetup.id) {
+            navigate(`/builder/${selectedSetup.id}`);
+        } else {
+            // Fallback just in case
+            navigate('/builder');
+        }
+
+        // Apelăm și onFinish în caz că părintele are nevoie de event
+        if (onFinish) onFinish(selectedProducts);
+    };
 
     useEffect(() => {
         if (s.step === 1) {
@@ -253,7 +274,7 @@ const SetupWizard = ({ onFinish }) => {
                     <SuggestedProductsView
                         selectedSetup={selectedSetup}
                         onBack={() => setShowResults(false)}
-                        onConfirm={(selectedProducts) => onFinish(selectedProducts)}
+                        onConfirm={(selectedProducts) => handleStartProject(selectedProducts)}
                     />
 
                     <div className="ai-agent-section" style={{ marginTop: '30px', padding: '20px', borderTop: '2px solid #eee', textAlign: 'center' }}>

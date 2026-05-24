@@ -15,6 +15,8 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
 import gr.A4.SmartHouseBuilder.model.Layout;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class DeviceSuggestionAlgorithmService {
@@ -50,16 +52,15 @@ public class DeviceSuggestionAlgorithmService {
         // Folosim lista mutabila pentru a putea sterge elemente din ea
         List<HardwareDevice> dbCandidates = new ArrayList<>(deviceRepository.findCandidatesForAlgorithm(allowedCategoryIds, maxAllowedPrice));
 
-        // NOU: Filtram device-urile care sunt deja in acest layout
-        // NOU: Filtram device-ul care este deja in acest layout
         if (!layoutIdStr.isEmpty()) {
             try {
                 Integer layoutId = Integer.parseInt(layoutIdStr);
                 layoutRepository.findById(layoutId).ifPresent(layout -> {
-                    Integer existingDeviceId = layout.getDevicesId();
-                    // Daca layout-ul are un device salvat, il scoatem din lista de sugestii
-                    if (existingDeviceId != null) {
-                        dbCandidates.removeIf(device -> device.getId().equals(existingDeviceId.longValue()));
+                    String drawingJson = layout.getDrawing();
+                    List<Long> existingDeviceIds = extractDeviceIdsFromJson(drawingJson);
+
+                    if (!existingDeviceIds.isEmpty()) {
+                        dbCandidates.removeIf(device -> existingDeviceIds.contains(device.getId()));
                     }
                 });
             } catch (NumberFormatException e) {
@@ -361,4 +362,32 @@ public class DeviceSuggestionAlgorithmService {
         return price - basePricePerCategory.get(catId); // Cost de upgrade
     }
 
+    private List<Long> extractDeviceIdsFromJson(String drawingJson) {
+        List<Long> ids = new ArrayList<>();
+        if (drawingJson == null || drawingJson.isBlank()) {
+            return ids;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(drawingJson);
+            JsonNode devicesNode = root.path("devices");
+
+            if (devicesNode.isArray()) {
+                for (JsonNode node : devicesNode) {
+                    JsonNode deviceNode = node.path("device");
+                    if (!deviceNode.isMissingNode() && deviceNode.has("id")) {
+                        try {
+                            ids.add(Long.parseLong(deviceNode.get("id").asText()));
+                        } catch (NumberFormatException e) {
+                            // Ignoram ID-urile care nu pot fi transformate in numere
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // In caz ca JSON-ul este invalid, nu stricam algoritmul, returnam o lista goala
+        }
+        return ids;
+    }
 }

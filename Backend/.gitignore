@@ -31,5 +31,5 @@ build/
 Backend/src/main/resources/application-dev.properties
 ### VS Code ###
 .vscode/
-.env
+../.env
 application-dev.properties

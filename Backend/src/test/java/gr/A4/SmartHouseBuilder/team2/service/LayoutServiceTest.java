@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +52,7 @@ class LayoutServiceTest {
         ValidationResult result = new ValidationResult(true, "INFO", "ok");
 
         when(modelMapper.toEngineModel(dto)).thenReturn(engineModel);
-        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(List.of(result));
+        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(new ArrayList<>(List.of(result)));
 
         SetupBuildDTO returned = layoutService.validateLayout(layout);
 
@@ -67,12 +68,29 @@ class LayoutServiceTest {
     void validateLayout_acceptsEmptyResults() {
         when(modelMapper.toEngineModel(dto)).thenReturn(new SetupBuild());
         when(compatibilityEngine.runAllChecks(org.mockito.ArgumentMatchers.any()))
-                .thenReturn(List.of());
+                .thenReturn(new ArrayList<>());
 
         SetupBuildDTO returned = layoutService.validateLayout(layout);
 
         assertNotNull(returned.getErrors());
         assertTrue(returned.getErrors().isEmpty());
+    }
+
+    @Test
+    void validateLayout_combinesCompatibilityAndPhysicalErrors() {
+        SetupBuild engineModel = new SetupBuild();
+        ValidationResult compatResult = new ValidationResult(false, "ERROR", "Compatibility issue");
+        ValidationResult physicalResult = new ValidationResult(false, "ERROR", "Physical issue");
+
+        when(modelMapper.toEngineModel(dto)).thenReturn(engineModel);
+        when(compatibilityEngine.runAllChecks(engineModel)).thenReturn(new ArrayList<>(List.of(compatResult)));
+
+        SetupBuildDTO returned = layoutService.validateLayout(layout);
+
+        assertNotNull(returned.getErrors());
+        // Ar trebui să conțină rezultate de la ambele engine-uri
+        assertTrue(returned.getErrors().size() >= 1);
+        verify(compatibilityEngine).runAllChecks(engineModel);
     }
 
     @Test

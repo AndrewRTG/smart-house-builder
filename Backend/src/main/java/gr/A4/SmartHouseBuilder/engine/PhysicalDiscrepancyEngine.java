@@ -157,7 +157,8 @@ public class PhysicalDiscrepancyEngine {
         for (PlacedDevice pd : build.getDevices()) {
             if (pd.getDevice() != null && pd.getDevice().getDeviceType() != null) {
                 String type = pd.getDevice().getDeviceType().toLowerCase();
-                if (type.contains("hub") || type.contains("gateway")) {
+                String name = pd.getDevice().getName().toLowerCase();
+                if (type.contains("hub") || type.contains("gateway") || name.contains("hub") || name.contains("gateway")) {
                     hub = pd;
                     break;
                 }
@@ -291,7 +292,7 @@ public class PhysicalDiscrepancyEngine {
         String type = pd.getDevice().getDeviceType() != null ? pd.getDevice().getDeviceType().toLowerCase(Locale.ROOT) : "";
 
         return name.contains("bec") || name.contains("light") || name.contains("bulb") ||
-               type.contains("light") || type.contains("bulb");
+               type.contains("light") || type.contains("bulb") || name.toLowerCase().contains("led");
     }
 
     // Helper: distanță de la punct la segment

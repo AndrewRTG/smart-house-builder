@@ -21,8 +21,9 @@ public class HubRequirementRule implements IValidationRule {
 
             String proto = pd.getDevice().getProtocol();
             String type = pd.getDevice().getDeviceType();
+            String name = pd.getDevice().getName().toLowerCase();
 
-            if (type != null && type.toLowerCase().contains("hub")) {
+            if ((type != null && type.toLowerCase().contains("hub"))||name.contains("hub")) {
                 hasHub = true;
             }
 

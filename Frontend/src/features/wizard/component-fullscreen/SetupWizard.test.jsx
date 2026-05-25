@@ -1,292 +1,660 @@
+/**
+ * SetupWizard.test.jsx
+ *
+ * Vitest + React Testing Library
+ * Coverage target: 100% branch & statement
+ */
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
-import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// ─── Mocks ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. ENV STUB (must happen before any module import that reads it)
+// ─────────────────────────────────────────────────────────────────────────────
+vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:20025');
 
-// Mock pentru react-router-dom
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. ROUTER MOCK
+// ─────────────────────────────────────────────────────────────────────────────
 const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-    const actual = await vi.importActual('react-router-dom');
-    return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-    };
+vi.mock('react-router-dom', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, useNavigate: () => mockNavigate };
 });
 
-// Mock pentru authFetch
-import { authFetch } from '../../../utils/authFetch';
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. authFetch MOCK
+// ─────────────────────────────────────────────────────────────────────────────
 vi.mock('../../../utils/authFetch', () => ({
-    authFetch: vi.fn()
+    authFetch: vi.fn(),
 }));
+import { authFetch } from '../../../utils/authFetch';
 
-// Mock stabil pentru Zustand Store
-const mockStore = {
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. STABLE ZUSTAND STORE MOCK
+//    The store object is created ONCE outside describe() so its reference never
+//    changes across renders — prevents useEffect infinite loops.
+// ─────────────────────────────────────────────────────────────────────────────
+const storeState = {
     step: 1,
-    rooms: [],
+    darkMode: false,
     priceRange: [0, 1000],
     ecosystem: '',
+    techLevel: '',
     categories: [],
     protocols: [],
-    techLevel: 'Plug & Play',
-    darkMode: false,
-    toggleRoom: vi.fn(),
-    setPrice: vi.fn(),
-    setEcosystem: vi.fn(),
-    toggleCategory: vi.fn(),
-    toggleProtocol: vi.fn(),
-    setTechLevel: vi.fn(),
-    nextStep: vi.fn(),
-    prevStep: vi.fn(),
-    setStep: vi.fn(),
+    setStep: vi.fn((n) => { storeState.step = n; }),
+    nextStep: vi.fn(() => { storeState.step += 1; }),
+    prevStep: vi.fn(() => { storeState.step -= 1; }),
+    setPrice: vi.fn((v) => { storeState.priceRange = [0, v]; }),
+    setEcosystem: vi.fn((e) => { storeState.ecosystem = e; }),
+    setTechLevel: vi.fn((l) => { storeState.techLevel = l; }),
+    toggleCategory: vi.fn((c) => {
+        storeState.categories = storeState.categories.includes(c)
+            ? storeState.categories.filter(x => x !== c)
+            : [...storeState.categories, c];
+    }),
+    toggleProtocol: vi.fn((p) => {
+        storeState.protocols = storeState.protocols.includes(p)
+            ? storeState.protocols.filter(x => x !== p)
+            : [...storeState.protocols, p];
+    }),
+};
+
+const resetStore = () => {
+    storeState.step = 1;
+    storeState.darkMode = false;
+    storeState.priceRange = [0, 1000];
+    storeState.ecosystem = '';
+    storeState.techLevel = '';
+    storeState.categories = [];
+    storeState.protocols = [];
+    Object.values(storeState)
+        .filter(v => typeof v === 'function' && v.mockClear)
+        .forEach(fn => fn.mockClear());
 };
 
 vi.mock('../../../store/wizardStore.js', () => ({
-    default: vi.fn(() => mockStore),
+    default: () => storeState,
 }));
 
-vi.mock('./wizard.css', () => ({}));
-vi.stubGlobal('import', { meta: { env: { VITE_API_BASE_URL: 'http://localhost:20025' } } });
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. GLOBAL fetch MOCK
+// ─────────────────────────────────────────────────────────────────────────────
+const mockAlgoDevices = [
+    { id: 1, name: 'Smart Cam Pro', brand: 'Ring', bestPrice: 129.99, categoryId: 1, communicationProtocol: 'WiFi' },
+    { id: 2, name: 'Smart Plug X', brand: 'TP-Link', price: 19.99, categoryId: 7, communicationProtocol: 'Zigbee' },
+];
 
-import SetupWizard from './SetupWizard';
+const mockAIDevices = [
+    { id: 3, name: 'Robot Vac AI', brand: 'iRobot', bestPrice: 299.99, categoryId: 11, communicationProtocol: 'WiFi' },
+];
 
-// Helper pentru resetarea stării la fiecare test
-const resetStore = (overrides = {}) => {
-    mockStore.step = 1;
-    mockStore.rooms = [];
-    mockStore.priceRange = [0, 1000];
-    mockStore.ecosystem = '';
-    mockStore.categories = [];
-    mockStore.protocols = [];
-    mockStore.techLevel = 'Plug & Play';
-    mockStore.darkMode = false;
-    Object.assign(mockStore, overrides);
+const mockSetups = [
+    { id: 'setup-1', name: 'Living Room', status: 'Draft' },
+    { id: 'setup-2', name: 'Bedroom', status: 'Draft' },
+];
 
-    vi.clearAllMocks();
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. COMPONENT IMPORT  (after all mocks are in place)
+// ─────────────────────────────────────────────────────────────────────────────
+import SetupWizard from '../SetupWizard.jsx';
 
-    mockStore.toggleRoom = vi.fn();
-    mockStore.setPrice = vi.fn();
-    mockStore.setEcosystem = vi.fn();
-    mockStore.toggleCategory = vi.fn();
-    mockStore.toggleProtocol = vi.fn();
-    mockStore.setTechLevel = vi.fn();
-    mockStore.nextStep = vi.fn();
-    mockStore.prevStep = vi.fn();
-    mockStore.setStep = vi.fn();
-};
-
-beforeEach(() => {
-    resetStore();
-    global.fetch = vi.fn().mockResolvedValue({ json: async () => [] });
-    authFetch.mockResolvedValue({ ok: true, json: async () => ({ content: [] }) });
-});
-
-afterEach(() => {
-    vi.restoreAllMocks();
-    sessionStorage.clear();
-});
-
-// ─── Utility: navighează la SuggestedProductsView ────────────────────────────
-const goToSuggestions = async (fetchImpl) => {
-    if (fetchImpl) global.fetch = vi.fn().mockImplementation(fetchImpl);
-    resetStore({ step: 4, priceRange: [0, 1500], ecosystem: 'Alexa', techLevel: 'Intermediate', categories: ['Security'], protocols: ['Wi-Fi'] });
-
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. RENDER HELPER
+// ─────────────────────────────────────────────────────────────────────────────
+const renderWizard = (props = {}) =>
     render(
         <MemoryRouter>
-            <SetupWizard onFinish={vi.fn()} />
+            <SetupWizard {...props} />
         </MemoryRouter>
     );
-    fireEvent.click(screen.getByText(/Get Suggestions/i));
-    await screen.findByText(/Recommended Devices/i);
-};
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SetupWizard — Randare & Pasul 1 (Setups)
-// ═══════════════════════════════════════════════════════════════════════════
-describe('SetupWizard — Pasul 1 (Setups)', () => {
-    test('Apelează API-ul pentru setups la montare pe pasul 1', async () => {
-        authFetch.mockResolvedValueOnce({
+// ─────────────────────────────────────────────────────────────────────────────
+// TESTS
+// ─────────────────────────────────────────────────────────────────────────────
+describe('SetupWizard', () => {
+    beforeEach(() => {
+        resetStore();
+        mockNavigate.mockClear();
+        vi.clearAllMocks();
+
+        // Default: authFetch returns setups list
+        authFetch.mockResolvedValue({
             ok: true,
-            json: async () => ({ content: [{ id: 99, name: 'Living Smart', status: 'Draft' }] })
+            json: async () => ({ content: mockSetups }),
         });
 
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
-
-        expect(authFetch).toHaveBeenCalledWith('/api/v1/setups/user/drafts?page=0&size=20');
-        expect(await screen.findByText('Living Smart')).toBeInTheDocument();
+        // Default: global fetch returns algo devices
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            json: async () => mockAlgoDevices,
+        }));
     });
 
-    test('Arată un mesaj gol dacă nu există setups', async () => {
-        authFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ content: [] }) });
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
-        expect(await screen.findByText(/You don't have any setups yet/i)).toBeInTheDocument();
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
-    test('Tratează eroarea de la fetchSetups fără să crape', async () => {
-        const spyConsole = vi.spyOn(console, 'error').mockImplementation(() => {});
-        authFetch.mockRejectedValueOnce(new Error('Network error'));
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
-        await waitFor(() => expect(spyConsole).toHaveBeenCalledWith('Eroare la încărcarea Setups în wizard:', expect.any(Error)));
-    });
-
-    test('Permite selecția unui setup', async () => {
-        authFetch.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ content: [{ id: 1, name: 'Setup A' }] })
+    // ── Step 1: Setup selection ───────────────────────────────────────────
+    describe('Step 1 — Select Your Project', () => {
+        it('renders heading and loads setups from API', async () => {
+            renderWizard();
+            expect(screen.getByText('Select Your Project')).toBeInTheDocument();
+            await screen.findByText('Living Room');
+            expect(screen.getByText('Bedroom')).toBeInTheDocument();
         });
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
 
-        const setupCard = await screen.findByText('Setup A');
-        fireEvent.click(setupCard.closest('div[style*="cursor: pointer"]'));
-
-        // Căutăm bifa de selecție
-        expect(await screen.findByText('✓')).toBeInTheDocument();
-    });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SetupWizard — Pașii 2, 3 și 4
-// ═══════════════════════════════════════════════════════════════════════════
-describe('SetupWizard — Restul Pașilor', () => {
-    test('Pasul 2: Modificarea slider-ului apelează setPrice', () => {
-        resetStore({ step: 2 });
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
-        fireEvent.change(screen.getByRole('slider'), { target: { value: '2000' } });
-        expect(mockStore.setPrice).toHaveBeenCalledWith(2000);
-    });
-
-    test('Pasul 3: Selecția unui ecosistem și a categoriilor', () => {
-        resetStore({ step: 3 });
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
-        fireEvent.click(screen.getByText('Google Home'));
-        expect(mockStore.setEcosystem).toHaveBeenCalledWith('Google Home');
-
-        fireEvent.click(screen.getByText('Security').closest('.option-card'));
-        expect(mockStore.toggleCategory).toHaveBeenCalledWith('Security');
-    });
-
-    test('Pasul 4: Selecția nivelului tehnic și protocoalelor', () => {
-        resetStore({ step: 4 });
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
-        fireEvent.click(screen.getByText('Intermediate').closest('.option-card'));
-        expect(mockStore.setTechLevel).toHaveBeenCalledWith('Intermediate');
-
-        fireEvent.click(screen.getByText('Zigbee'));
-        expect(mockStore.toggleProtocol).toHaveBeenCalledWith('Zigbee');
-    });
-
-    test('Navigarea între pași funcționează', () => {
-        resetStore({ step: 2 });
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
-        fireEvent.click(screen.getByText(/Previous/i));
-        expect(mockStore.prevStep).toHaveBeenCalled();
-
-        fireEvent.click(screen.getByText(/Next/i));
-        expect(mockStore.nextStep).toHaveBeenCalled();
-    });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SuggestedProductsView (Integrarea AI & Algoritm)
-// ═══════════════════════════════════════════════════════════════════════════
-describe('SuggestedProductsView — Algoritm & AI Flow', () => {
-    const algoProduct = { id: 10, name: 'Algo Device', price: 100, categoryId: 1 };
-    const aiProduct = { id: 20, name: 'AI Device', price: 250, categoryId: 2 };
-
-    const mockDualFetch = (url) => {
-        if (url.includes('algorithmSuggestions')) return Promise.resolve({ json: async () => [algoProduct] });
-        if (url.includes('suggestions')) return Promise.resolve({ json: async () => [aiProduct] });
-        return Promise.resolve({ json: async () => [] });
-    };
-
-    test('La montare, se încarcă DOAR algoritmul', async () => {
-        await goToSuggestions(mockDualFetch);
-
-        expect(await screen.findByText('Algo Device')).toBeInTheDocument();
-        // Panoul de AI încă nu trebuie să existe pe ecran
-        expect(screen.queryByText('AI Recommendations')).not.toBeInTheDocument();
-    });
-
-    test('Eroare la algoritm nu blochează pagina (prinde catch-ul)', async () => {
-        const spyConsole = vi.spyOn(console, 'error').mockImplementation(() => {});
-        await goToSuggestions((url) => Promise.reject(new Error('Backend picat')));
-
-        expect(await screen.findByText(/Algorithm found no matches/i)).toBeInTheDocument();
-        expect(spyConsole).toHaveBeenCalled();
-    });
-
-    test('Trimiterea unui prompt cere sugestii AI și afișează panoul', async () => {
-        await goToSuggestions(mockDualFetch);
-
-        const aiInput = screen.getByPlaceholderText(/Not finding what you need/i) || screen.getByRole('textbox');
-        fireEvent.change(aiInput, { target: { value: 'Un bec verde' } });
-
-        const askAiBtn = screen.getByText(/Ask AI/i);
-        fireEvent.click(askAiBtn);
-
-        // Așteptăm să apară panoul de AI și produsul AI
-        expect(await screen.findByText('AI Recommendations')).toBeInTheDocument();
-        expect(await screen.findByText('AI Device')).toBeInTheDocument();
-
-        // Verificăm dacă fetch-ul a conținut textul nostru
-        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('Un%20bec%20verde'));
-    });
-
-    test('Tasta Enter în inputul AI trimite cererea', async () => {
-        await goToSuggestions(mockDualFetch);
-        const aiInput = screen.getByRole('textbox');
-        fireEvent.change(aiInput, { target: { value: 'Senzor usa' } });
-
-        fireEvent.keyDown(aiInput, { key: 'Enter', code: 'Enter', shiftKey: false });
-
-        expect(await screen.findByText('AI Recommendations')).toBeInTheDocument();
-    });
-
-    test('Selectarea produselor actualizează suma și permite pornirea proiectului', async () => {
-        const onFinishMock = vi.fn();
-        global.fetch = vi.fn().mockImplementation(mockDualFetch);
-        resetStore({ step: 4 });
-
-        render(<MemoryRouter><SetupWizard onFinish={onFinishMock} /></MemoryRouter>);
-        fireEvent.click(screen.getByText(/Get Suggestions/i));
-
-        // Selectăm device-ul de la algoritm
-        const card = await screen.findByText('Algo Device');
-        fireEvent.click(card.closest('.option-card'));
-
-        // Verificăm totalul
-        expect(await screen.findByText('100.00€')).toBeInTheDocument();
-
-        // Finalizăm
-        fireEvent.click(screen.getByText(/Start Project/i));
-
-        // Verificăm că a adăugat în sessionStorage și a apelat onFinish
-        expect(sessionStorage.getItem('wizard_selected_devices')).toBe(JSON.stringify([10]));
-        expect(mockNavigate).toHaveBeenCalledWith('/builder');
-        expect(onFinishMock).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ id: "10" })]));
-    });
-
-    test('Dacă utilizatorul are selectedSetup, Start Project navighează către ID-ul lui', async () => {
-        // Simulăm selecția pe pasul 1
-        authFetch.mockResolvedValueOnce({
-            ok: true, json: async () => ({ content: [{ id: 777, name: 'Casa Noua' }] })
+        it('shows loading state while fetching', () => {
+            // Never resolves during this check
+            authFetch.mockReturnValue(new Promise(() => {}));
+            renderWizard();
+            expect(screen.getByText('Loading your projects...')).toBeInTheDocument();
         });
-        resetStore({ step: 1 });
-        render(<MemoryRouter><SetupWizard onFinish={vi.fn()} /></MemoryRouter>);
 
-        // Selectăm
-        fireEvent.click((await screen.findByText('Casa Noua')).closest('div[style*="cursor: pointer"]'));
+        it('shows empty state when no setups returned', async () => {
+            authFetch.mockResolvedValue({ ok: true, json: async () => [] });
+            renderWizard();
+            await screen.findByText("You don't have any setups yet.");
+        });
 
-        // Sărim direct la pasul 4 și forțăm rezultatele
-        resetStore({ step: 4 });
-        fireEvent.click(screen.getByText(/Get Suggestions/i));
+        it('handles plain array response (non-paginated)', async () => {
+            authFetch.mockResolvedValue({ ok: true, json: async () => mockSetups });
+            renderWizard();
+            await screen.findByText('Living Room');
+        });
 
-        // Click Start Project
-        fireEvent.click(await screen.findByText(/Start Project/i));
+        it('handles authFetch network error gracefully', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            authFetch.mockRejectedValue(new Error('Network error'));
+            renderWizard();
+            // Wizard should still render without crashing
+            await waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+            expect(screen.getByText('Select Your Project')).toBeInTheDocument();
+            consoleSpy.mockRestore();
+        });
 
-        // Trebuie să ne ducă direct în builder pe id-ul ales
-        expect(mockNavigate).toHaveBeenCalledWith('/builder/777');
+        it('handles authFetch returning ok=false gracefully', async () => {
+            authFetch.mockResolvedValue({ ok: false });
+            renderWizard();
+            // Should not crash; empty list state after fetch
+            await waitFor(() => {
+                expect(screen.queryByText('Loading your projects...')).not.toBeInTheDocument();
+            });
+        });
+
+        it('selects a setup when clicked and shows checkmark badge', async () => {
+            renderWizard();
+            const card = await screen.findByText('Living Room');
+            fireEvent.click(card.closest('div[style]'));
+            // Checkmark badge appears
+            await waitFor(() => {
+                expect(screen.getByText('✓')).toBeInTheDocument();
+            });
+        });
+
+        it('does not allow navigation past step 1 until a setup is selected', async () => {
+            renderWizard();
+            await screen.findByText('Living Room');
+            const nextBtn = screen.getByText('Next 〉');
+            expect(nextBtn).toBeDisabled();
+        });
+
+        it('enables Next button after selecting a setup', async () => {
+            renderWizard();
+            const card = await screen.findByText('Living Room');
+            fireEvent.click(card.closest('div[style]'));
+            await waitFor(() => {
+                expect(screen.getByText('Next 〉')).not.toBeDisabled();
+            });
+        });
+
+        it('does not re-fetch setups when step is not 1', () => {
+            storeState.step = 2;
+            renderWizard();
+            expect(authFetch).not.toHaveBeenCalled();
+        });
+    });
+
+    // ── Progress tracker ──────────────────────────────────────────────────
+    describe('Progress Tracker', () => {
+        it('renders all 4 step circles', () => {
+            renderWizard();
+            ['1', '2', '3', '4'].forEach(n => {
+                expect(screen.getByText(n)).toBeInTheDocument();
+            });
+        });
+
+        it('marks completed steps with ✓', async () => {
+            storeState.step = 3;
+            renderWizard();
+            // Steps 1 and 2 are completed
+            const checkmarks = screen.getAllByText('✓');
+            expect(checkmarks.length).toBeGreaterThanOrEqual(2);
+        });
+
+        it('calls setStep when clicking a step circle', async () => {
+            renderWizard();
+            fireEvent.click(screen.getByText('3'));
+            expect(storeState.setStep).toHaveBeenCalledWith(3);
+        });
+    });
+
+    // ── Step 2: Budget ────────────────────────────────────────────────────
+    describe('Step 2 — Budget', () => {
+        beforeEach(() => { storeState.step = 2; });
+
+        it('renders budget heading and price display', () => {
+            renderWizard();
+            expect(screen.getByText('What is your total budget?')).toBeInTheDocument();
+            expect(screen.getByText('1000€')).toBeInTheDocument();
+        });
+
+        it('calls setPrice when preset pill is clicked', () => {
+            renderWizard();
+            fireEvent.click(screen.getByText('500€'));
+            expect(storeState.setPrice).toHaveBeenCalledWith(500);
+        });
+
+        it('calls setPrice when range slider is changed', () => {
+            renderWizard();
+            const slider = screen.getByRole('slider');
+            fireEvent.change(slider, { target: { value: '2000' } });
+            expect(storeState.setPrice).toHaveBeenCalledWith(2000);
+        });
+
+        it('applies active class to currently selected preset', () => {
+            storeState.priceRange = [0, 1000];
+            renderWizard();
+            const pill1000 = screen.getByText('1000€');
+            expect(pill1000.className).toContain('active');
+        });
+    });
+
+    // ── Step 3: Priorities ────────────────────────────────────────────────
+    describe('Step 3 — Priorities', () => {
+        beforeEach(() => { storeState.step = 3; });
+
+        it('renders ecosystem pills', () => {
+            renderWizard();
+            expect(screen.getByText('Apple Home')).toBeInTheDocument();
+            expect(screen.getByText('Alexa')).toBeInTheDocument();
+            expect(screen.getByText('Google Home')).toBeInTheDocument();
+        });
+
+        it('calls setEcosystem when a pill is clicked', () => {
+            renderWizard();
+            fireEvent.click(screen.getByText('Alexa'));
+            expect(storeState.setEcosystem).toHaveBeenCalledWith('Alexa');
+        });
+
+        it('renders all 4 category option cards', () => {
+            renderWizard();
+            ['Security', 'Comfort', 'Energy', 'Entertainment'].forEach(cat => {
+                expect(screen.getByText(cat)).toBeInTheDocument();
+            });
+        });
+
+        it('calls toggleCategory when a category card is clicked', () => {
+            renderWizard();
+            fireEvent.click(screen.getByText('Security').closest('.option-card'));
+            expect(storeState.toggleCategory).toHaveBeenCalledWith('Security');
+        });
+
+        it('shows checkmark for selected categories', () => {
+            storeState.categories = ['Comfort'];
+            renderWizard();
+            // The ✔️ emoji should appear next to Comfort
+            expect(screen.getByText('✔️')).toBeInTheDocument();
+        });
+
+        it('applies active class to selected ecosystem pill', () => {
+            storeState.ecosystem = 'Alexa';
+            renderWizard();
+            expect(screen.getByText('Alexa').className).toContain('active');
+        });
+    });
+
+    // ── Step 4: Technical Level ───────────────────────────────────────────
+    describe('Step 4 — Technical Level', () => {
+        beforeEach(() => { storeState.step = 4; });
+
+        it('renders protocol pills and level cards', () => {
+            renderWizard();
+            expect(screen.getByText('Wi-Fi')).toBeInTheDocument();
+            expect(screen.getByText('Plug & Play')).toBeInTheDocument();
+            expect(screen.getByText('Intermediate')).toBeInTheDocument();
+            expect(screen.getByText('DIY / Custom')).toBeInTheDocument();
+        });
+
+        it('calls toggleProtocol on pill click', () => {
+            renderWizard();
+            fireEvent.click(screen.getByText('Zigbee'));
+            expect(storeState.toggleProtocol).toHaveBeenCalledWith('Zigbee');
+        });
+
+        it('calls setTechLevel when a level card is clicked', () => {
+            renderWizard();
+            fireEvent.click(screen.getByText('Intermediate').closest('.option-card'));
+            expect(storeState.setTechLevel).toHaveBeenCalledWith('Intermediate');
+        });
+
+        it('shows checkmark for selected tech level', () => {
+            storeState.techLevel = 'DIY / Custom';
+            renderWizard();
+            expect(screen.getByText('✔️')).toBeInTheDocument();
+        });
+
+        it('applies active class to selected protocol pill', () => {
+            storeState.protocols = ['Matter'];
+            renderWizard();
+            expect(screen.getByText('Matter').className).toContain('active');
+        });
+
+        it('changes button label to "Get Suggestions 〉" on last step', () => {
+            renderWizard();
+            expect(screen.getByText('Get Suggestions 〉')).toBeInTheDocument();
+        });
+    });
+
+    // ── Navigation ────────────────────────────────────────────────────────
+    describe('Navigation buttons', () => {
+        it('Previous button is disabled on step 1', () => {
+            renderWizard();
+            expect(screen.getByText('〈 Previous')).toBeDisabled();
+        });
+
+        it('calls prevStep when Previous is clicked on step > 1', () => {
+            storeState.step = 2;
+            renderWizard();
+            fireEvent.click(screen.getByText('〈 Previous'));
+            expect(storeState.prevStep).toHaveBeenCalled();
+        });
+
+        it('calls nextStep when Next is clicked on steps 2-3', () => {
+            storeState.step = 2;
+            renderWizard();
+            fireEvent.click(screen.getByText('Next 〉'));
+            expect(storeState.nextStep).toHaveBeenCalled();
+        });
+    });
+
+    // ── Results / SuggestedProductsView ──────────────────────────────────
+    describe('SuggestedProductsView', () => {
+        const goToResults = async () => {
+            storeState.step = 4;
+            // Select a setup so we have context
+            authFetch.mockResolvedValue({ ok: true, json: async () => ({ content: mockSetups }) });
+            renderWizard();
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+        };
+
+        it('renders recommended devices heading', async () => {
+            await goToResults();
+            await screen.findByText('Recommended Devices');
+        });
+
+        it('fetches and displays algorithm products', async () => {
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+            expect(screen.getByText('Smart Plug X')).toBeInTheDocument();
+        });
+
+        it('handles fetch error for algorithm products', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('API down')));
+
+            storeState.step = 4;
+            renderWizard();
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            await waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+            await screen.findByText('Algorithm found no matches.');
+            consoleSpy.mockRestore();
+        });
+
+        it('renders the AI prompt area', async () => {
+            await goToResults();
+            await screen.findByText(/Not finding what you need/);
+        });
+
+        it('AI panel is NOT visible before asking', async () => {
+            await goToResults();
+            await screen.findByText('Recommended Devices');
+            expect(screen.queryByText('AI Recommendations')).not.toBeInTheDocument();
+        });
+
+        it('shows AI panel after submitting a prompt', async () => {
+            // Second fetch call returns AI devices
+            let callCount = 0;
+            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+                callCount++;
+                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
+                return Promise.resolve({ json: async () => mockAIDevices });
+            }));
+
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+
+            const input = screen.getByPlaceholderText(/robot vacuum/i);
+            fireEvent.change(input, { target: { value: 'robot vacuum under 300' } });
+
+            const askBtn = screen.getByText('Ask AI ✦');
+            fireEvent.click(askBtn);
+
+            await screen.findByText('AI Recommendations');
+            await screen.findByText('Robot Vac AI');
+        });
+
+        it('handles Enter key in AI prompt input', async () => {
+            let callCount = 0;
+            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+                callCount++;
+                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
+                return Promise.resolve({ json: async () => mockAIDevices });
+            }));
+
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+
+            const input = screen.getByPlaceholderText(/robot vacuum/i);
+            fireEvent.change(input, { target: { value: 'smart speaker' } });
+            fireEvent.keyDown(input, { key: 'Enter', shiftKey: false });
+
+            await screen.findByText('AI Recommendations');
+        });
+
+        it('Shift+Enter does NOT submit the AI prompt', async () => {
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+
+            const input = screen.getByPlaceholderText(/robot vacuum/i);
+            fireEvent.change(input, { target: { value: 'something' } });
+            fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
+
+            // AI panel should not appear
+            await waitFor(() => {
+                expect(screen.queryByText('AI Recommendations')).not.toBeInTheDocument();
+            });
+        });
+
+        it('does not submit AI prompt when input is empty', async () => {
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+
+            const askBtn = screen.getByText('Ask AI ✦');
+            expect(askBtn).toBeDisabled();
+        });
+
+        it('handles AI fetch error and shows empty message', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            let callCount = 0;
+            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+                callCount++;
+                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
+                return Promise.reject(new Error('AI service down'));
+            }));
+
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+
+            const input = screen.getByPlaceholderText(/robot vacuum/i);
+            fireEvent.change(input, { target: { value: 'anything' } });
+            fireEvent.click(screen.getByText('Ask AI ✦'));
+
+            await screen.findByText('AI found no matches. Try rephrasing your request!');
+            consoleSpy.mockRestore();
+        });
+
+        it('selects and deselects a product card', async () => {
+            await goToResults();
+            const card = await screen.findByText('Smart Cam Pro');
+            const cardEl = card.closest('.option-card');
+
+            fireEvent.click(cardEl);
+            await waitFor(() => expect(cardEl.classList.contains('selected')).toBe(true));
+
+            fireEvent.click(cardEl);
+            await waitFor(() => expect(cardEl.classList.contains('selected')).toBe(false));
+        });
+
+        it('updates total price when products are selected', async () => {
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+
+            // Total starts at 0
+            expect(screen.getByText(/0\.00€/)).toBeInTheDocument();
+
+            fireEvent.click(screen.getByText('Smart Cam Pro').closest('.option-card'));
+            await screen.findByText(/129\.99€/);
+        });
+
+        it('navigates to /builder/:id on "Start Project" with a selected setup', async () => {
+            // Step 1: select a setup first
+            authFetch.mockResolvedValue({ ok: true, json: async () => ({ content: mockSetups }) });
+            storeState.step = 1;
+            renderWizard();
+
+            const card = await screen.findByText('Living Room');
+            fireEvent.click(card.closest('div[style]'));
+
+            // Navigate to results screen by directly triggering showResults
+            // (simulate clicking through steps to Get Suggestions on step 4)
+            storeState.step = 4;
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            await screen.findByText('Recommended Devices');
+            fireEvent.click(screen.getByText('Start Project 〉'));
+
+            await waitFor(() => {
+                expect(mockNavigate).toHaveBeenCalledWith('/builder/setup-1');
+            });
+        });
+
+        it('navigates to /builder without id when no setup is selected', async () => {
+            storeState.step = 4;
+            authFetch.mockResolvedValue({ ok: true, json: async () => [] });
+            renderWizard();
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            await screen.findByText('Recommended Devices');
+            fireEvent.click(screen.getByText('Start Project 〉'));
+
+            await waitFor(() => {
+                expect(mockNavigate).toHaveBeenCalledWith('/builder');
+            });
+        });
+
+        it('calls onFinish prop when Start Project is clicked', async () => {
+            const onFinish = vi.fn();
+            storeState.step = 4;
+            renderWizard({ onFinish });
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            await screen.findByText('Recommended Devices');
+            fireEvent.click(screen.getByText('Start Project 〉'));
+
+            await waitFor(() => expect(onFinish).toHaveBeenCalled());
+        });
+
+        it('navigating Back from results returns to wizard', async () => {
+            await goToResults();
+            await screen.findByText('Recommended Devices');
+
+            fireEvent.click(screen.getByText('Back'));
+            await waitFor(() => {
+                expect(screen.queryByText('Recommended Devices')).not.toBeInTheDocument();
+            });
+        });
+
+        it('shows "Searching..." loading state in algorithm panel', async () => {
+            // Keep fetch hanging
+            vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
+
+            storeState.step = 4;
+            renderWizard();
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            await screen.findByText('Searching...');
+        });
+
+        it('shows "Searching…" button label while AI is loading', async () => {
+            let resolveAI;
+            let callCount = 0;
+            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+                callCount++;
+                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
+                return new Promise(r => { resolveAI = r; });
+            }));
+
+            await goToResults();
+            await screen.findByText('Smart Cam Pro');
+
+            const input = screen.getByPlaceholderText(/robot vacuum/i);
+            fireEvent.change(input, { target: { value: 'speaker' } });
+            fireEvent.click(screen.getByText('Ask AI ✦'));
+
+            await screen.findByText('Searching…');
+
+            // Resolve and verify it disappears
+            resolveAI({ json: async () => mockAIDevices });
+            await screen.findByText('Robot Vac AI');
+        });
+
+        it('renders dark-mode class when darkMode is true', async () => {
+            storeState.darkMode = true;
+            storeState.step = 4;
+            renderWizard();
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            await screen.findByText('Recommended Devices');
+            expect(document.querySelector('.dark-mode')).toBeInTheDocument();
+        });
+
+        it('displays price as Unavailable when price is 0', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+                json: async () => [{ id: 5, name: 'Free Device', brand: 'ACME', price: 0, categoryId: 8, communicationProtocol: 'WiFi' }],
+            }));
+
+            storeState.step = 4;
+            renderWizard();
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            await screen.findByText('Unavailable');
+        });
+
+        it('getCategoryIcon returns 📦 for unknown categoryId', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+                json: async () => [{ id: 99, name: 'Mystery Device', brand: 'X', bestPrice: 50, categoryId: 99, communicationProtocol: 'BLE' }],
+            }));
+
+            storeState.step = 4;
+            renderWizard();
+            fireEvent.click(screen.getByText('Get Suggestions 〉'));
+
+            // 📦 should appear as the icon
+            await screen.findByText('📦');
+        });
     });
 });

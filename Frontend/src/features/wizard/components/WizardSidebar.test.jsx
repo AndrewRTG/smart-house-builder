@@ -84,7 +84,7 @@ vi.mock('../../../store/useFilterStore.js', () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. COMPONENT IMPORT (after mock)
 // ─────────────────────────────────────────────────────────────────────────────
-import Sidebar from '../WizardSidebar.jsx';
+import Sidebar from './WizardSidebar.jsx';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -108,7 +108,7 @@ describe('WizardSidebar', () => {
   describe('Initial render', () => {
     it('renders the Filters heading', () => {
       renderSidebar();
-      expect(screen.getByText('Filters')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Filters' })).toBeInTheDocument();
     });
 
     it('renders all ecosystem pills', () => {
@@ -288,7 +288,6 @@ describe('WizardSidebar', () => {
   // ── Brand search & pills ──────────────────────────────────────────────
   describe('Brand search input', () => {
     it('shows suggestions when input matches recommended brands', async () => {
-      filterState.brandInput = 'Sam';
       renderSidebar();
 
       const input = screen.getByPlaceholderText('Search brands...');
@@ -307,9 +306,9 @@ describe('WizardSidebar', () => {
     it('does NOT show suggestions for already-added brands', () => {
       filterState.brandInput = 'Sam';
       filterState.brands = ['Samsung'];
-      renderSidebar();
+      const { container } = renderSidebar();
       // Samsung is in brands → should not appear as suggestion
-      expect(screen.queryByText('Samsung')).not.toBeInTheDocument();
+      expect(container.querySelector('.brand-suggestions')).not.toBeInTheDocument();
     });
 
     it('does not show suggestions when brandInput is empty', () => {

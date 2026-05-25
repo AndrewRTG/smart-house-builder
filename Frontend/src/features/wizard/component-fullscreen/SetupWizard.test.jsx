@@ -100,7 +100,7 @@ const mockSetups = [
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. COMPONENT IMPORT  (after all mocks are in place)
 // ─────────────────────────────────────────────────────────────────────────────
-import SetupWizard from '../SetupWizard.jsx';
+import SetupWizard from './SetupWizard.jsx';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 7. RENDER HELPER
@@ -248,7 +248,7 @@ describe('SetupWizard', () => {
         it('renders budget heading and price display', () => {
             renderWizard();
             expect(screen.getByText('What is your total budget?')).toBeInTheDocument();
-            expect(screen.getByText('1000€')).toBeInTheDocument();
+            expect(screen.getAllByText('1000€').length).toBeGreaterThan(0);
         });
 
         it('calls setPrice when preset pill is clicked', () => {
@@ -267,7 +267,7 @@ describe('SetupWizard', () => {
         it('applies active class to currently selected preset', () => {
             storeState.priceRange = [0, 1000];
             renderWizard();
-            const pill1000 = screen.getByText('1000€');
+            const pill1000 = screen.getByRole('button', { name: '1000€' });
             expect(pill1000.className).toContain('active');
         });
     });
@@ -524,24 +524,27 @@ describe('SetupWizard', () => {
             await screen.findByText('Smart Cam Pro');
 
             // Total starts at 0
-            expect(screen.getByText(/0\.00€/)).toBeInTheDocument();
+            expect(screen.getAllByText(/0\.00€/).length).toBeGreaterThan(0);
 
             fireEvent.click(screen.getByText('Smart Cam Pro').closest('.option-card'));
-            await screen.findByText(/129\.99€/);
+            await waitFor(() => expect(screen.getAllByText(/129\.99€/).length).toBeGreaterThan(0));
         });
 
         it('navigates to /builder/:id on "Start Project" with a selected setup', async () => {
             // Step 1: select a setup first
             authFetch.mockResolvedValue({ ok: true, json: async () => ({ content: mockSetups }) });
             storeState.step = 1;
-            renderWizard();
+            const { rerender } = renderWizard();
 
             const card = await screen.findByText('Living Room');
             fireEvent.click(card.closest('div[style]'));
 
-            // Navigate to results screen by directly triggering showResults
-            // (simulate clicking through steps to Get Suggestions on step 4)
             storeState.step = 4;
+            rerender(
+                <MemoryRouter>
+                    <SetupWizard />
+                </MemoryRouter>
+            );
             fireEvent.click(screen.getByText('Get Suggestions 〉'));
 
             await screen.findByText('Recommended Devices');

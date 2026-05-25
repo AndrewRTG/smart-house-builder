@@ -4,6 +4,7 @@ import gr.A4.SmartHouseBuilder.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class PhysicalDiscrepancyEngine {
 
@@ -123,10 +124,8 @@ public class PhysicalDiscrepancyEngine {
             // Numără becurile din această cameră
             List<PlacedDevice> lightsInRoom = new ArrayList<>();
             for (PlacedDevice pd : build.getDevices()) {
-                if (pd.getDevice() != null && pd.getDevice().getDeviceType() != null) {
-                    String type = pd.getDevice().getDeviceType().toLowerCase();
-                    if ((type.contains("light") || type.contains("bulb")) &&
-                        isPointInRoom(pd.getX(), pd.getY(), room)) {
+                if (pd.getDevice() != null) {
+                    if (isLightDevice(pd) && isPointInRoom(pd.getX(), pd.getY(), room)) {
                         lightsInRoom.add(pd);
                     }
                 }
@@ -175,7 +174,7 @@ public class PhysicalDiscrepancyEngine {
                 continue;
             }
 
-            double distance = distance(hub.getX(), hub.getY(), pd.getX(), pd.getY());
+            double distance = distanceInMeters(build, hub.getX(), hub.getY(), pd.getX(), pd.getY());
             if (distance > HUB_RANGE) {
                 results.add(new ValidationResult(
                     false,
@@ -203,7 +202,7 @@ public class PhysicalDiscrepancyEngine {
                 PlacedDevice dev2 = devices.get(j);
                 if (dev2.getX() == null || dev2.getY() == null) continue;
 
-                double dist = distance(dev1.getX(), dev1.getY(), dev2.getX(), dev2.getY());
+                double dist = distanceInMeters(build, dev1.getX(), dev1.getY(), dev2.getX(), dev2.getY());
 
                 if (dist < MIN_DISTANCE) {
                     boolean canOverlap = canDevicesOverlap(dev1, dev2);
@@ -259,6 +258,40 @@ public class PhysicalDiscrepancyEngine {
     // Helper: distanță între 2 puncte
     private double distance(double x1, double y1, double x2, double y2) {
         return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    private double distanceInMeters(SetupBuild build, double x1, double y1, double x2, double y2) {
+        return distance(x1, y1, x2, y2) * coordinateUnitToMeters(build);
+    }
+
+    private double coordinateUnitToMeters(SetupBuild build) {
+        if (build == null || build.getScale() == null) {
+            return 1.0;
+        }
+
+        String scale = build.getScale().trim().toLowerCase(Locale.ROOT);
+        if (scale.equals("cm") || scale.equals("centimeter") || scale.equals("centimeters")) {
+            return 0.01;
+        }
+        if (scale.equals("mm") || scale.equals("millimeter") || scale.equals("millimeters")) {
+            return 0.001;
+        }
+        if (scale.equals("grid") || scale.equals("point") || scale.equals("points")) {
+            return 0.5;
+        }
+        return 1.0;
+    }
+
+    private boolean isLightDevice(PlacedDevice pd) {
+        if (pd == null || pd.getDevice() == null) {
+            return false;
+        }
+
+        String name = pd.getDevice().getName() != null ? pd.getDevice().getName().toLowerCase(Locale.ROOT) : "";
+        String type = pd.getDevice().getDeviceType() != null ? pd.getDevice().getDeviceType().toLowerCase(Locale.ROOT) : "";
+
+        return name.contains("bec") || name.contains("light") || name.contains("bulb") ||
+               type.contains("light") || type.contains("bulb");
     }
 
     // Helper: distanță de la punct la segment

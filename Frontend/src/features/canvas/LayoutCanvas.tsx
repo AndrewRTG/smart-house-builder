@@ -34,6 +34,7 @@ interface Room {
 interface HistorySnapshot { lines: any[]; icons: any[]; furniture: any[]; }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
+const GRID_POINT_CM = 50;
 
 const ICON_MAP: Record<string, React.FC<{ color: string }>> = {
     bec: BecIcon, senzor: SenzorIcon, lock: LockIcon, router: RouterIcon,
@@ -80,24 +81,23 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const validationRequestIdRef = useRef(0);
     const exportData = useMemo<{ devices: Device[]; rooms: Room[]; }>(() => {
-        const scale = layout.dotSpacing || 1;
         const walls = lines.filter(l => l.type === 'wall').map(l => ({
-            x1: Math.trunc(l.start.col * scale), y1: Math.trunc(l.start.row * scale),
-            x2: Math.trunc(l.end.col * scale), y2: Math.trunc(l.end.row * scale)
+            x1: Math.trunc(l.start.col * GRID_POINT_CM), y1: Math.trunc(l.start.row * GRID_POINT_CM),
+            x2: Math.trunc(l.end.col * GRID_POINT_CM), y2: Math.trunc(l.end.row * GRID_POINT_CM)
         }));
         const windows = lines.filter(l => l.type === 'window').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale),
-            width: Math.trunc(Math.abs(l.end.col - l.start.col) * scale) || Math.trunc(scale),
-            height: Math.trunc(Math.abs(l.end.row - l.start.row) * scale) || Math.trunc(scale),
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * GRID_POINT_CM),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * GRID_POINT_CM),
+            width: Math.trunc(Math.abs(l.end.col - l.start.col) * GRID_POINT_CM) || GRID_POINT_CM,
+            height: Math.trunc(Math.abs(l.end.row - l.start.row) * GRID_POINT_CM) || GRID_POINT_CM,
             distanceFromFloor: 0
         }));
         const doors = lines.filter(l => l.type === 'door').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale)
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * GRID_POINT_CM),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * GRID_POINT_CM)
         }));
         const plugs = placedIcons.filter(i => i.type === 'priza').map(i => ({
-            x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)
+            x: Math.trunc(i.col * GRID_POINT_CM), y: Math.trunc(i.row * GRID_POINT_CM)
         }));
         const roomSquareMeters = (() => {
             if (!walls.length) return 10;
@@ -107,7 +107,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         })();
         const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
         const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
-            coordinates: {x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)},
+            coordinates: {x: Math.trunc(i.col * GRID_POINT_CM), y: Math.trunc(i.row * GRID_POINT_CM)},
             rotationAngle: 0,
             device: {
                 id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
@@ -121,7 +121,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             }
         }));
         return {devices, rooms};
-    }, [placedIcons, lines, layout.dotSpacing]);
+    }, [placedIcons, lines]);
     const exportDataRef = useRef(exportData);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [validationInfos, setValidationInfos] = useState<string[]>([]);

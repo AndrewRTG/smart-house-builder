@@ -18,6 +18,8 @@ public interface SetupRepository extends JpaRepository<Setup, Long> {
 
     Optional<Setup> findByIdAndUserId(Long id, Long userId);
 
+    List<Setup> findByPublicSetupTrueAndStatus(SetupStatus status);
+
     List<Setup> findByUserIdAndStatus(Long userId, SetupStatus status);
 
     Page<Setup> findByUserIdAndStatus(Long userId, SetupStatus status, Pageable pageable);

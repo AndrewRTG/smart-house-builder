@@ -11,11 +11,16 @@ import {
   ShieldCheck,
   Sparkles,
   Tag,
+  ZoomIn,
+  ZoomOut,
+  X,
+  Maximize2,
 } from 'lucide-react';
 import CommentsSection from '../components/CommentsSection';
 import { useError } from '../context/ErrorContext';
 import { getCurrentUser } from '../utils/currentUser';
 import { getStoredLike, setStoredLike } from '../utils/likedItemsStorage';
+import { formatDate as fmtDate, formatRelativeDate as fmtRel } from '../utils/parseDate';
 import '../styles/DetailPage.css';
 
 const API_BASE = 'http://localhost:20025/api/v1';
@@ -32,30 +37,8 @@ const SETUP_TOPIC_MAP = [
   { label: 'Automatizare', keywords: ['automatizare', 'automation', 'routine', 'scenariu'] },
 ];
 
-function formatDate(dateString, options = {}) {
-  if (!dateString) return 'Nespecificat';
-  return new Date(dateString).toLocaleDateString('ro-RO', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    ...options,
-  });
-}
-
-function formatRelativeDate(dateString) {
-  if (!dateString) return 'recent';
-
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (seconds < 60) return 'acum cateva secunde';
-  if (seconds < 3600) return `acum ${Math.floor(seconds / 60)} min`;
-  if (seconds < 86400) return `acum ${Math.floor(seconds / 3600)} h`;
-  if (seconds < 604800) return `acum ${Math.floor(seconds / 86400)} zile`;
-
-  return formatDate(dateString, { month: 'short' });
-}
+const formatDate = fmtDate;
+const formatRelativeDate = fmtRel;
 
 function splitIntoParagraphs(text = '') {
   const cleanedText = text.trim();
@@ -104,6 +87,8 @@ export default function SetupDetailPage({ darkMode }) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxZoom, setLightboxZoom] = useState(1);
 
   useEffect(() => {
     fetchSetup();
@@ -209,7 +194,13 @@ export default function SetupDetailPage({ darkMode }) {
     if (!setup) return null;
 
     const detectedTopics = getSetupTopics(setup);
-    const deviceCount = setup.deviceIds?.length || 0;
+    const deviceCount = setup.deviceCount ?? setup.deviceIds?.length ?? 0;
+
+    let deviceList = [];
+    try {
+      if (setup.deviceSnapshots) deviceList = JSON.parse(setup.deviceSnapshots) || [];
+    } catch { deviceList = []; }
+    const totalPrice = deviceList.reduce((sum, d) => sum + (Number(d.priceEUR) || 0), 0);
     const descriptionParagraphs = splitIntoParagraphs(setup.description || '');
     const excerpt = buildExcerpt(setup.description || '');
     const readingTime = estimateReadingTime(setup.description || '');
@@ -222,14 +213,19 @@ export default function SetupDetailPage({ darkMode }) {
     const sourceLabel = setup.copiedFromId ? 'Copiat din alt setup' : 'Setup original';
     const statusLabel = setup.status || 'Fara status';
 
-    const displayTags = Array.from(new Set([
-      ...detectedTopics,
-      visibilityLabel,
-      sourceLabel,
-      deviceCount > 0 ? `${deviceCount} device${deviceCount === 1 ? '' : '-uri'}` : 'Fara device-uri',
-      hasEdits ? 'Actualizat' : null,
-      statusLabel,
-    ].filter(Boolean))).slice(0, 6);
+    // Prefer the user-chosen tags from the backend. Fall back to auto-detected
+    // topics + meta info only if the setup has no tags at all (legacy data).
+    const userTags = Array.isArray(setup.tags) ? setup.tags : [];
+    const displayTags = userTags.length > 0
+      ? userTags
+      : Array.from(new Set([
+          ...detectedTopics,
+          visibilityLabel,
+          sourceLabel,
+          deviceCount > 0 ? `${deviceCount} device${deviceCount === 1 ? '' : '-uri'}` : 'Fara device-uri',
+          hasEdits ? 'Actualizat' : null,
+          statusLabel,
+        ].filter(Boolean))).slice(0, 6);
 
     return {
       detectedTopics,
@@ -242,9 +238,26 @@ export default function SetupDetailPage({ darkMode }) {
       sourceLabel,
       statusLabel,
       displayTags,
+      deviceList,
+      totalPrice,
       primaryTopic: detectedTopics[0] || 'Smart home',
     };
   }, [setup]);
+
+  const formatEur = (n) => new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(n));
+
+  // Keyboard shortcuts for lightbox: Esc to close, +/- to zoom
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+      else if (e.key === '+' || e.key === '=') setLightboxZoom(z => Math.min(z + 0.25, 5));
+      else if (e.key === '-') setLightboxZoom(z => Math.max(z - 0.25, 0.5));
+      else if (e.key === '0') setLightboxZoom(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxOpen]);
 
   if (loading) {
     return <div className="detail-page"><div className="loading">Loading setup...</div></div>;
@@ -316,12 +329,34 @@ export default function SetupDetailPage({ darkMode }) {
               ) : null}
 
               <div className="setup-hero-panel">
-                <div className="setup-image-placeholder">
-                  <svg viewBox="0 0 400 300" className="placeholder-icon">
-                    <rect width="400" height="300" fill="currentColor" />
-                    <path d="M160 120 L240 180 L200 240 L120 180 Z" fill="white" opacity="0.3" />
-                    <circle cx="180" cy="140" r="10" fill="white" opacity="0.3" />
-                  </svg>
+                <div
+                  className="setup-image-placeholder"
+                  style={setup.thumbnailUrl ? { padding: 0, overflow: 'hidden', background: '#000', cursor: 'zoom-in', position: 'relative' } : {}}
+                  onClick={() => { if (setup.thumbnailUrl) { setLightboxZoom(1); setLightboxOpen(true); } }}
+                  role={setup.thumbnailUrl ? 'button' : undefined}
+                  tabIndex={setup.thumbnailUrl ? 0 : undefined}
+                  onKeyDown={(e) => { if (setup.thumbnailUrl && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setLightboxZoom(1); setLightboxOpen(true); } }}
+                  title={setup.thumbnailUrl ? 'Click pentru zoom' : undefined}
+                >
+                  {setup.thumbnailUrl ? (
+                    <>
+                      <img
+                        src={setup.thumbnailUrl}
+                        alt={setup.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        onError={e => { e.target.style.display = 'none'; }}
+                      />
+                      <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.6)', borderRadius: '999px', padding: '6px 10px', color: '#fff', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, pointerEvents: 'none' }}>
+                        <Maximize2 size={12} /> Click pentru zoom
+                      </div>
+                    </>
+                  ) : (
+                    <svg viewBox="0 0 400 300" className="placeholder-icon">
+                      <rect width="400" height="300" fill="currentColor" />
+                      <path d="M160 120 L240 180 L200 240 L120 180 Z" fill="white" opacity="0.3" />
+                      <circle cx="180" cy="140" r="10" fill="white" opacity="0.3" />
+                    </svg>
+                  )}
                 </div>
                 <div className="setup-hero-copy">
                   <div className="setup-highlight-card">
@@ -352,6 +387,37 @@ export default function SetupDetailPage({ darkMode }) {
                   <p className="article-paragraph">{setup.description || 'Acest setup nu are descriere inca.'}</p>
                 )}
               </div>
+
+              {setupInsights?.deviceList?.length > 0 && (
+                <div className="setup-devices-section" style={{ marginTop: 28 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
+                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+                      Device-uri folosite <span style={{ fontWeight: 500, opacity: 0.7, fontSize: 14 }}>({setupInsights.deviceList.length})</span>
+                    </h3>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#5092ce' }}>
+                      Total: {formatEur(setupInsights.totalPrice)}
+                    </div>
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {setupInsights.deviceList.map((d, idx) => (
+                      <li key={`${d.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, background: darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(80,146,206,0.06)', border: darkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(80,146,206,0.15)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#5092ce', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                            {(d.name || '?').charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</div>
+                            {d.brand && <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>{d.brand}</div>}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#5092ce', flexShrink: 0 }}>
+                          {formatEur(d.priceEUR || 0)}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="setup-detail-footer">
@@ -368,7 +434,7 @@ export default function SetupDetailPage({ darkMode }) {
 
               <div className="article-footer-meta">
                 <CalendarDays size={16} />
-                <span>{formatDate(setup.createdAt)}</span>
+                <span>{formatDate(setup.publishedAt || setup.createdAt)}</span>
               </div>
             </div>
           </article>
@@ -399,7 +465,7 @@ export default function SetupDetailPage({ darkMode }) {
                 </div>
                 <div className="article-side-row">
                   <span className="article-side-label">Publicat</span>
-                  <span className="article-side-value">{formatDate(setup.createdAt)}</span>
+                  <span className="article-side-value">{setup.publishedAt ? formatDate(setup.publishedAt) : (setup.isPublic ? formatDate(setup.updatedAt) : 'Nepublicat')}</span>
                 </div>
               </div>
             </div>
@@ -421,6 +487,66 @@ export default function SetupDetailPage({ darkMode }) {
             </div>
           </aside>
         </div>
+
+        {lightboxOpen && setup.thumbnailUrl && (
+          <div
+            onClick={() => setLightboxOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 99999,
+              background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'zoom-out', overflow: 'auto'
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close zoom"
+          >
+            <img
+              src={setup.thumbnailUrl}
+              alt={setup.name}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: 'none', maxHeight: 'none',
+                width: `${90 * lightboxZoom}vw`,
+                height: 'auto',
+                transition: 'width 0.15s ease-out',
+                cursor: lightboxZoom > 1 ? 'grab' : 'zoom-in',
+                boxShadow: '0 8px 40px rgba(0,0,0,0.5)'
+              }}
+            />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+                display: 'flex', gap: 12, alignItems: 'center',
+                padding: '10px 20px', borderRadius: 999,
+                background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}
+            >
+              <button
+                onClick={() => setLightboxZoom(z => Math.max(z - 0.25, 0.5))}
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                title="Zoom out (-)"
+              ><ZoomOut size={18} /></button>
+              <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, minWidth: 50, textAlign: 'center' }}>{Math.round(lightboxZoom * 100)}%</span>
+              <button
+                onClick={() => setLightboxZoom(z => Math.min(z + 0.25, 5))}
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                title="Zoom in (+)"
+              ><ZoomIn size={18} /></button>
+              <button
+                onClick={() => setLightboxZoom(1)}
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: 999, padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                title="Reset (0)"
+              >Reset</button>
+              <button
+                onClick={() => setLightboxOpen(false)}
+                style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginLeft: 8 }}
+                title="Close (Esc)"
+              ><X size={18} /></button>
+            </div>
+          </div>
+        )}
 
         <div className="article-comments-container">
           <div className="comments-heading-row">

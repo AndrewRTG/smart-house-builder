@@ -1,5 +1,6 @@
 package gr.A4.SmartHouseBuilder.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,5 +20,14 @@ public class SetupRequest {
 
     private List<Long> deviceIds;
 
+    @JsonProperty("isPublic")
     private boolean isPublic;
+
+    private List<String> tags;
+
+    private String thumbnailUrl;
+
+    private String canvasState;
+
+    private String deviceSnapshots;
 }

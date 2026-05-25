@@ -165,6 +165,7 @@ describe('LayoutCanvas - Suita de Testare', () => {
   });
 
   test('Apeleaza salvarea layout-ului cand se apasa butonul Save', async () => {
+    localStorage.setItem('accessToken', 'token');
     render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} />);
 
     const hueDevice = await screen.findByText('Philips Hue E27');
@@ -175,11 +176,28 @@ describe('LayoutCanvas - Suita de Testare', () => {
     expect(saveBtn).not.toBeDisabled();
     if (saveBtn) fireEvent.click(saveBtn);
 
+    fireEvent.change(screen.getByPlaceholderText(/Dormitor Automatizat/i), {
+      target: { value: 'Living saved' },
+    });
+    (globalThis.fetch as any).mockResolvedValueOnce(new Response(JSON.stringify({ id: 999 }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    fireEvent.click(screen.getByRole('button', { name: /draft/i }));
+
     await waitFor(() => {
-      expect(authFetch).toHaveBeenCalled();
+      expect(authFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/team2/layouts/save'),
+        expect.objectContaining({ method: 'POST' })
+      );
     });
 
-    expect(await screen.findByText(/Saved \(id: 999\)/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:20025/api/v1/setups',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
   });
 
   test('Construieste URL-ul catalogului din filtre si afiseaza starea goala', async () => {
@@ -225,7 +243,7 @@ describe('LayoutCanvas - Suita de Testare', () => {
     fireEvent.click(screen.getByTestId('trigger-validate'));
 
     expect(await screen.findByText('Device is too close to wall')).toBeInTheDocument();
-    expect(screen.getByText(/Save/i).closest('button')).toBeDisabled();
+    expect(screen.getByText(/Save/i).closest('button')).not.toBeDisabled();
   });
 
   test('Trateaza validarea si salvarea esuate fara sa crape UI-ul', async () => {
@@ -242,13 +260,25 @@ describe('LayoutCanvas - Suita de Testare', () => {
     expect(await screen.findByText('Eroare la validare')).toBeInTheDocument();
 
     unmount();
+    (authFetch as any).mockReset();
     (authFetch as any).mockResolvedValueOnce({
       ok: false,
       json: () => Promise.resolve({ saved: false }),
     });
     render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} />);
+    localStorage.setItem('accessToken', 'token');
     const saveBtn = screen.getByText(/Save/i).closest('button');
     if (saveBtn) fireEvent.click(saveBtn);
+    const setupNameInput = screen.getByPlaceholderText(/Dormitor Automatizat/i);
+    fireEvent.change(setupNameInput, {
+      target: { value: 'Broken save' },
+    });
+    await waitFor(() => expect(setupNameInput).toHaveValue('Broken save'));
+    fireEvent.click(screen.getByRole('button', { name: /draft/i }));
+    await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/team2/layouts/save'),
+      expect.objectContaining({ method: 'POST' })
+    ));
     expect(await screen.findByText('Eroare la salvare')).toBeInTheDocument();
   });
 

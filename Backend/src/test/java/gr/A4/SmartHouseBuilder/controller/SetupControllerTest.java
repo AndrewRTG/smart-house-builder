@@ -162,7 +162,7 @@ class SetupControllerTest {
     @Test
     @WithMockUser(username = "catalin")
     void publishSetup_ReturnsOk() throws Exception {
-        when(setupService.publishSetup(1L, "catalin")).thenReturn(mockSetup);
+        when(setupService.publishSetup(eq(1L), eq("catalin"), any())).thenReturn(mockSetup);
 
         mockMvc.perform(put("/api/v1/setups/1/publish"))
                 .andExpect(status().isOk());

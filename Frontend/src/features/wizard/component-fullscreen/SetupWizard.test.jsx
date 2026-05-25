@@ -426,16 +426,14 @@ describe('SetupWizard', () => {
         });
 
         it('shows AI panel after submitting a prompt', async () => {
-            // Second fetch call returns AI devices
-            let callCount = 0;
-            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
-                callCount++;
-                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
-                return Promise.resolve({ json: async () => mockAIDevices });
-            }));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => mockAlgoDevices }));
 
             await goToResults();
             await screen.findByText('Smart Cam Pro');
+            authFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ devices: mockAIDevices }),
+            });
 
             const input = screen.getByPlaceholderText(/robot vacuum/i);
             fireEvent.change(input, { target: { value: 'robot vacuum under 300' } });
@@ -448,15 +446,14 @@ describe('SetupWizard', () => {
         });
 
         it('handles Enter key in AI prompt input', async () => {
-            let callCount = 0;
-            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
-                callCount++;
-                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
-                return Promise.resolve({ json: async () => mockAIDevices });
-            }));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => mockAlgoDevices }));
 
             await goToResults();
             await screen.findByText('Smart Cam Pro');
+            authFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ devices: mockAIDevices }),
+            });
 
             const input = screen.getByPlaceholderText(/robot vacuum/i);
             fireEvent.change(input, { target: { value: 'smart speaker' } });
@@ -489,15 +486,11 @@ describe('SetupWizard', () => {
 
         it('handles AI fetch error and shows empty message', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            let callCount = 0;
-            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
-                callCount++;
-                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
-                return Promise.reject(new Error('AI service down'));
-            }));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => mockAlgoDevices }));
 
             await goToResults();
             await screen.findByText('Smart Cam Pro');
+            authFetch.mockRejectedValueOnce(new Error('AI service down'));
 
             const input = screen.getByPlaceholderText(/robot vacuum/i);
             fireEvent.change(input, { target: { value: 'anything' } });
@@ -604,15 +597,11 @@ describe('SetupWizard', () => {
 
         it('shows "Searching…" button label while AI is loading', async () => {
             let resolveAI;
-            let callCount = 0;
-            vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
-                callCount++;
-                if (callCount === 1) return Promise.resolve({ json: async () => mockAlgoDevices });
-                return new Promise(r => { resolveAI = r; });
-            }));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => mockAlgoDevices }));
 
             await goToResults();
             await screen.findByText('Smart Cam Pro');
+            authFetch.mockReturnValueOnce(new Promise(r => { resolveAI = r; }));
 
             const input = screen.getByPlaceholderText(/robot vacuum/i);
             fireEvent.change(input, { target: { value: 'speaker' } });
@@ -621,7 +610,7 @@ describe('SetupWizard', () => {
             await screen.findByText('Searching…');
 
             // Resolve and verify it disappears
-            resolveAI({ json: async () => mockAIDevices });
+            resolveAI({ ok: true, json: async () => ({ devices: mockAIDevices }) });
             await screen.findByText('Robot Vac AI');
         });
 

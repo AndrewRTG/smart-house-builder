@@ -53,6 +53,10 @@ describe('LayoutCanvas - Suita de Testare', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (authFetch as any).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ saved: true, id: 999, errors: [] })
+    });
     useFilterStore.setState({
       ecosystem: null,
       priceRange: [0, 1000],
@@ -315,6 +319,97 @@ describe('LayoutCanvas - Suita de Testare', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Niciun produs găsit pentru această căutare.')).toBeInTheDocument();
+    });
+  });
+  test('Incarca un setup existent din canvasState si il salveaza cu PUT', async () => {
+    localStorage.setItem('accessToken', 'token');
+    (globalThis.fetch as any).mockResolvedValueOnce(new Response(JSON.stringify({
+      id: 42,
+      name: 'Saved layout',
+      canvasState: JSON.stringify({
+        layoutId: 123,
+        lines: [{ id: 'wall-1', type: 'wall', start: { col: 0, row: 0 }, end: { col: 4, row: 0 } }],
+        placedIcons: [{
+          id: 'placed-1',
+          deviceId: '7',
+          col: 2,
+          row: 2,
+          type: 'priza',
+          name: 'Existing Plug',
+          brand: 'Aqara',
+          status: 'online',
+          priceEUR: 25,
+        }],
+        placedFurniture: [],
+      }),
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} setupId={42} />);
+
+    expect(await screen.findByText('Existing Plug')).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Save/i).closest('button')!);
+
+    await waitFor(() => {
+      expect(authFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/team2/layouts/save'),
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:20025/api/v1/setups/42',
+        expect.objectContaining({ method: 'PUT' })
+      );
+    });
+  });
+
+  test('Publica un setup nou dupa ce creeaza draftul necesar', async () => {
+    localStorage.setItem('accessToken', 'token');
+    render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} />);
+
+    fireEvent.click(await screen.findByText('Philips Hue E27'));
+    fireEvent.click(screen.getByTestId('trigger-click'));
+    fireEvent.click(screen.getByText(/Post/i).closest('button')!);
+
+    fireEvent.change(screen.getByPlaceholderText(/Casa Inteligent/i), {
+      target: { value: 'Published layout' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Descrie setup-ul/i), {
+      target: { value: 'Automated living room' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Living/i }));
+
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 777 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 777, isPublic: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+
+    fireEvent.click(screen.getByRole('button', { name: /Public/i }));
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:20025/api/v1/setups',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:20025/api/v1/setups/777/publish',
+        expect.objectContaining({
+          method: 'PUT',
+          body: expect.stringContaining('Automated living room'),
+        })
+      );
     });
   });
 });

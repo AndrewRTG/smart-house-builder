@@ -163,23 +163,37 @@ const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
     }, [s.priceRange, s.ecosystem, s.techLevel, s.categories, s.protocols, selectedSetup]);
 
     // ── Handler: Ask AI with user's custom prompt ──────────────────────────
-    const handleAskAI = (userPrompt) => {
+    const handleAskAI = async (userPrompt) => {
         setHasRequestedAI(true);
         setLoadingAI(true);
 
         const setupName = selectedSetup ? selectedSetup.name : 'Nespecificat';
-        // Append user's custom text to the standard criteria
-        const criterii = `${buildCriteria(setupName, s)}. Cerinta suplimentara: ${userPrompt}`;
-        const encodedCriteria = encodeURIComponent(criterii);
+        const userContext = buildCriteria(setupName, s); // Algoritmul și filtrele setate de user
 
-        fetch(`${API_BASE}/api/devices/suggestions?criteria=${encodedCriteria}`)
-            .then(res => res.json())
-            .then(data => setAiProducts(mapDevices(data)))
-            .catch(err => {
-                console.error("Failed to fetch AI products:", err);
+        try {
+            const res = await authFetch('/api/ai/agent-search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: userPrompt,
+                    context: userContext
+                }),
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // mapDevices se așteaptă la un array, așa că luăm data.devices (sau un array gol dacă pică ceva)
+                setAiProducts(mapDevices(data.devices || []));
+            } else {
+                console.error("Eroare de la server la fetch AI");
                 setAiProducts([]);
-            })
-            .finally(() => setLoadingAI(false));
+            }
+        } catch (err) {
+            console.error("Failed to fetch AI products:", err);
+            setAiProducts([]);
+        } finally {
+            setLoadingAI(false);
+        }
     };
 
     // ── Derived values ─────────────────────────────────────────────────────

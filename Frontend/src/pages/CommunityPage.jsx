@@ -815,17 +815,32 @@ export default function CommunityPage({ darkMode }) {
                     </button>
                     <p className="setup-description">{setup.description}</p>
 
-                    <div className="setup-image-placeholder">
-                      <svg viewBox="0 0 200 150" className="placeholder-icon">
-                        <rect width="200" height="150" fill="currentColor" />
-                        <path
-                          d="M80 60 L120 90 L100 120 L60 90 Z"
-                          fill="white"
-                          opacity="0.3"
+                    <button
+                      type="button"
+                      className="setup-image-placeholder"
+                      onClick={() => openSetupDetail(setup.id)}
+                      style={setup.thumbnailUrl ? { padding: 8, overflow: 'hidden', cursor: 'pointer', border: 'none', background: '#1a1a1e', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' } : { cursor: 'pointer', border: 'none' }}
+                      title="Vezi detalii"
+                    >
+                      {setup.thumbnailUrl ? (
+                        <img
+                          src={setup.thumbnailUrl}
+                          alt={setup.name}
+                          style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+                          onError={e => { e.target.style.display = 'none'; }}
                         />
-                        <circle cx="90" cy="70" r="5" fill="white" opacity="0.3" />
-                      </svg>
-                    </div>
+                      ) : (
+                        <svg viewBox="0 0 200 150" className="placeholder-icon">
+                          <rect width="200" height="150" fill="currentColor" />
+                          <path
+                            d="M80 60 L120 90 L100 120 L60 90 Z"
+                            fill="white"
+                            opacity="0.3"
+                          />
+                          <circle cx="90" cy="70" r="5" fill="white" opacity="0.3" />
+                        </svg>
+                      )}
+                    </button>
 
                     <div className="setup-footer">
                       <div className="footer-actions">

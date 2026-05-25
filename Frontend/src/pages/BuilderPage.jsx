@@ -10,7 +10,10 @@ import useWizardStore from '../store/wizardStore';
 function BuilderPage({ darkMode = false, setDarkMode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialView = new URLSearchParams(location.search).get('mode') === 'wizard' ? 'wizard' : 'canvas';
+  const searchParams = new URLSearchParams(location.search);
+  const initialView = searchParams.get('mode') === 'wizard' ? 'wizard' : 'canvas';
+  const setupIdParam = searchParams.get('setupId');
+  const setupId = setupIdParam ? parseInt(setupIdParam, 10) : null;
   const [activeView, setActiveView] = useState(initialView);
   const setStoreDarkMode = useFilterStore((state) => state.setDarkMode);
   const setWizardDarkMode = useWizardStore((state) => state.setDarkMode);
@@ -64,6 +67,7 @@ function BuilderPage({ darkMode = false, setDarkMode }) {
         <LayoutCanvas
           isDarkMode={darkMode}
           onBack={() => setActiveView('wizard')}
+          setupId={setupId}
         />
       )}
 

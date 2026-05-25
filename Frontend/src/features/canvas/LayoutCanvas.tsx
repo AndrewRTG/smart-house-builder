@@ -109,12 +109,16 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
         const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
         const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
             coordinates: {x: Math.trunc(i.col * GRID_POINT_CM), y: Math.trunc(i.row * GRID_POINT_CM)},
-            rotationAngle: 0,
+            rotationAngle: Number(i.rotation || 0),
             device: {
-                id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
-                protocol: i.type === 'router' ? 'WiFi' : 'Zigbee',
+                id: (i.deviceId || i.id).toString(),
+                name: i.name,
+                price: i.priceEUR,
+                ecosystem: 'Apple HomeKit',
+                protocol: i.communicationProtocol || (i.type === 'router' ? 'WiFi' : 'Zigbee'),
                 lumens: i.type === 'bec' ? 800 : 0, requiresPlug: i.type !== 'bec',
-                rangeRadius: i.type === 'senzor' ? 10 : 0, deviceType: i.type,
+                rangeRadius: i.type === 'senzor' ? 10 : 0,
+                deviceType: i.type,
                 mountType: i.type === 'tv' ? 'wall' : 'table',
                 fieldOfView: i.type === 'interfon' ? 120 : 0,
                 powerConsumption: i.type === 'bec' ? 10 : 5,
@@ -130,6 +134,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
     const [lastSavedId, setLastSavedId] = useState<number | null>(null);
     const [currentSetupId, setCurrentSetupId] = useState<number | null>(setupId ?? null);
     const [currentSetupName, setCurrentSetupName] = useState<string>('');
+    const [currentLayoutDbId, setCurrentLayoutDbId] = useState<number | null>(null);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [pendingSetupName, setPendingSetupName] = useState('');
     const [saveNameError, setSaveNameError] = useState(false);
@@ -167,13 +172,104 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
         return fuzzyFilter(fetchedDevices, searchQuery, (d: any) => [d.name, d.brand]);
     }, [fetchedDevices, searchQuery]);
 
-    const getIconTypeForCategory = (categoryId: number) => {
-        const iconMapping: Record<number, string> = {
-            1: 'interfon', 2: 'prelungitor', 3: 'controller', 4: 'hub',
-            5: 'hub', 6: 'tv', 7: 'priza', 8: 'senzor',
-            9: 'soundsystem', 10: 'tv', 11: 'aspirator', 12: 'router'
+    const normalizeText = (value?: string | null) =>
+        (value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+    const includesAny = (text: string, keywords: string[]) =>
+        keywords.some(keyword => text.includes(keyword));
+
+    const getIconTypeForDevice = (device: any) => {
+        const name = normalizeText(device.name);
+        const category = normalizeText(device.categoryName);
+        const description = normalizeText(device.description);
+        const text = `${name} ${category} ${description}`;
+
+        if (includesAny(text, [
+            'bec', 'bulb', 'led', 'lampa', 'lamp', 'lumina', 'light', 'lighting'
+        ])) {
+            return 'bec';
+        }
+
+        if (includesAny(text, [
+            'priza', 'outlet', 'plug', 'intrerupator', 'switch', 'socket'
+        ])) {
+            return 'priza';
+        }
+
+        if (includesAny(text, [
+            'senzor', 'sensor', 'motion', 'miscare', 'temperatura', 'temperature',
+            'umiditate', 'humidity', 'smoke', 'fum', 'contact'
+        ])) {
+            return 'senzor';
+        }
+
+        if (includesAny(text, [
+            'router', 'wi-fi router', 'wifi router', 'mesh', 'nighthawk', 'zenwifi'
+        ])) {
+            return 'router';
+        }
+
+        if (includesAny(text, [
+            'hub', 'gateway', 'bridge', 'zigbee hub'
+        ])) {
+            return 'hub';
+        }
+
+        if (includesAny(text, [
+            'tv', 'televizor', 'television', 'monitor', 'display'
+        ])) {
+            return 'tv';
+        }
+
+        if (includesAny(text, [
+            'interfon', 'doorbell', 'videointerfon', 'video doorbell'
+        ])) {
+            return 'interfon';
+        }
+
+        if (includesAny(text, [
+            'camera', 'camere', 'cam', 'nest cam'
+        ])) {
+            return 'interfon';
+        }
+
+        if (includesAny(text, [
+            'sound', 'audio', 'speaker', 'boxa', 'sonos'
+        ])) {
+            return 'soundsystem';
+        }
+
+        if (includesAny(text, [
+            'aspirator', 'vacuum', 'roborock', 'robot vacuum'
+        ])) {
+            return 'aspirator';
+        }
+
+        if (includesAny(text, [
+            'controller', 'consola', 'console', 'gaming'
+        ])) {
+            return 'controller';
+        }
+
+        const fallbackByCategoryId: Record<number, string> = {
+            1: 'interfon',
+            2: 'prelungitor',
+            3: 'controller',
+            4: 'hub',
+            5: 'hub',
+            6: 'tv',
+            7: 'priza',
+            8: 'senzor',
+            9: 'soundsystem',
+            10: 'tv',
+            11: 'aspirator',
+            12: 'router'
         };
-        return iconMapping[categoryId] || 'bec';
+
+        return fallbackByCategoryId[Number(device.categoryId)] || 'bec';
     };
 
     const getCategoryIdByName = (name: string) => {
@@ -230,10 +326,14 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                     const mapped = data.map((d: any) => ({
                         id: d.id.toString(),
                         name: d.name,
-                        brand: d.brand,
+                        brand: d.brand || 'Generic',
+                        categoryId: d.categoryId,
+                        categoryName: d.categoryName,
+                        communicationProtocol: d.communicationProtocol,
+                        specifications: d.specifications,
                         price: `${d.bestPrice || 0}€`,
                         priceEUR: d.bestPrice || 0,
-                        type: getIconTypeForCategory(d.categoryId),
+                        type: getIconTypeForDevice(d),
                         status: 'online'
                     }));
                     setFetchedDevices(mapped);
@@ -343,6 +443,12 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
             if (setup.canvasState) {
                 try {
                     const state = JSON.parse(setup.canvasState);
+
+                    if (state.layoutId) {
+                        const parsedLayoutId = Number(state.layoutId);
+                        if (!Number.isNaN(parsedLayoutId)) setCurrentLayoutDbId(parsedLayoutId);
+                    }
+
                     if (Array.isArray(state.lines)) setLines(state.lines);
                     if (Array.isArray(state.placedIcons)) setPlacedIcons(state.placedIcons);
                     if (Array.isArray(state.placedFurniture)) setPlacedFurniture(state.placedFurniture);
@@ -495,7 +601,50 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
         requestValidation();
     }, [exportData]);
 
+    const saveLayoutToDb = async () => {
+        let thumbnailPngBase64: string | null = null;
+
+        try {
+            const snapRoot = document.getElementById('layout-capture-root') as HTMLElement | null;
+            thumbnailPngBase64 = await captureLayoutThumbnailRoot(snapRoot, placedIcons, layout);
+        } catch {
+            thumbnailPngBase64 = null;
+        }
+
+        const payload: Record<string, unknown> = {
+            id: layoutId,
+            scale: 'cm',
+            maxBudget: 15000,
+            targetEcosystem: 'Apple HomeKit',
+            rooms: exportData.rooms,
+            devices: exportData.devices
+        };
+
+        if (thumbnailPngBase64) {
+            payload.thumbnailPngBase64 = thumbnailPngBase64;
+        }
+
+        const res = await authFetch(`${API_BASE}/api/team2/layouts/save`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+        });
+
+        const json = await res.json().catch(() => ({}));
+
+        if (!res.ok || json?.saved !== true || !json?.id) {
+            throw new Error('Eroare la salvarea layout-ului');
+        }
+
+        const savedLayoutId = Number(json.id);
+        setCurrentLayoutDbId(savedLayoutId);
+
+        return savedLayoutId;
+    };
+
     const buildSetupPayload = async (name: string, isPublic = false) => {
+        const savedLayoutId = await saveLayoutToDb();
+
         const deviceIds = placedIcons
             .map(i => parseInt(i.deviceId || i.id, 10))
             .filter(n => !isNaN(n));
@@ -504,21 +653,32 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
             id: parseInt(i.deviceId || i.id, 10),
             name: i.name || 'Unknown',
             brand: i.brand || '',
+            categoryId: i.categoryId ?? null,
+            categoryName: i.categoryName || '',
             priceEUR: Number(i.priceEUR) || 0,
             type: i.type || '',
+            communicationProtocol: i.communicationProtocol || '',
         }));
 
         const deviceSnapshots = JSON.stringify(snapshots);
-        const canvasState = JSON.stringify({ lines, placedIcons, placedFurniture });
 
-        let thumbnailUrl: string | null = null;
-        try {
-            const snapRoot = document.getElementById('layout-capture-root') as HTMLElement | null;
-            const b64 = await captureLayoutThumbnailRoot(snapRoot, placedIcons, layout);
-            if (b64) thumbnailUrl = `data:image/jpeg;base64,${b64}`;
-        } catch {}
+        const canvasState = JSON.stringify({
+            layoutId: savedLayoutId,
+            lines,
+            placedIcons,
+            placedFurniture
+        });
 
-        return { name, deviceIds, isPublic, canvasState, thumbnailUrl, deviceSnapshots };
+        const thumbnailUrl = `${API_BASE}/api/team2/layouts/${savedLayoutId}/thumbnail`;
+
+        return {
+            name,
+            deviceIds,
+            isPublic,
+            canvasState,
+            thumbnailUrl,
+            deviceSnapshots
+        };
     };
 
     const doSaveSetup = async (name: string, existingId: number | null) => {

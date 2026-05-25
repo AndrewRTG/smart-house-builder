@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import gr.A4.SmartHouseBuilder.model.Layout;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
 
@@ -35,13 +36,33 @@ public class LayoutController {
     private final LayoutPersistenceService layoutPersistenceService;
     private final UserRepository userRepository;
     private final LayoutRepository layoutRepository;
+    private final ObjectMapper objectMapper;
 
-    public LayoutController(LayoutService layoutService, LayoutPersistenceService layoutPersistenceService,
-                            UserRepository userRepository, LayoutRepository layoutRepository) {
+    public LayoutController(LayoutService layoutService,
+                            LayoutPersistenceService layoutPersistenceService,
+                            UserRepository userRepository,
+                            LayoutRepository layoutRepository,
+                            ObjectMapper objectMapper) {
         this.layoutService = layoutService;
         this.layoutPersistenceService = layoutPersistenceService;
         this.userRepository = userRepository;
         this.layoutRepository = layoutRepository;
+        this.objectMapper = objectMapper;
+    }
+
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SetupBuildDTO> getLayoutById(@PathVariable Integer id) {
+        return layoutRepository.findById(id)
+                .map(layout -> {
+                    try {
+                        SetupBuildDTO dto = objectMapper.readValue(layout.getDrawing(), SetupBuildDTO.class);
+                        return ResponseEntity.ok(dto);
+                    } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).<SetupBuildDTO>build();
+                    }
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/validate")

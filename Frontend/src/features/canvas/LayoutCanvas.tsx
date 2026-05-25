@@ -11,6 +11,7 @@ import {authFetch} from '../../utils/authFetch';
 import {captureLayoutThumbnailRoot} from './captureLayoutThumbnail';
 import useFilterStore from '../../store/useFilterStore';
 import {SETUP_TAG_GROUPS} from '../../utils/setupTags';
+import { fuzzyFilter } from '../../utils/fuzzySearch';
 
 // --- INTERFACES ---
 interface Wall { x1: number; y1: number; x2: number; y2: number; }
@@ -34,6 +35,7 @@ interface Room {
 interface HistorySnapshot { lines: any[]; icons: any[]; furniture: any[]; }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
+const GRID_POINT_CM = 50;
 
 const ICON_MAP: Record<string, React.FC<{ color: string }>> = {
     bec: BecIcon, senzor: SenzorIcon, lock: LockIcon, router: RouterIcon,
@@ -77,9 +79,50 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
     const [layout, setLayout] = useState({offsetX: 0, offsetY: 0, dotSpacing: 0});
     const [undoStack, setUndoStack] = useState<HistorySnapshot[]>([]);
     const [redoStack, setRedoStack] = useState<HistorySnapshot[]>([]);
-    const [exportData, setExportData] = useState<{ devices: Device[]; rooms: Room[]; }>({devices: [], rooms: []});
-
     const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const validationRequestIdRef = useRef(0);
+    const exportData = useMemo<{ devices: Device[]; rooms: Room[]; }>(() => {
+        const walls = lines.filter(l => l.type === 'wall').map(l => ({
+            x1: Math.trunc(l.start.col * GRID_POINT_CM), y1: Math.trunc(l.start.row * GRID_POINT_CM),
+            x2: Math.trunc(l.end.col * GRID_POINT_CM), y2: Math.trunc(l.end.row * GRID_POINT_CM)
+        }));
+        const windows = lines.filter(l => l.type === 'window').map(l => ({
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * GRID_POINT_CM),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * GRID_POINT_CM),
+            width: Math.trunc(Math.abs(l.end.col - l.start.col) * GRID_POINT_CM) || GRID_POINT_CM,
+            height: Math.trunc(Math.abs(l.end.row - l.start.row) * GRID_POINT_CM) || GRID_POINT_CM,
+            distanceFromFloor: 0
+        }));
+        const doors = lines.filter(l => l.type === 'door').map(l => ({
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * GRID_POINT_CM),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * GRID_POINT_CM)
+        }));
+        const plugs = placedIcons.filter(i => i.type === 'priza').map(i => ({
+            x: Math.trunc(i.col * GRID_POINT_CM), y: Math.trunc(i.row * GRID_POINT_CM)
+        }));
+        const roomSquareMeters = (() => {
+            if (!walls.length) return 10;
+            const xs = walls.flatMap(w => [w.x1, w.x2]);
+            const ys = walls.flatMap(w => [w.y1, w.y2]);
+            return Math.max(1, Math.trunc(((Math.max(...xs) - Math.min(...xs)) / 100) * ((Math.max(...ys) - Math.min(...ys)) / 100)));
+        })();
+        const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
+        const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
+            coordinates: {x: Math.trunc(i.col * GRID_POINT_CM), y: Math.trunc(i.row * GRID_POINT_CM)},
+            rotationAngle: 0,
+            device: {
+                id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
+                protocol: i.type === 'router' ? 'WiFi' : 'Zigbee',
+                lumens: i.type === 'bec' ? 800 : 0, requiresPlug: i.type !== 'bec',
+                rangeRadius: i.type === 'senzor' ? 10 : 0, deviceType: i.type,
+                mountType: i.type === 'tv' ? 'wall' : 'table',
+                fieldOfView: i.type === 'interfon' ? 120 : 0,
+                powerConsumption: i.type === 'bec' ? 10 : 5,
+                communicationFrequency: i.type === 'router' ? '2.4GHz' : '868MHz', width: 10
+            }
+        }));
+        return {devices, rooms};
+    }, [placedIcons, lines]);
     const exportDataRef = useRef(exportData);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [validationInfos, setValidationInfos] = useState<string[]>([]);
@@ -116,6 +159,13 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
     const [isCatalogLoading, setIsCatalogLoading] = useState(true);
 
     const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
+
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredDevices = useMemo(() => {
+        if (!searchQuery.trim()) return fetchedDevices;
+        return fuzzyFilter(fetchedDevices, searchQuery, (d: any) => [d.name, d.brand]);
+    }, [fetchedDevices, searchQuery]);
 
     const getIconTypeForCategory = (categoryId: number) => {
         const iconMapping: Record<number, string> = {
@@ -378,61 +428,18 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
         else { setActiveTool(tool); setSelectedDevice(null); setShowFurnitureMenu(false); }
     };
 
-    // --- EXPORT LOGIC ---
-    useEffect(() => {
-        const scale = layout.dotSpacing || 1;
-        const walls = lines.filter(l => l.type === 'wall').map(l => ({
-            x1: Math.trunc(l.start.col * scale), y1: Math.trunc(l.start.row * scale),
-            x2: Math.trunc(l.end.col * scale), y2: Math.trunc(l.end.row * scale)
-        }));
-        const windows = lines.filter(l => l.type === 'window').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale),
-            width: Math.trunc(Math.abs(l.end.col - l.start.col) * scale) || Math.trunc(scale),
-            height: Math.trunc(Math.abs(l.end.row - l.start.row) * scale) || Math.trunc(scale),
-            distanceFromFloor: 0
-        }));
-        const doors = lines.filter(l => l.type === 'door').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale)
-        }));
-        const plugs = placedIcons.filter(i => i.type === 'priza').map(i => ({
-            x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)
-        }));
-        const roomSquareMeters = (() => {
-            if (!walls.length) return 10;
-            const xs = walls.flatMap(w => [w.x1, w.x2]);
-            const ys = walls.flatMap(w => [w.y1, w.y2]);
-            return Math.max(1, Math.trunc(((Math.max(...xs) - Math.min(...xs)) / 100) * ((Math.max(...ys) - Math.min(...ys)) / 100)));
-        })();
-        const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
-        const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
-            coordinates: {x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)},
-            rotationAngle: 0,
-            device: {
-                id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
-                protocol: i.type === 'router' ? 'WiFi' : 'Zigbee',
-                lumens: i.type === 'bec' ? 800 : 0, requiresPlug: i.type !== 'bec',
-                rangeRadius: i.type === 'senzor' ? 10 : 0, deviceType: i.type,
-                mountType: i.type === 'tv' ? 'wall' : 'table',
-                fieldOfView: i.type === 'interfon' ? 120 : 0,
-                powerConsumption: i.type === 'bec' ? 10 : 5,
-                communicationFrequency: i.type === 'router' ? '2.4GHz' : '868MHz', width: 10
-            }
-        }));
-        setExportData({devices, rooms});
-    }, [placedIcons, lines, layout.dotSpacing]);
-
     useEffect(() => {
         exportDataRef.current = exportData;
     }, [exportData]);
 
     const requestValidation = () => {
         if (validateTimerRef.current) return;
+        const requestId = ++validationRequestIdRef.current;
         validateTimerRef.current = setTimeout(() => {
             validateTimerRef.current = null;
 
             if (!placedIconsRef.current.length && !linesRef.current.length) {
+                if (requestId !== validationRequestIdRef.current) return;
                 setValidationErrors([]);
                 setValidationInfos([]);
                 return;
@@ -455,6 +462,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
             })
                 .then(async (r) => {
                     const json = await r.json().catch(() => ({}));
+                    if (requestId !== validationRequestIdRef.current) return;
                     if (!r.ok) {
                         setValidationErrors(['Eroare la validare']);
                         setValidationInfos([]);
@@ -476,18 +484,22 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                     setValidationErrors(blocking);
                 })
                 .catch(() => {
+                    if (requestId !== validationRequestIdRef.current) return;
                     setValidationErrors(['Eroare la validare']);
                     setValidationInfos([]);
                 });
         }, 0);
     };
 
+    useEffect(() => {
+        requestValidation();
+    }, [exportData]);
+
     const buildSetupPayload = async (name: string, isPublic = false) => {
         const deviceIds = placedIcons
             .map(i => parseInt(i.deviceId || i.id, 10))
             .filter(n => !isNaN(n));
-        // Snapshot of devices so we can show name + price on the detail page
-        // without having to re-fetch the catalog (or worry about deleted devices).
+
         const snapshots = placedIcons.map(i => ({
             id: parseInt(i.deviceId || i.id, 10),
             name: i.name || 'Unknown',
@@ -495,33 +507,44 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
             priceEUR: Number(i.priceEUR) || 0,
             type: i.type || '',
         }));
+
         const deviceSnapshots = JSON.stringify(snapshots);
         const canvasState = JSON.stringify({ lines, placedIcons, placedFurniture });
+
         let thumbnailUrl: string | null = null;
         try {
             const snapRoot = document.getElementById('layout-capture-root') as HTMLElement | null;
             const b64 = await captureLayoutThumbnailRoot(snapRoot, placedIcons, layout);
             if (b64) thumbnailUrl = `data:image/jpeg;base64,${b64}`;
-        } catch { /* skip thumbnail */ }
+        } catch {}
+
         return { name, deviceIds, isPublic, canvasState, thumbnailUrl, deviceSnapshots };
     };
 
     const doSaveSetup = async (name: string, existingId: number | null) => {
         setIsSaving(true);
         setSaveSuccess(false);
+
         try {
             const token = localStorage.getItem('accessToken');
             if (!token) return;
+
             const payload = await buildSetupPayload(name);
             const url = existingId
                 ? `${API_BASE}/api/v1/setups/${existingId}`
                 : `${API_BASE}/api/v1/setups`;
+
             const method = existingId ? 'PUT' : 'POST';
+
             const res = await fetch(url, {
                 method,
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(payload),
             });
+
             if (res.ok) {
                 const json = await res.json().catch(() => ({}));
                 setCurrentSetupId(json.id ?? existingId);
@@ -538,7 +561,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
             setIsSaving(false);
         }
     };
-
+        
     const handleSave = () => {
         if (isSaving) return;
         if (currentSetupId) {
@@ -786,7 +809,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                                     setPlacedIcons={setPlacedIcons} checkCollision={checkUniversalCollision}
                                     saveHistory={saveHistory} undo={handleUndo}
                                     redo={handleRedo} canUndo={undoStack.length > 0} canRedo={redoStack.length > 0}
-                                    onCommitValidate={requestValidation}
                                 />
 
                                 {/* Placed icons */}
@@ -833,7 +855,6 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                                                             saveHistory();
                                                             setPlacedIcons(placedIcons.filter((_, i) => i !== index));
                                                             setHoveredIconIndex(null);
-                                                            requestValidation();
                                                         }}
                                                         style={{
                                                             position: 'absolute', top: '-8px', right: '-8px',
@@ -967,6 +988,8 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                             <input
                                 type="text"
                                 placeholder="Search devices..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%', padding: '10px 16px 10px 36px',
                                     borderRadius: '12px', border: '1px solid transparent',
@@ -981,10 +1004,12 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                         <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', padding: '2px'}}>
                             {isCatalogLoading ? (
                                 <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Se caută produse...</div>
-                            ) : fetchedDevices.length === 0 ? (
-                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>Niciun produs găsit.</div>
+                            ) : filteredDevices.length === 0 ? (
+                                <div style={{fontSize: '11px', textAlign: 'center', padding: '20px', color: colors.textMuted}}>
+                                    {searchQuery ? 'Niciun produs găsit pentru această căutare.' : 'Niciun produs găsit.'}
+                                </div>
                             ) : (
-                                fetchedDevices.map((d) => {
+                                filteredDevices.map((d) => {
                                     const IconComponent = ICON_MAP[d.type] || ControllerIcon;
                                     const isSelected = selectedDevice?.id === d.id;
                                     return (

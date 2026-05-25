@@ -21,7 +21,10 @@ import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -101,4 +104,29 @@ public class LayoutController {
                         .body(bytes))
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/my-layouts")
+    public ResponseEntity<List<Map<String, Object>>> getMyLayouts(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    List<Layout> layouts = layoutRepository.findByUserId(Math.toIntExact(user.getId()));
+
+                    List<Map<String, Object>> result = layouts.stream().map(l -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", l.getId());
+                        return map;
+                    }).collect(Collectors.toList());
+
+                    return ResponseEntity.ok(result);
+                })
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
 }
+
+

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PriceHistoryRepository extends JpaRepository<PriceHistory,Integer> {
@@ -23,4 +24,15 @@ public interface PriceHistoryRepository extends JpaRepository<PriceHistory,Integ
         )
         """, nativeQuery = true)
     Optional<PriceHistory> findCheapestCurrentRecord(@Param("deviceId") Integer deviceId);
+
+    @Query(value = """
+        SELECT * FROM (
+            SELECT DISTINCT ON (store_name) *
+            FROM price_history
+            WHERE device_id = :deviceId
+            ORDER BY store_name, scraped_at DESC
+        ) as latest_prices
+        ORDER BY price ASC
+        """, nativeQuery = true)
+    List<PriceHistory> findLatestOffersForDevice(@Param("deviceId") Integer deviceId);
 }

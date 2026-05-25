@@ -3,6 +3,8 @@ package gr.A4.SmartHouseBuilder.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.dto.DeviceRequest;
 import gr.A4.SmartHouseBuilder.dto.DeviceResponse;
+import gr.A4.SmartHouseBuilder.dto.OfferResponse;
+import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
 import gr.A4.SmartHouseBuilder.security.JwtAuthenticationFilter;
 import gr.A4.SmartHouseBuilder.security.OAuth2LoginSuccessHandler;
 import gr.A4.SmartHouseBuilder.security.RateLimitingFilter;
@@ -17,6 +19,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +61,7 @@ public class DeviceControllerTest {
         DeviceResponse deviceResponse = new DeviceResponse(
                 1, 1, "Iluminat", "Bec Inteligent", "Philips",
                 "Bec color", "url.jpg", "WiFi",
-                Map.<String, Object>of("power", "10W"),
+                Map.of("power", "10W"),
                 50.0, "store.com/bec"
         );
 
@@ -79,13 +83,13 @@ public class DeviceControllerTest {
         DeviceRequest request = new DeviceRequest(
                 1, "Bec Inteligent", "Philips", "Bec color",
                 "url.jpg", "WiFi",
-                Map.<String, Object>of("power", "10W")
+                Map.of("power", "10W")
         );
 
         DeviceResponse response = new DeviceResponse(
                 1, 1, "Iluminat", "Bec Inteligent", "Philips",
                 "Bec color", "url.jpg", "WiFi",
-                Map.<String, Object>of("power", "10W"),
+                Map.of("power", "10W"),
                 null, null
         );
 
@@ -121,5 +125,44 @@ public class DeviceControllerTest {
         mockMvc.perform(get("/api/devices/suggest").param("q", "phi"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.suggestion").value("Philips"));
+    }
+
+    @Test
+    @DisplayName("GET /api/devices/{id}/offers - Caz fericit: Returnează ofertele agregate")
+    void getDeviceOffers_ShouldReturn200() throws Exception {
+        List<OfferResponse> mockOffers = List.of(
+                new OfferResponse("PC Garage", 145.0, "pcgarage.ro/produs", LocalDateTime.now()),
+                new OfferResponse("eMAG", 150.0, "emag.ro/produs", LocalDateTime.now())
+        );
+
+        when(deviceService.getDeviceOffers(1)).thenReturn(mockOffers);
+
+        mockMvc.perform(get("/api/devices/{id}/offers", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].storeName").value("PC Garage"))
+                .andExpect(jsonPath("$[0].price").value(145.0))
+                .andExpect(jsonPath("$[1].storeName").value("eMAG"))
+                .andExpect(jsonPath("$[1].price").value(150.0));
+    }
+
+    @Test
+    @DisplayName("GET /api/devices/{id}/offers - Caz de eroare: Returnează 404 dacă device-ul nu există")
+    void getDeviceOffers_ShouldReturn404_WhenDeviceNotFound() throws Exception {
+        when(deviceService.getDeviceOffers(99)).thenThrow(new ResourceNotFoundException("Device-ul cu ID 99 nu a fost găsit!"));
+
+        mockMvc.perform(get("/api/devices/{id}/offers", 99))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /api/devices/{id}/offers - Caz limită: Returnează o listă goală dacă nu sunt oferte")
+    void getDeviceOffers_ShouldReturn200AndEmptyList_WhenNoOffers() throws Exception {
+        when(deviceService.getDeviceOffers(2)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/devices/{id}/offers", 2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(0))
+                .andExpect(jsonPath("$").isArray());
     }
 }

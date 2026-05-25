@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.stream.Collectors;
+import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
+import gr.A4.SmartHouseBuilder.model.Layout;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class DeviceSuggestionAlgorithmService {
@@ -23,10 +27,12 @@ public class DeviceSuggestionAlgorithmService {
     private static final String AMAZON="amazon";
     private static final String MATTER="MATTER";
     private final HardwareDeviceRepository deviceRepository;
+    private final LayoutRepository layoutRepository;
 
 
-    public DeviceSuggestionAlgorithmService(HardwareDeviceRepository deviceRepository) {
+    public DeviceSuggestionAlgorithmService(HardwareDeviceRepository deviceRepository, LayoutRepository layoutRepository) {
         this.deviceRepository = deviceRepository;
+        this.layoutRepository = layoutRepository;
     }
 
     public List<HardwareDevice> getSmartSuggestions(String criteriaString) {
@@ -37,13 +43,72 @@ public class DeviceSuggestionAlgorithmService {
         String ecosystem = criteria.getOrDefault("Ecosistem", ORICARE);
         String level = criteria.getOrDefault("Nivel", ORICARE);
 
-        List<HardwareDevice> allDevices = deviceRepository.findAll();
+        // NOU: Extragem ID-ul layout-ului curent (daca frontend-ul il trimite)
+        String layoutIdStr = criteria.getOrDefault("Layout", "");
 
-        List<HardwareDevice> filteredByEcosystem = filterByEcosystem(allDevices, ecosystem);
+        List<Integer> allowedCategoryIds = determineAllowedCategoryIds(desiredCategoriesStr);
+        double maxAllowedPrice = budget > 0 ? budget + (budget * 0.05) : 0.0;
+
+        // Folosim lista mutabila pentru a putea sterge elemente din ea
+        List<HardwareDevice> dbCandidates = new ArrayList<>(deviceRepository.findCandidatesForAlgorithm(allowedCategoryIds, maxAllowedPrice));
+
+        if (!layoutIdStr.isEmpty()) {
+            try {
+                Integer layoutId = Integer.parseInt(layoutIdStr);
+                layoutRepository.findById(layoutId).ifPresent(layout -> {
+                    String drawingJson = layout.getDrawing();
+                    List<Long> existingDeviceIds = extractDeviceIdsFromJson(drawingJson);
+
+                    if (!existingDeviceIds.isEmpty()) {
+                        dbCandidates.removeIf(device -> existingDeviceIds.contains(device.getId()));
+                    }
+                });
+            } catch (NumberFormatException e) {
+                // Daca frontend-ul trimite un layout invalid, ignoram si mergem mai departe
+            }
+        }
+
+        List<HardwareDevice> filteredByEcosystem = filterByEcosystem(dbCandidates, ecosystem);
         List<HardwareDevice> filteredByLevel = filterByLevel(filteredByEcosystem, level);
         List<HardwareDevice> filteredByCategory = filterByTargetCategories(filteredByLevel, desiredCategoriesStr, ecosystem);
 
         return buildBalancedSetupWithinBudget(filteredByCategory, budget);
+    }
+
+    // --- METODA NOUA ---
+    // Transforma cuvintele in ID-uri pentru baza de date
+    private List<Integer> determineAllowedCategoryIds(String categoriesStr) {
+        if (categoriesStr.equalsIgnoreCase("Toate") || categoriesStr.equalsIgnoreCase(ORICARE)) {
+            // Daca vrea toate, returnam toate cele 12 ID-uri posibile (sau cate ai in total)
+            return Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+        }
+
+        List<String> requestedCats = Arrays.stream(categoriesStr.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .toList();
+
+        List<Integer> ids = new ArrayList<>();
+
+        // Hub-urile (5) si Routerele (12) sunt fundatia oricarei case smart, le cerem mereu
+        ids.add(5);
+        ids.add(12);
+
+        if (requestedCats.contains("security")) {
+            ids.addAll(Arrays.asList(1, 8)); // Camere si Senzori
+        }
+        if (requestedCats.contains("comfort")) {
+            ids.addAll(Arrays.asList(4, 11, 8)); // Electrocasnice, Aspiratoare, Senzori
+        }
+        if (requestedCats.contains("energy")) {
+            ids.addAll(Arrays.asList(2, 7, 8)); // Prelungitoare, Prize, Senzori
+        }
+        if (requestedCats.contains("entertainment")) {
+            ids.addAll(Arrays.asList(3, 6, 9, 10)); // Console, Monitoare, Boxe, TV
+        }
+
+        // Eliminam duplicatele in caz ca a cerut si security si comfort (amandoi folosesc senzori = 8)
+        return ids.stream().distinct().collect(Collectors.toList());
     }
 
     private Map<String, String> parseCriteriaString(String text) {
@@ -295,5 +360,34 @@ public class DeviceSuggestionAlgorithmService {
             return price; // Setup de baza
         }
         return price - basePricePerCategory.get(catId); // Cost de upgrade
+    }
+
+    private List<Long> extractDeviceIdsFromJson(String drawingJson) {
+        List<Long> ids = new ArrayList<>();
+        if (drawingJson == null || drawingJson.isBlank()) {
+            return ids;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(drawingJson);
+            JsonNode devicesNode = root.path("devices");
+
+            if (devicesNode.isArray()) {
+                for (JsonNode node : devicesNode) {
+                    JsonNode deviceNode = node.path("device");
+                    if (!deviceNode.isMissingNode() && deviceNode.has("id")) {
+                        try {
+                            ids.add(Long.parseLong(deviceNode.get("id").asText()));
+                        } catch (NumberFormatException e) {
+                            // Ignoram ID-urile care nu pot fi transformate in numere
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // In caz ca JSON-ul este invalid, nu stricam algoritmul, returnam o lista goala
+        }
+        return ids;
     }
 }

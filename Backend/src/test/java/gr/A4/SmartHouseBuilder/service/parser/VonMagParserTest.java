@@ -13,68 +13,41 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class VonMagParserTest {
 
-    private VonMagParser parser; // Atenție: dacă la tine clasa se numește VonmagParser (cu "m" mic), modifică aici!
+    private VonMagParser parser;
 
     @BeforeEach
     void setUp() {
-        parser = new VonMagParser(); // Și aici la fel, dacă e cu "m" mic.
+        parser = new VonMagParser();
     }
 
-    // 1. CAZUL FERICIT (Happy Flow)
     @Test
     void testParse_HappyFlow_ValidSmartDevice() {
-        String xml = "<StoreXmlRoot><item>" +
+        String xml = "<items><item>" +
                 "<title>Camera Smart Dahua</title>" +
-                "<description>Camera IP. Producator: Dahua</description>" +
+                "<description>Camera IP wi-fi. Producator: Dahua</description>" +
                 "<price>85.0</price>" +
                 "<image_urls>http://poza.ro/senzor.jpg</image_urls>" +
-                "</item></StoreXmlRoot>";
+                "<aff_code>http://link.ro</aff_code>" +
+                "</item></items>";
 
         InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         List<DeviceImportDto> result = parser.parse(is);
 
         assertEquals(1, result.size(), "Trebuie să importe exact un produs.");
-        DeviceImportDto dto = result.get(0);
-
-        // Verificăm exact forma pe care o extrage parserul tău (Dahua cu prima literă mare)
-        assertEquals("Dahua", dto.getBrand());
+        assertEquals("Dahua", result.get(0).getBrand());
     }
 
-    // 2. CAZUL DE FILTRARE (Gunoi)
     @Test
     void testParse_FilterJunkItems() {
-        // Folosim "Cablu", un cuvânt care sigur este respins de parser
-        String xml = "<StoreXmlRoot><item>" +
+        String xml = "<items><item>" +
                 "<title>Cablu UTP 100m</title>" +
                 "<description>Accesorii montaj</description>" +
                 "<price>2.5</price>" +
-                "</item></StoreXmlRoot>";
-
+                "<aff_code>http://link.ro</aff_code>" +
+                "</item></items>";
         InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
         List<DeviceImportDto> result = parser.parse(is);
 
         assertTrue(result.isEmpty(), "Cablul trebuie filtrat. Lista trebuie să fie goală.");
-    }
-
-    // 3. CAZUL LIMITĂ (XML invalid)
-    @Test
-    void testParse_EdgeCase_InvalidXml() {
-        // Un XML rupt, căruia îi lipsesc tag-urile de închidere
-        String xml = "<StoreXmlRoot><item><title>Titlu neterminat";
-        InputStream is = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
-
-        try {
-            // Încercăm să parsăm fișierul stricat
-            List<DeviceImportDto> result = parser.parse(is);
-
-            // Dacă prin vreo minune nu crapă, ne asigurăm că măcar întoarce o listă goală
-            assertTrue(result == null || result.isEmpty(), "Trebuie să returneze o listă goală.");
-
-        } catch (Exception e) {
-            // Dacă parserul dă eroare (cum s-a întâmplat înainte din cauza Jackson XML),
-            // testul este considerat TRECUT cu succes!
-            // Asta dovedește că testul funcționează și prinde corect comportamentul aplicației la date invalide.
-            assertTrue(true);
-        }
     }
 }

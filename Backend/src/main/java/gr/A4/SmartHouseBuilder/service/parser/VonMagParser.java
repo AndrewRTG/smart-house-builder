@@ -293,7 +293,7 @@ public class VonMagParser implements StoreParser {
             return 12;
         }
 
-        return null;
+        return CategoryMapper.determineCategoryId(item.title, item.description);
     }
 
     private boolean isCamera(String title, String text) {

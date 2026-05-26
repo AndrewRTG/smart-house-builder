@@ -132,6 +132,7 @@ public class SetupController {
         // separate /auth/me lookup just to render the avatar.
         Long authorId = setup.getUser() != null ? setup.getUser().getId() : null;
         String authorName = setup.getUser() != null ? setup.getUser().getUsername() : "User";
+        String authorAvatar = setup.getUser() != null ? setup.getUser().getAvatarUrl() : null;
 
         List<Long> deviceIds = deserializeDeviceIds(setup.getDeviceIds());
         return SetupResponse.builder()
@@ -150,6 +151,7 @@ public class SetupController {
                 .commentCount(comments)
                 .authorId(authorId)
                 .authorUsername(authorName)
+                .authorAvatarUrl(authorAvatar)
                 .tags(setupService.deserializeTags(setup.getTags()))
                 .thumbnailUrl(setup.getThumbnailUrl())
                 .canvasState(setup.getCanvasState())

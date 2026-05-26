@@ -1083,6 +1083,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId,
                                     return (
                                         <div
                                             key={icon.id}
+                                            data-placed-icon={icon.id}
                                             onMouseEnter={() => setHoveredIconIndex(index)}
                                             onMouseLeave={() => setHoveredIconIndex(null)}
                                             onMouseDown={(e) => {

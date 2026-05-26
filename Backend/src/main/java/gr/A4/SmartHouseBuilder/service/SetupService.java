@@ -181,11 +181,20 @@ public class SetupService {
         // device list. We also freeze a SNAPSHOT of description + deviceIds
         // at this moment — publishSetup later compares against this snapshot
         // to reject unchanged republishes.
+        // Carry over the visual + canvas state too, so the draft opens in the
+        // builder with the exact same components, positions, walls and
+        // furniture as the original. Without this the copy looks empty even
+        // though deviceIds carries the part list, and the thumbnail card in
+        // My Setups -> Drafts has no image to show.
         Setup copy = Setup.builder()
                 .user(user)
                 .name(name)
                 .description(original.getDescription())
                 .deviceIds(original.getDeviceIds())
+                .tags(original.getTags())
+                .thumbnailUrl(original.getThumbnailUrl())
+                .canvasState(original.getCanvasState())
+                .deviceSnapshots(original.getDeviceSnapshots())
                 .publicSetup(false)
                 .status(SetupStatus.DRAFT)
                 .copiedFromId(original.getId())

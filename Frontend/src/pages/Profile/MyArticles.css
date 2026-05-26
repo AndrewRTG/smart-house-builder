@@ -47,8 +47,12 @@
 
 .empty-state p {
   font-size: 1.1rem;
-  color: var(--text-secondary, #666);
+  color: #1a2236;
   margin-bottom: 1.5rem;
+}
+
+.my-articles-container.dark .empty-state p {
+  color: #e8edf5;
 }
 
 .cta-btn {
@@ -88,7 +92,7 @@
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--text-secondary, #666);
+  color: #1a2236;
   font-size: 0.95rem;
   font-weight: 600;
   font-family: 'Montserrat', sans-serif;
@@ -185,9 +189,13 @@
 
 .article-preview {
   font-size: 0.95rem;
-  color: var(--text-secondary, #666);
+  color: #3a4252;
   margin: 0 0 1rem 0;
   line-height: 1.5;
+}
+
+.my-articles-container.dark .article-preview {
+  color: #c5cdd9;
 }
 
 .article-meta {
@@ -195,18 +203,32 @@
   gap: 1.5rem;
   flex-wrap: wrap;
   font-size: 0.85rem;
-  color: var(--text-secondary, #666);
+  color: #3a4252;
+  align-items: center;
+}
+
+.my-articles-container.dark .article-meta {
+  color: #c5cdd9;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  color: #3a4252;
+}
+
+.my-articles-container.dark .meta-item {
+  color: #c5cdd9;
 }
 
 .meta-item .label {
-  font-weight: 500;
-  color: var(--text-primary, #333);
+  font-weight: 600;
+  color: #1a2236;
+}
+
+.my-articles-container.dark .meta-item .label {
+  color: #e8edf5;
 }
 
 .created-at {

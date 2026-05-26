@@ -412,4 +412,44 @@ describe('LayoutCanvas - Suita de Testare', () => {
       );
     });
   });
+
+  test('Afișează butonul Wizard Suggestions și filtrează corect produsele', async () => {
+    sessionStorage.setItem('wizard_selected_devices', JSON.stringify([1]));
+
+    (globalThis.fetch as any).mockResolvedValueOnce(new Response(JSON.stringify([
+      { id: '1', name: 'Produs din Wizard', brand: 'Philips', bestPrice: 50, categoryId: 1, type: 'bec' },
+      { id: '2', name: 'Produs Extra', brand: 'Aqara', bestPrice: 30, categoryId: 8, type: 'senzor' }
+    ]), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+    render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} />);
+
+    expect(await screen.findByText('Produs din Wizard')).toBeInTheDocument();
+    expect(screen.getByText('Produs Extra')).toBeInTheDocument();
+
+    const wizardBtn = await screen.findByText('Wizard Suggestions');
+    expect(wizardBtn).toBeInTheDocument();
+
+    fireEvent.click(wizardBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Produs Extra')).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('Produs din Wizard')).toBeInTheDocument();
+
+    fireEvent.click(wizardBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Produs Extra')).toBeInTheDocument();
+    });
+  });
+
+  test('Nu afișează butonul Wizard Suggestions dacă sessionStorage este gol', async () => {
+    sessionStorage.removeItem('wizard_selected_devices');
+
+    render(<LayoutCanvas isDarkMode={false} onBack={mockOnBack} />);
+
+    await screen.findByText('Philips Hue E27');
+
+    expect(screen.queryByText('Wizard Suggestions')).not.toBeInTheDocument();
+  });
 });

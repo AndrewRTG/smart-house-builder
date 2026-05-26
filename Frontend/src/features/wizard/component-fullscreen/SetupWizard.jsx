@@ -148,8 +148,7 @@ const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
     // ── On mount: ONLY fetch algorithm suggestions ─────────────────────────
     useEffect(() => {
         setLoadingAlgo(true);
-        const setupName = selectedSetup ? selectedSetup.name : 'Nespecificat';
-        const criterii = buildCriteria(setupName, s);
+        const criterii = buildCriteria(selectedSetup);
         const encodedCriteria = encodeURIComponent(criterii);
 
         fetch(`${API_BASE}/api/devices/algorithmSuggestions?criteria=${encodedCriteria}`)
@@ -167,8 +166,7 @@ const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
         setHasRequestedAI(true);
         setLoadingAI(true);
 
-        const setupName = selectedSetup ? selectedSetup.name : 'Nespecificat';
-        const userContext = buildCriteria(setupName, s); // Algoritmul și filtrele setate de user
+        const userContext = buildCriteria(selectedSetup); // Algoritmul și filtrele setate de user
 
         try {
             const res = await authFetch('/api/ai/agent-search', {
@@ -264,8 +262,54 @@ const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const buildCriteria = (setupName, s) =>
-    `Proiect/Cameră: ${setupName}. Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel}. Categorii: ${s.categories.join(', ')}. Protocoale: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
+const parseJsonValue = (value, fallback) => {
+    if (!value) return fallback;
+    if (typeof value !== 'string') return value;
+
+    try {
+        return JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+};
+
+const getSetupDevices = (setup) => {
+    if (!setup) return [];
+
+    const canvasState = parseJsonValue(setup.canvasState, {});
+    const placedIcons = Array.isArray(canvasState.placedIcons) ? canvasState.placedIcons : [];
+    const deviceSnapshots = parseJsonValue(setup.deviceSnapshots, []);
+
+    if (placedIcons.length > 0) {
+        return placedIcons.map((icon) => ({
+            id: icon.deviceId || icon.id,
+            name: icon.name || '',
+            type: icon.type || '',
+            brand: icon.brand || '',
+        }));
+    }
+
+    if (Array.isArray(deviceSnapshots) && deviceSnapshots.length > 0) {
+        return deviceSnapshots.map((device) => ({
+            id: device.id,
+            name: device.name || '',
+            type: device.type || device.categoryName || '',
+            brand: device.brand || '',
+        }));
+    }
+
+    return (setup.deviceIds || []).map((id) => ({ id }));
+};
+
+const buildCriteria = (setup) => {
+    const roomId = setup?.id || null;
+    const devices = getSetupDevices(setup);
+
+    return JSON.stringify({
+        roomId,
+        devices,
+    });
+};
 
 const mapDevices = (data) =>
     data.map(item => ({
@@ -306,29 +350,50 @@ const SetupWizard = ({ onFinish }) => {
 
     useEffect(() => {
         if (s.step !== 1) return;
+
+        const normalizeSetupsResponse = async (response) => {
+            if (!response?.ok) return [];
+            const data = await response.json();
+            return data.content ? data.content : (Array.isArray(data) ? data : []);
+        };
+
         const fetchSetups = async () => {
             setLoadingLayouts(true);
             try {
-                const response = await authFetch('/api/v1/setups/user/drafts?page=0&size=20');
-                if (response.ok) {
-                    const data = await response.json();
-                    const setupsArray = data.content ? data.content : (Array.isArray(data) ? data : []);
-                    setSavedLayouts(setupsArray);
-                }
+                const [draftsRes, publishedRes] = await Promise.all([
+                    authFetch('/api/v1/setups/user/drafts?page=0&size=20'),
+                    authFetch('/api/v1/setups/user/published?page=0&size=20'),
+                ]);
+
+                const [drafts, published] = await Promise.all([
+                    normalizeSetupsResponse(draftsRes),
+                    normalizeSetupsResponse(publishedRes),
+                ]);
+
+                setSavedLayouts([
+                    ...drafts.map((setup) => ({
+                        ...setup,
+                        status: setup.status || 'DRAFT',
+                    })),
+                    ...published.map((setup) => ({
+                        ...setup,
+                        status: setup.status || 'PUBLISHED',
+                    })),
+                ]);
             } catch (error) {
                 console.error('Eroare la încărcarea Setups în wizard:', error);
             } finally {
                 setLoadingLayouts(false);
             }
         };
+
         fetchSetups();
     }, [s.step]);
 
     const handleAgentSearch = async () => {
         if (!agentPrompt.trim()) return;
         setIsAgentLoading(true);
-        const setupName = selectedSetup ? selectedSetup.name : 'Nespecificat';
-        const userContext = `Proiect/Cameră vizată: ${setupName}. Buget: ${s.priceRange[1]} Euro. Nivel tehnic: ${s.techLevel}. Ecosistem: ${s.ecosystem}. Categorii: ${s.categories.join(', ')}.`;
+        const userContext = buildCriteria(selectedSetup);
         try {
             const res = await authFetch('/api/ai/agent-search', {
                 method: 'POST',
@@ -404,15 +469,44 @@ const SetupWizard = ({ onFinish }) => {
                                                         ✓
                                                     </div>
                                                 )}
-                                                <div style={{ height: '90px', backgroundColor: isSelected ? '#cce0f5' : '#a8c2d8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease' }}>
-                                                    <span style={{ fontSize: '2rem' }}>🏠</span>
+                                                <div
+                                                    style={{
+                                                        height: '90px',
+                                                        backgroundColor: setup.thumbnailUrl ? '#1a1a1e' : (isSelected ? '#cce0f5' : '#a8c2d8'),
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'background-color 0.2s ease',
+                                                        padding: setup.thumbnailUrl ? 6 : 0,
+                                                    }}
+                                                >
+                                                    {setup.thumbnailUrl ? (
+                                                        <img
+                                                            src={setup.thumbnailUrl}
+                                                            alt={setup.name || 'Setup preview'}
+                                                            style={{
+                                                                maxWidth: '100%',
+                                                                maxHeight: '100%',
+                                                                width: 'auto',
+                                                                height: 'auto',
+                                                                objectFit: 'contain',
+                                                                display: 'block',
+                                                                borderRadius: 6,
+                                                            }}
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <span style={{ fontSize: '2rem' }}>🏠</span>
+                                                    )}
                                                 </div>
                                                 <div style={{ padding: '12px', textAlign: 'left' }}>
                                                     <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--wz-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                         {setup.name || 'Untitled Setup'}
                                                     </div>
                                                     <div style={{ fontSize: '0.7rem', color: 'var(--wz-muted)', marginTop: '4px' }}>
-                                                        Status: {setup.status || 'Draft'}
+                                                        Status: {String(setup.status || 'DRAFT').toUpperCase() === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'}
                                                     </div>
                                                 </div>
                                             </div>

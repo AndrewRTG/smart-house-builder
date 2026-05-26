@@ -256,6 +256,7 @@ describe('Profile area', () => {
     const { unmount } = renderInShell(<MySetups isDark={false} />);
     expect(await screen.findByText('Draft kitchen')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Publish'));
+    fireEvent.click(screen.getByRole('button', { name: /public/i }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
       'http://localhost:20025/api/v1/setups/1/publish',
       expect.objectContaining({ method: 'PUT' })
@@ -279,6 +280,7 @@ describe('Profile area', () => {
     fireEvent.click(await screen.findByText('Published'));
     expect(await screen.findByText('Published living')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Delete published setup'));
+    fireEvent.click(screen.getByRole('button', { name: /tot/i }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
       'http://localhost:20025/api/v1/setups/2',
       expect.objectContaining({ method: 'DELETE' })

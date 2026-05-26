@@ -1328,3 +1328,37 @@ button.sidebar-section.user-profile:focus-visible {
 .dark-mode .empty-clear-filter {
   color: #4a9eff;
 }
+
+.community-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 12px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(96, 165, 250, 0.5);
+  background: rgba(37, 99, 235, 0.12);
+  color: #bfdbfe;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.28);
+}
+
+.pagination-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

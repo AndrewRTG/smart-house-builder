@@ -91,7 +91,9 @@ function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete,
         setShowReplyForm(false);
         onReplySubmit();
       } else {
-        showError('Failed to post reply');
+        const data = await response.json().catch(() => null);
+        const msg = data?.message || data?.error || `Failed to post reply (HTTP ${response.status})`;
+        showError(msg);
       }
     } catch (error) {
       console.error('Error posting reply:', error);
@@ -270,7 +272,9 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
         setPage(0);
         fetchComments();
       } else {
-        showError('Failed to add comment');
+        const data = await response.json().catch(() => null);
+        const msg = data?.message || data?.error || `Failed to add comment (HTTP ${response.status})`;
+        showError(msg);
       }
     } catch (error) {
       console.error('Error adding comment:', error);

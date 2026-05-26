@@ -10,6 +10,7 @@ import WizardSidebar from '../wizard/components/WizardSidebar';
 import {authFetch} from '../../utils/authFetch';
 import {captureLayoutThumbnailRoot} from './captureLayoutThumbnail';
 import useFilterStore from '../../store/useFilterStore';
+import {SETUP_TAG_GROUPS} from '../../utils/setupTags';
 import { fuzzyFilter } from '../../utils/fuzzySearch';
 
 // --- INTERFACES ---
@@ -34,6 +35,7 @@ interface Room {
 interface HistorySnapshot { lines: any[]; icons: any[]; furniture: any[]; }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
+const GRID_POINT_CM = 50;
 
 const ICON_MAP: Record<string, React.FC<{ color: string }>> = {
     bec: BecIcon, senzor: SenzorIcon, lock: LockIcon, router: RouterIcon,
@@ -54,9 +56,9 @@ function formatEur(n: number): string {
     }).format(Math.round(n));
 }
 
-interface LayoutCanvasProps { isDarkMode: boolean; onBack: () => void; }
+interface LayoutCanvasProps { isDarkMode: boolean; onBack: () => void; setupId?: number | null; }
 
-const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
+const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}) => {
     const generateLayoutId = () => {
         const r = () => Math.floor(1000 + Math.random() * 9000).toString();
         return `layout-uuid-${r()}-${r()}`;
@@ -80,24 +82,23 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
     const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const validationRequestIdRef = useRef(0);
     const exportData = useMemo<{ devices: Device[]; rooms: Room[]; }>(() => {
-        const scale = layout.dotSpacing || 1;
         const walls = lines.filter(l => l.type === 'wall').map(l => ({
-            x1: Math.trunc(l.start.col * scale), y1: Math.trunc(l.start.row * scale),
-            x2: Math.trunc(l.end.col * scale), y2: Math.trunc(l.end.row * scale)
+            x1: Math.trunc(l.start.col * GRID_POINT_CM), y1: Math.trunc(l.start.row * GRID_POINT_CM),
+            x2: Math.trunc(l.end.col * GRID_POINT_CM), y2: Math.trunc(l.end.row * GRID_POINT_CM)
         }));
         const windows = lines.filter(l => l.type === 'window').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale),
-            width: Math.trunc(Math.abs(l.end.col - l.start.col) * scale) || Math.trunc(scale),
-            height: Math.trunc(Math.abs(l.end.row - l.start.row) * scale) || Math.trunc(scale),
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * GRID_POINT_CM),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * GRID_POINT_CM),
+            width: Math.trunc(Math.abs(l.end.col - l.start.col) * GRID_POINT_CM) || GRID_POINT_CM,
+            height: Math.trunc(Math.abs(l.end.row - l.start.row) * GRID_POINT_CM) || GRID_POINT_CM,
             distanceFromFloor: 0
         }));
         const doors = lines.filter(l => l.type === 'door').map(l => ({
-            x: Math.trunc(Math.min(l.start.col, l.end.col) * scale),
-            y: Math.trunc(Math.min(l.start.row, l.end.row) * scale)
+            x: Math.trunc(Math.min(l.start.col, l.end.col) * GRID_POINT_CM),
+            y: Math.trunc(Math.min(l.start.row, l.end.row) * GRID_POINT_CM)
         }));
         const plugs = placedIcons.filter(i => i.type === 'priza').map(i => ({
-            x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)
+            x: Math.trunc(i.col * GRID_POINT_CM), y: Math.trunc(i.row * GRID_POINT_CM)
         }));
         const roomSquareMeters = (() => {
             if (!walls.length) return 10;
@@ -107,13 +108,17 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         })();
         const rooms = [{id: 'room-001', squareMeters: roomSquareMeters, wallType: 'concrete', walls, doors, windows, plugs}];
         const devices = placedIcons.filter(i => i.type !== 'priza').map(i => ({
-            coordinates: {x: Math.trunc(i.col * scale), y: Math.trunc(i.row * scale)},
-            rotationAngle: 0,
+            coordinates: {x: Math.trunc(i.col * GRID_POINT_CM), y: Math.trunc(i.row * GRID_POINT_CM)},
+            rotationAngle: Number(i.rotation || 0),
             device: {
-                id: i.id, name: i.name, price: i.priceEUR, ecosystem: 'Apple HomeKit',
-                protocol: i.type === 'router' ? 'WiFi' : 'Zigbee',
+                id: (i.deviceId || i.id).toString(),
+                name: i.name,
+                price: i.priceEUR,
+                ecosystem: 'Apple HomeKit',
+                protocol: i.communicationProtocol || (i.type === 'router' ? 'WiFi' : 'Zigbee'),
                 lumens: i.type === 'bec' ? 800 : 0, requiresPlug: i.type !== 'bec',
-                rangeRadius: i.type === 'senzor' ? 10 : 0, deviceType: i.type,
+                rangeRadius: i.type === 'senzor' ? 10 : 0,
+                deviceType: i.type,
                 mountType: i.type === 'tv' ? 'wall' : 'table',
                 fieldOfView: i.type === 'interfon' ? 120 : 0,
                 powerConsumption: i.type === 'bec' ? 10 : 5,
@@ -121,12 +126,23 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             }
         }));
         return {devices, rooms};
-    }, [placedIcons, lines, layout.dotSpacing]);
+    }, [placedIcons, lines]);
     const exportDataRef = useRef(exportData);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [validationInfos, setValidationInfos] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSavedId, setLastSavedId] = useState<number | null>(null);
+    const [currentSetupId, setCurrentSetupId] = useState<number | null>(setupId ?? null);
+    const [currentSetupName, setCurrentSetupName] = useState<string>('');
+    const [currentLayoutDbId, setCurrentLayoutDbId] = useState<number | null>(null);
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [pendingSetupName, setPendingSetupName] = useState('');
+    const [saveNameError, setSaveNameError] = useState(false);
+    const [showPostModal, setShowPostModal] = useState(false);
+    const [postDescription, setPostDescription] = useState('');
+    const [postSelectedTags, setPostSelectedTags] = useState<string[]>([]);
+    const [isPosting, setIsPosting] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     // --- THEME ---
     const colors = {
@@ -156,13 +172,104 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         return fuzzyFilter(fetchedDevices, searchQuery, (d: any) => [d.name, d.brand]);
     }, [fetchedDevices, searchQuery]);
 
-    const getIconTypeForCategory = (categoryId: number) => {
-        const iconMapping: Record<number, string> = {
-            1: 'interfon', 2: 'prelungitor', 3: 'controller', 4: 'hub',
-            5: 'hub', 6: 'tv', 7: 'priza', 8: 'senzor',
-            9: 'soundsystem', 10: 'tv', 11: 'aspirator', 12: 'router'
+    const normalizeText = (value?: string | null) =>
+        (value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+    const includesAny = (text: string, keywords: string[]) =>
+        keywords.some(keyword => text.includes(keyword));
+
+    const getIconTypeForDevice = (device: any) => {
+        const name = normalizeText(device.name);
+        const category = normalizeText(device.categoryName);
+        const description = normalizeText(device.description);
+        const text = `${name} ${category} ${description}`;
+
+        if (includesAny(text, [
+            'bec', 'bulb', 'led', 'lampa', 'lamp', 'lumina', 'light', 'lighting'
+        ])) {
+            return 'bec';
+        }
+
+        if (includesAny(text, [
+            'priza', 'outlet', 'plug', 'intrerupator', 'switch', 'socket'
+        ])) {
+            return 'priza';
+        }
+
+        if (includesAny(text, [
+            'senzor', 'sensor', 'motion', 'miscare', 'temperatura', 'temperature',
+            'umiditate', 'humidity', 'smoke', 'fum', 'contact'
+        ])) {
+            return 'senzor';
+        }
+
+        if (includesAny(text, [
+            'router', 'wi-fi router', 'wifi router', 'mesh', 'nighthawk', 'zenwifi'
+        ])) {
+            return 'router';
+        }
+
+        if (includesAny(text, [
+            'hub', 'gateway', 'bridge', 'zigbee hub'
+        ])) {
+            return 'hub';
+        }
+
+        if (includesAny(text, [
+            'tv', 'televizor', 'television', 'monitor', 'display'
+        ])) {
+            return 'tv';
+        }
+
+        if (includesAny(text, [
+            'interfon', 'doorbell', 'videointerfon', 'video doorbell'
+        ])) {
+            return 'interfon';
+        }
+
+        if (includesAny(text, [
+            'camera', 'camere', 'cam', 'nest cam'
+        ])) {
+            return 'interfon';
+        }
+
+        if (includesAny(text, [
+            'sound', 'audio', 'speaker', 'boxa', 'sonos'
+        ])) {
+            return 'soundsystem';
+        }
+
+        if (includesAny(text, [
+            'aspirator', 'vacuum', 'roborock', 'robot vacuum'
+        ])) {
+            return 'aspirator';
+        }
+
+        if (includesAny(text, [
+            'controller', 'consola', 'console', 'gaming'
+        ])) {
+            return 'controller';
+        }
+
+        const fallbackByCategoryId: Record<number, string> = {
+            1: 'interfon',
+            2: 'prelungitor',
+            3: 'controller',
+            4: 'hub',
+            5: 'hub',
+            6: 'tv',
+            7: 'priza',
+            8: 'senzor',
+            9: 'soundsystem',
+            10: 'tv',
+            11: 'aspirator',
+            12: 'router'
         };
-        return iconMapping[categoryId] || 'bec';
+
+        return fallbackByCategoryId[Number(device.categoryId)] || 'bec';
     };
 
     const getCategoryIdByName = (name: string) => {
@@ -219,10 +326,14 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                     const mapped = data.map((d: any) => ({
                         id: d.id.toString(),
                         name: d.name,
-                        brand: d.brand,
+                        brand: d.brand || 'Generic',
+                        categoryId: d.categoryId,
+                        categoryName: d.categoryName,
+                        communicationProtocol: d.communicationProtocol,
+                        specifications: d.specifications,
                         price: `${d.bestPrice || 0}€`,
                         priceEUR: d.bestPrice || 0,
-                        type: getIconTypeForCategory(d.categoryId),
+                        type: getIconTypeForDevice(d),
                         status: 'online'
                     }));
                     setFetchedDevices(mapped);
@@ -319,6 +430,33 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (!setupId) return;
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        fetch(`${API_BASE}/api/v1/setups/${setupId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.ok ? r.json() : null).then(setup => {
+            if (!setup) return;
+            setCurrentSetupId(setup.id);
+            setCurrentSetupName(setup.name || '');
+            if (setup.canvasState) {
+                try {
+                    const state = JSON.parse(setup.canvasState);
+
+                    if (state.layoutId) {
+                        const parsedLayoutId = Number(state.layoutId);
+                        if (!Number.isNaN(parsedLayoutId)) setCurrentLayoutDbId(parsedLayoutId);
+                    }
+
+                    if (Array.isArray(state.lines)) setLines(state.lines);
+                    if (Array.isArray(state.placedIcons)) setPlacedIcons(state.placedIcons);
+                    if (Array.isArray(state.placedFurniture)) setPlacedFurniture(state.placedFurniture);
+                } catch { /* ignore corrupt state */ }
+            }
+        }).catch(() => {});
+    }, [setupId]);
+
     // --- LOGIC ---
     const saveHistory = () => {
         setUndoStack(prev => [{
@@ -368,6 +506,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
             saveHistory();
             setPlacedIcons([...placedIcons, {
                 col, row, id: Date.now().toString(),
+                deviceId: selectedDevice.id,
                 type: selectedDevice.type, name: selectedDevice.name,
                 brand: selectedDevice.brand, status: selectedDevice.status,
                 priceEUR: parseInt(selectedDevice.price.replace('€', '')),
@@ -462,44 +601,201 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
         requestValidation();
     }, [exportData]);
 
-    const handleSaveToDb = async () => {
-        if (isSaving) return;
-        if (validationErrors.length > 0) return;
-        setIsSaving(true);
+    const saveLayoutToDb = async () => {
+        let thumbnailPngBase64: string | null = null;
+
         try {
-            const data = exportDataRef.current;
-            let thumbnailPngBase64: string | null = null;
-            try {
-                const snapRoot = document.getElementById('layout-capture-root');
-                thumbnailPngBase64 = await captureLayoutThumbnailRoot(snapRoot);
-            } catch {
-                thumbnailPngBase64 = null;
-            }
-            const payload: Record<string, unknown> = {
-                id: layoutId,
-                scale: 'cm',
-                maxBudget: 15000,
-                targetEcosystem: 'Apple HomeKit',
-                rooms: data.rooms,
-                devices: data.devices
-            };
-            if (thumbnailPngBase64) payload.thumbnailPngBase64 = thumbnailPngBase64;
-            const res = await authFetch(`${API_BASE}/api/team2/layouts/save`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+            const snapRoot = document.getElementById('layout-capture-root') as HTMLElement | null;
+            thumbnailPngBase64 = await captureLayoutThumbnailRoot(snapRoot, placedIcons, layout);
+        } catch {
+            thumbnailPngBase64 = null;
+        }
+
+        const payload: Record<string, unknown> = {
+            id: layoutId,
+            scale: 'cm',
+            maxBudget: 15000,
+            targetEcosystem: 'Apple HomeKit',
+            rooms: exportData.rooms,
+            devices: exportData.devices
+        };
+
+        if (thumbnailPngBase64) {
+            payload.thumbnailPngBase64 = thumbnailPngBase64;
+        }
+
+        const res = await authFetch(`${API_BASE}/api/team2/layouts/save`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+        });
+
+        const json = await res.json().catch(() => ({}));
+
+        if (!res.ok || json?.saved !== true || !json?.id) {
+            throw new Error('Eroare la salvarea layout-ului');
+        }
+
+        const savedLayoutId = Number(json.id);
+        setCurrentLayoutDbId(savedLayoutId);
+
+        return savedLayoutId;
+    };
+
+    const buildSetupPayload = async (name: string, isPublic = false) => {
+        const savedLayoutId = await saveLayoutToDb();
+
+        const deviceIds = placedIcons
+            .map(i => parseInt(i.deviceId || i.id, 10))
+            .filter(n => !isNaN(n));
+
+        const snapshots = placedIcons.map(i => ({
+            id: parseInt(i.deviceId || i.id, 10),
+            name: i.name || 'Unknown',
+            brand: i.brand || '',
+            categoryId: i.categoryId ?? null,
+            categoryName: i.categoryName || '',
+            priceEUR: Number(i.priceEUR) || 0,
+            type: i.type || '',
+            communicationProtocol: i.communicationProtocol || '',
+        }));
+
+        const deviceSnapshots = JSON.stringify(snapshots);
+
+        const canvasState = JSON.stringify({
+            layoutId: savedLayoutId,
+            lines,
+            placedIcons,
+            placedFurniture
+        });
+
+        const thumbnailUrl = `${API_BASE}/api/team2/layouts/${savedLayoutId}/thumbnail`;
+
+        return {
+            name,
+            deviceIds,
+            isPublic,
+            canvasState,
+            thumbnailUrl,
+            deviceSnapshots
+        };
+    };
+
+    const doSaveSetup = async (name: string, existingId: number | null) => {
+        setIsSaving(true);
+        setSaveSuccess(false);
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+
+            const payload = await buildSetupPayload(name);
+            const url = existingId
+                ? `${API_BASE}/api/v1/setups/${existingId}`
+                : `${API_BASE}/api/v1/setups`;
+
+            const method = existingId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(payload),
             });
-            const json = await res.json().catch(() => ({}));
-            if (!res.ok || json?.saved !== true) {
+
+            if (res.ok) {
+                const json = await res.json().catch(() => ({}));
+                setCurrentSetupId(json.id ?? existingId);
+                setCurrentSetupName(name);
+                setLastSavedId(json.id ?? existingId);
+                setSaveSuccess(true);
+                setTimeout(() => setSaveSuccess(false), 3000);
+            } else {
                 setValidationErrors(['Eroare la salvare']);
-                setLastSavedId(null);
-                return;
             }
-            setLastSavedId(json.id ?? null);
         } catch {
-            setLastSavedId(null);
+            setValidationErrors(['Eroare la salvare']);
         } finally {
             setIsSaving(false);
+        }
+    };
+        
+    const handleSave = () => {
+        if (isSaving) return;
+        if (currentSetupId) {
+            doSaveSetup(currentSetupName || 'Untitled Setup', currentSetupId);
+        } else {
+            setPendingSetupName('');
+            setSaveNameError(false);
+            setShowSaveModal(true);
+        }
+    };
+
+    const handleSaveModalConfirm = () => {
+        if (!pendingSetupName.trim()) { setSaveNameError(true); return; }
+        setShowSaveModal(false);
+        doSaveSetup(pendingSetupName.trim(), null);
+    };
+
+    const handlePost = () => {
+        setPostDescription('');
+        setPostSelectedTags([]);
+        setShowPostModal(true);
+    };
+
+    const togglePostTag = (tag: string) => {
+        setPostSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+    };
+
+    const handlePostSubmit = async () => {
+        if (isPosting) return;
+        setIsPosting(true);
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+            const name = currentSetupName || pendingSetupName || 'My Setup';
+            let setupIdToPublish = currentSetupId;
+            if (!setupIdToPublish) {
+                const payload = await buildSetupPayload(name);
+                const res = await fetch(`${API_BASE}/api/v1/setups`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) { setValidationErrors(['Eroare la creare setup']); return; }
+                const json = await res.json().catch(() => ({}));
+                setupIdToPublish = json.id;
+                setCurrentSetupId(json.id);
+                setCurrentSetupName(name);
+            } else {
+                const payload = await buildSetupPayload(name);
+                await fetch(`${API_BASE}/api/v1/setups/${setupIdToPublish}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+            }
+            const tags = postSelectedTags;
+            const publishRes = await fetch(`${API_BASE}/api/v1/setups/${setupIdToPublish}/publish`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: postDescription, tags }),
+            });
+            if (publishRes.ok) {
+                setShowPostModal(false);
+                setSaveSuccess(true);
+                setLastSavedId(setupIdToPublish);
+                setTimeout(() => setSaveSuccess(false), 3000);
+            } else {
+                const err = await publishRes.json().catch(() => ({}));
+                setValidationErrors([err?.message || err?.error || 'Eroare la publicare']);
+            }
+        } catch {
+            setValidationErrors(['Eroare la publicare']);
+        } finally {
+            setIsPosting(false);
         }
     };
 
@@ -559,37 +855,37 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                 {/* Save / Post buttons */}
                 <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
                     <button
-                        onClick={handleSaveToDb}
-                        disabled={isSaving || validationErrors.length > 0}
+                        onClick={handleSave}
+                        disabled={isSaving}
                         style={{
                             display: 'flex', alignItems: 'center', gap: '8px',
                             padding: '10px 28px', borderRadius: '999px', border: 'none',
-                            background: colors.btnSecondary, color: colors.textMain,
+                            background: saveSuccess ? '#22c55e' : colors.btnSecondary,
+                            color: saveSuccess ? '#fff' : colors.textMain,
                             fontWeight: 600, fontSize: '14px',
-                            cursor: (isSaving || validationErrors.length > 0) ? 'not-allowed' : 'pointer',
-                            opacity: (isSaving || validationErrors.length > 0) ? 0.6 : 1,
+                            cursor: isSaving ? 'not-allowed' : 'pointer',
+                            opacity: isSaving ? 0.6 : 1,
                             boxShadow: '0 1px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap',
-                            fontFamily: 'inherit'
+                            fontFamily: 'inherit', transition: 'background 0.3s'
                         }}
                     >
-                        <span style={{opacity: 0.7}}>💾</span> Save
+                        <span style={{opacity: 0.7}}>💾</span> {isSaving ? 'Se salvează...' : 'Save'}
                     </button>
-                    {lastSavedId != null && (
-                        <div style={{fontSize: '12px', fontWeight: 700, color: colors.textMain}}>
-                            Saved (id: {lastSavedId})
-                        </div>
-                    )}
                     <button
+                        onClick={handlePost}
+                        disabled={isPosting}
                         style={{
                             display: 'flex', alignItems: 'center', gap: '8px',
                             padding: '10px 28px', borderRadius: '999px', border: 'none',
-                            background: colors.btnSecondary, color: colors.textMain,
-                            fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                            background: '#00B4D8', color: '#fff',
+                            fontWeight: 600, fontSize: '14px',
+                            cursor: isPosting ? 'not-allowed' : 'pointer',
+                            opacity: isPosting ? 0.6 : 1,
                             boxShadow: '0 1px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap',
                             fontFamily: 'inherit'
                         }}
                     >
-                        <span style={{opacity: 0.7}}>🚀</span> Post
+                        <span style={{opacity: 0.9}}>🚀</span> {isPosting ? 'Se postează...' : 'Post'}
                     </button>
                 </div>
             </div>
@@ -954,6 +1250,123 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack}) => {
                     </div>
                 </div>
             </div>
+        {/* ── Save Modal ── */}
+        {showSaveModal && (
+            <div style={{
+                position: 'fixed', inset: 0, zIndex: 9999,
+                background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }} onClick={() => setShowSaveModal(false)}>
+                <div style={{
+                    background: isDarkMode ? '#2F2F41' : '#fff', borderRadius: '24px',
+                    padding: '32px', width: '420px', boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
+                }} onClick={e => e.stopPropagation()}>
+                    <h2 style={{margin: '0 0 8px 0', fontSize: '18px', fontWeight: 700, color: colors.textMain}}>Salvează setup-ul</h2>
+                    <p style={{margin: '0 0 20px 0', fontSize: '13px', color: colors.textMuted}}>
+                        Alege un nume pentru setup-ul tău. Îl vei putea edita oricând din profilul tău.
+                    </p>
+                    <label style={{fontSize: '12px', fontWeight: 600, color: colors.textMuted, display: 'block', marginBottom: '6px'}}>Nume setup</label>
+                    <input
+                        autoFocus
+                        type="text"
+                        placeholder="ex: Dormitor Automatizat"
+                        value={pendingSetupName}
+                        onChange={e => { setPendingSetupName(e.target.value); setSaveNameError(false); }}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveModalConfirm(); if (e.key === 'Escape') setShowSaveModal(false); }}
+                        style={{
+                            width: '100%', padding: '12px 16px', borderRadius: '12px', boxSizing: 'border-box',
+                            border: saveNameError ? '2px solid #ef4444' : `2px solid ${colors.border}`,
+                            background: isDarkMode ? '#3A3A4E' : '#f8fafc', color: colors.textMain,
+                            fontSize: '14px', fontFamily: 'inherit', outline: 'none'
+                        }}
+                    />
+                    {saveNameError && <p style={{margin: '6px 0 0 0', fontSize: '12px', color: '#ef4444'}}>⚠ Te rog introdu un nume.</p>}
+                    <div style={{display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end'}}>
+                        <button onClick={() => setShowSaveModal(false)} style={{padding: '10px 24px', borderRadius: '999px', border: `1px solid ${colors.border}`, background: 'transparent', color: colors.textMain, fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit'}}>Anulează</button>
+                        <button onClick={handleSaveModalConfirm} style={{padding: '10px 24px', borderRadius: '999px', border: 'none', background: colors.btnSecondary, color: colors.textMain, fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit'}}>Salvează ca draft</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* ── Post Modal ── */}
+        {showPostModal && (
+            <div style={{
+                position: 'fixed', inset: 0, zIndex: 9999,
+                background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }} onClick={() => setShowPostModal(false)}>
+                <div style={{
+                    background: isDarkMode ? '#2F2F41' : '#fff', borderRadius: '24px',
+                    padding: '32px', width: '480px', boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
+                }} onClick={e => e.stopPropagation()}>
+                    <h2 style={{margin: '0 0 8px 0', fontSize: '18px', fontWeight: 700, color: colors.textMain}}>Publică setup-ul</h2>
+                    <p style={{margin: '0 0 20px 0', fontSize: '13px', color: colors.textMuted}}>
+                        Setup-ul tău va apărea pe pagina de Community și în profilul tău la secțiunea Published.
+                    </p>
+                    {!currentSetupId && (
+                        <>
+                            <label style={{fontSize: '12px', fontWeight: 600, color: colors.textMuted, display: 'block', marginBottom: '6px'}}>Nume setup</label>
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="ex: Casa Inteligentă"
+                                value={pendingSetupName}
+                                onChange={e => setPendingSetupName(e.target.value)}
+                                style={{width: '100%', padding: '12px 16px', borderRadius: '12px', boxSizing: 'border-box', border: `2px solid ${colors.border}`, background: isDarkMode ? '#3A3A4E' : '#f8fafc', color: colors.textMain, fontSize: '14px', fontFamily: 'inherit', outline: 'none', marginBottom: '16px'}}
+                            />
+                        </>
+                    )}
+                    <label style={{fontSize: '12px', fontWeight: 600, color: colors.textMuted, display: 'block', marginBottom: '6px'}}>Descriere</label>
+                    <textarea
+                        placeholder="Descrie setup-ul tău: ce dispozitive ai ales, pentru ce cameră, ce probleme rezolvă..."
+                        value={postDescription}
+                        onChange={e => setPostDescription(e.target.value)}
+                        rows={4}
+                        style={{width: '100%', padding: '12px 16px', borderRadius: '12px', boxSizing: 'border-box', border: `2px solid ${colors.border}`, background: isDarkMode ? '#3A3A4E' : '#f8fafc', color: colors.textMain, fontSize: '13px', fontFamily: 'inherit', outline: 'none', resize: 'vertical', marginBottom: '16px'}}
+                    />
+                    <label style={{fontSize: '12px', fontWeight: 600, color: colors.textMuted, display: 'block', marginBottom: '10px'}}>
+                        Taguri <span style={{fontWeight: 400}}>({postSelectedTags.length} selectate)</span>
+                    </label>
+                    <div style={{maxHeight: '240px', overflowY: 'auto', padding: '4px', display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                        {SETUP_TAG_GROUPS.map(group => (
+                            <div key={group.label}>
+                                <div style={{fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: colors.textMuted, marginBottom: '6px', textTransform: 'uppercase'}}>{group.label}</div>
+                                <div style={{display: 'flex', flexWrap: 'wrap', gap: '6px'}}>
+                                    {group.tags.map(tag => {
+                                        const selected = postSelectedTags.includes(tag);
+                                        return (
+                                            <button
+                                                key={tag}
+                                                type="button"
+                                                onClick={() => togglePostTag(tag)}
+                                                style={{
+                                                    padding: '6px 12px', borderRadius: '999px',
+                                                    border: selected ? '2px solid #00B4D8' : `2px solid ${colors.border}`,
+                                                    background: selected ? '#00B4D8' : 'transparent',
+                                                    color: selected ? '#fff' : colors.textMain,
+                                                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                                    fontFamily: 'inherit', transition: 'all 0.15s'
+                                                }}
+                                            >
+                                                {selected ? '✓ ' : ''}{tag}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{marginTop: '12px', fontSize: '11px', color: colors.textMuted}}>
+                        {placedIcons.length} device{placedIcons.length !== 1 ? 's' : ''} în setup
+                    </div>
+                    <div style={{display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end'}}>
+                        <button onClick={() => setShowPostModal(false)} style={{padding: '10px 24px', borderRadius: '999px', border: `1px solid ${colors.border}`, background: 'transparent', color: colors.textMain, fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit'}}>Anulează</button>
+                        <button onClick={handlePostSubmit} disabled={isPosting} style={{padding: '10px 28px', borderRadius: '999px', border: 'none', background: '#00B4D8', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: isPosting ? 'not-allowed' : 'pointer', opacity: isPosting ? 0.6 : 1, fontFamily: 'inherit'}}>
+                            {isPosting ? 'Se publică...' : '🚀 Publică'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         </main>
     );
 };

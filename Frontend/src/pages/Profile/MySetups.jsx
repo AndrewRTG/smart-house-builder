@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Tag, Heart, MessageCircle, Plus, X, Trash2, Edit3, ExternalLink, Eye } from "lucide-react";
+import { Home, Tag, Heart, MessageCircle, Plus, X, Trash2, Edit3, ExternalLink, Eye, AlertTriangle } from "lucide-react";
 import { useError } from "../../context/ErrorContext";
 import { fuzzyFilter } from "../../utils/fuzzySearch";
+import { SETUP_TAG_GROUPS } from "../../utils/setupTags";
 import "./MySetups.css";
 
 const API_BASE = 'http://localhost:20025/api/v1';
@@ -19,6 +20,15 @@ export default function MySetups({ isDark }) {
   const [titleError, setTitleError] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  // Delete confirmation modal
+  const [deleteTarget, setDeleteTarget] = useState(null); // {id, isDraft, name}
+
+  // Publish modal
+  const [publishTarget, setPublishTarget] = useState(null); // {id, name}
+  const [publishDescription, setPublishDescription] = useState('');
+  const [publishSelectedTags, setPublishSelectedTags] = useState([]);
+  const [isPublishing, setIsPublishing] = useState(false);
+
   useEffect(() => {
     fetchSetups();
   }, []);
@@ -27,30 +37,14 @@ export default function MySetups({ isDark }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      if (!token) {
-        setDrafts([]);
-        setPublished([]);
-        setLoading(false);
-        return;
-      }
+      if (!token) { setDrafts([]); setPublished([]); setLoading(false); return; }
 
       const [draftsRes, publishedRes] = await Promise.all([
-        fetch(`${API_BASE}/setups/user/drafts?page=0&size=20`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch(`${API_BASE}/setups/user/published?page=0&size=20`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+        fetch(`${API_BASE}/setups/user/drafts?page=0&size=20`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE}/setups/user/published?page=0&size=20`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
-
-      if (draftsRes.ok) {
-        const draftsData = await draftsRes.json();
-        setDrafts(draftsData.content || []);
-      }
-      if (publishedRes.ok) {
-        const publishedData = await publishedRes.json();
-        setPublished(publishedData.content || []);
-      }
+      if (draftsRes.ok) { const d = await draftsRes.json(); setDrafts(d.content || []); }
+      if (publishedRes.ok) { const d = await publishedRes.json(); setPublished(d.content || []); }
     } catch (error) {
       console.error('Failed to fetch setups:', error);
     } finally {
@@ -59,129 +53,88 @@ export default function MySetups({ isDark }) {
   };
 
   const handleCreateSetup = async () => {
-    if (!newTitle.trim()) {
-      setTitleError(true);
-      return;
-    }
-
+    if (!newTitle.trim()) { setTitleError(true); return; }
     try {
       const token = localStorage.getItem('accessToken');
-      if (!token) {
-        showError('Please login');
-        return;
-      }
-
+      if (!token) { showError('Please login'); return; }
       const response = await fetch(`${API_BASE}/setups`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTitle.trim() })
       });
-
       if (response.ok) {
-        setNewTitle("");
-        setTitleError(false);
-        setShowModal(false);
-        fetchSetups();
-        showSuccess('Setup created');
+        setNewTitle(""); setTitleError(false); setShowModal(false);
+        fetchSetups(); showSuccess('Setup created');
       } else {
         const data = await response.json().catch(() => null);
-        const msg = data?.error || data?.message || response.statusText || 'Failed to create setup';
-        showError(msg);
+        showError(data?.error || data?.message || 'Failed to create setup');
       }
-    } catch (error) {
-      console.error('Failed to create setup:', error);
-      showError('Something went wrong. Please try again.');
-    }
+    } catch { showError('Something went wrong. Please try again.'); }
   };
 
-  const handlePublish = async (setupId) => {
+  const handlePublishConfirm = async () => {
+    if (!publishTarget) return;
+    setIsPublishing(true);
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
-
-      const response = await fetch(`${API_BASE}/setups/${setupId}/publish`, {
+      const response = await fetch(`${API_BASE}/setups/${publishTarget.id}/publish`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: publishDescription, tags: publishSelectedTags })
       });
-
       if (response.ok) {
-        fetchSetups();
-        showSuccess('Setup published');
+        setPublishTarget(null); setPublishDescription(''); setPublishSelectedTags([]);
+        fetchSetups(); showSuccess('Setup published!');
       } else {
         const data = await response.json().catch(() => null);
-        const msg = data?.error || data?.message || response.statusText || 'Failed to publish setup';
-        showError(msg);
+        showError(data?.error || data?.message || 'Failed to publish setup');
         fetchSetups();
       }
-    } catch (error) {
-      console.error('Failed to publish setup:', error);
-      showError('Something went wrong. Please try again.');
-      fetchSetups();
-    }
+    } catch { showError('Something went wrong. Please try again.'); }
+    finally { setIsPublishing(false); }
   };
 
-  const handleDelete = async (setupId, isDraft = true) => {
-    // Slightly different wording for published setups so the user knows this
-    // is a destructive move that also removes the setup from the community
-    // feed (and deletes comments/likes attached to it — see SetupService).
-    const confirmMsg = isDraft
-      ? 'Are you sure you want to delete this draft?'
-      : 'This will remove your published setup from the community feed and delete all its comments and likes. Continue?';
-    if (!window.confirm(confirmMsg)) return;
-
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    const { id, isDraft } = deleteTarget;
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
-
-      const response = await fetch(`${API_BASE}/setups/${setupId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch(`${API_BASE}/setups/${id}`, {
+        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
       });
-
       if (response.ok) {
-        fetchSetups();
-        showSuccess(isDraft ? 'Draft deleted' : 'Published setup deleted');
+        fetchSetups(); showSuccess(isDraft ? 'Draft deleted' : 'Published setup deleted');
       } else {
         const data = await response.json().catch(() => null);
-        const msg = data?.error || data?.message || response.statusText || 'Failed to delete setup';
-        showError(msg);
+        showError(data?.error || data?.message || 'Failed to delete setup');
         fetchSetups();
       }
-    } catch (error) {
-      console.error('Failed to delete setup:', error);
-      showError('Something went wrong. Please try again.');
-      fetchSetups();
-    }
+    } catch { showError('Something went wrong. Please try again.'); fetchSetups(); }
+    finally { setDeleteTarget(null); }
   };
 
-  const handleOpenModal = () => {
-    setNewTitle("");
-    setTitleError(false);
-    setShowModal(true);
-  };
+  const handleOpenModal = () => { setNewTitle(""); setTitleError(false); setShowModal(true); };
+  const handleCloseModal = () => { setShowModal(false); setNewTitle(""); setTitleError(false); };
+  const handleKeyDown = (e) => { if (e.key === "Enter") handleCreateSetup(); if (e.key === "Escape") handleCloseModal(); };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setNewTitle("");
-    setTitleError(false);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleCreateSetup();
-    if (e.key === "Escape") handleCloseModal();
-  };
-
-  // Fuzzy filter — same matcher Community uses, so "smrtsec" matches
-  // "Smart Security Suite" the same way in both places.
   const filteredDrafts = fuzzyFilter(drafts, search, (s) => [s.name, s.description]);
   const filteredPublished = fuzzyFilter(published, search, (s) => [s.name, s.description]);
 
+  const deviceCount = (setup) => setup.deviceCount ?? setup.deviceIds?.length ?? 0;
+
   const renderSetupCard = (setup, isDraft = false) => (
     <div className="setup-card" key={setup.id}>
-      <div className="card-image">
+      <div className="card-image" style={setup.thumbnailUrl ? { padding: 8, overflow: 'hidden', background: '#1a1a1e', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}}>
+        {setup.thumbnailUrl ? (
+          <img
+            src={setup.thumbnailUrl}
+            alt={setup.name}
+            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block', borderRadius: 6 }}
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+        ) : null}
         <span className={`status-badge ${isDraft ? 'draft' : 'published'}`}>
           {isDraft ? 'Draft' : 'Published'}
         </span>
@@ -189,15 +142,15 @@ export default function MySetups({ isDark }) {
       <div className="card-body">
         <h3 className="card-title">{setup.name}</h3>
         <div className="card-meta">
-          <span className="meta-item"><Home size={14} /> {setup.deviceCount || 0} devices</span>
+          <span className="meta-item"><Home size={14} /> {deviceCount(setup)} devices</span>
           <span className="price">{setup.price || '—'}</span>
         </div>
         <div className="card-tags">
           {setup.tags?.map((tag) => <span key={tag} className="tag">{tag}</span>)}
         </div>
         <div className="card-actions">
-          <span className="action-item"><Heart size={14} /> {setup.likes || 0}</span>
-          <span className="action-item"><MessageCircle size={14} /> {setup.comments || 0}</span>
+          <span className="action-item"><Heart size={14} /> {setup.likeCount || 0}</span>
+          <span className="action-item"><MessageCircle size={14} /> {setup.commentCount || 0}</span>
         </div>
         {isDraft && (
           <>
@@ -208,35 +161,18 @@ export default function MySetups({ isDark }) {
               </div>
             )}
             <div className="card-buttons">
-              {/* Edit opens the builder loaded with this draft. The
-                  /builder?setupId=... handler is part of Phase 4 (builder
-                  integration); for now the route may fall through to the
-                  fresh builder. */}
-              <button
-                className="btn-edit"
-                onClick={() => navigate(`/builder?setupId=${setup.id}`)}
-                title="Edit in builder"
-              >
+              <button className="btn-edit" onClick={() => navigate(`/builder?setupId=${setup.id}`)} title="Edit in builder">
                 <Edit3 size={14} /> Edit
               </button>
               {setup.copiedFromId && (
-                <button
-                  className="btn-view"
-                  onClick={() => navigate(`/setups/${setup.copiedFromId}`)}
-                  title="See the original setup, its comments, and likes"
-                >
+                <button className="btn-view" onClick={() => navigate(`/setups/${setup.copiedFromId}`)} title="See the original">
                   <Eye size={14} /> View original
                 </button>
               )}
-              <button className="btn-publish" onClick={() => handlePublish(setup.id)}>
+              <button className="btn-publish" onClick={() => { setPublishTarget({ id: setup.id, name: setup.name }); setPublishDescription(setup.description || ''); setPublishSelectedTags(setup.tags || []); }}>
                 Publish
               </button>
-              <button
-                className="btn-delete"
-                onClick={() => handleDelete(setup.id, true)}
-                title="Delete this draft"
-                aria-label="Delete draft"
-              >
+              <button className="btn-delete" onClick={() => setDeleteTarget({ id: setup.id, isDraft: true, name: setup.name })} title="Delete this draft" aria-label="Delete draft">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -247,12 +183,7 @@ export default function MySetups({ isDark }) {
             <button className="btn-view" onClick={() => navigate(`/setups/${setup.id}`)}>
               <Eye size={14} /> View
             </button>
-            <button
-              className="btn-delete"
-              onClick={() => handleDelete(setup.id, false)}
-              title="Delete this published setup"
-              aria-label="Delete published setup"
-            >
+            <button className="btn-delete" onClick={() => setDeleteTarget({ id: setup.id, isDraft: false, name: setup.name })} title="Delete this published setup" aria-label="Delete published setup">
               <Trash2 size={14} />
             </button>
           </div>
@@ -265,28 +196,12 @@ export default function MySetups({ isDark }) {
     <div className="mysetups-container">
       <div className="search-bar">
         <Tag size={18} className="search-icon" />
-        <input
-          type="text"
-          placeholder="Search for a setup"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <input type="text" placeholder="Search for a setup" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      {/* TABS */}
       <div className="tabs-container">
-        <button
-          className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('drafts')}
-        >
-          Drafts
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'published' ? 'active' : ''}`}
-          onClick={() => setActiveTab('published')}
-        >
-          Published
-        </button>
+        <button className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`} onClick={() => setActiveTab('drafts')}>Drafts</button>
+        <button className={`tab-btn ${activeTab === 'published' ? 'active' : ''}`} onClick={() => setActiveTab('published')}>Published</button>
       </div>
 
       {loading ? (
@@ -295,76 +210,32 @@ export default function MySetups({ isDark }) {
         <>
           {activeTab === 'drafts' && (
             <div className="cards-grid">
-              {filteredDrafts.length > 0 ? (
-                filteredDrafts.map((setup) => renderSetupCard(setup, true))
-              ) : (
-                <div className="empty-state">No drafts found</div>
-              )}
-
-              <div
-                className="setup-card add-card"
-                onClick={handleOpenModal}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenModal(); } }}
-                role="button"
-                tabIndex={0}
-              >
-                <div className="add-content">
-                  <Plus size={32} className="add-icon" />
-                  <span>Adaugă setup nou</span>
-                </div>
+              {filteredDrafts.length > 0 ? filteredDrafts.map((s) => renderSetupCard(s, true)) : <div className="empty-state">No drafts found</div>}
+              <div className="setup-card add-card" onClick={handleOpenModal} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenModal(); } }} role="button" tabIndex={0}>
+                <div className="add-content"><Plus size={32} className="add-icon" /><span>Adaugă setup nou</span></div>
               </div>
             </div>
           )}
-
           {activeTab === 'published' && (
             <div className="cards-grid">
-              {filteredPublished.length > 0 ? (
-                filteredPublished.map((setup) => renderSetupCard(setup, false))
-              ) : (
-                <div className="empty-state">No published setups found</div>
-              )}
+              {filteredPublished.length > 0 ? filteredPublished.map((s) => renderSetupCard(s, false)) : <div className="empty-state">No published setups found</div>}
             </div>
           )}
         </>
       )}
 
-      {/* Modal */}
+      {/* Create Modal */}
       {showModal && (
-        <div
-          className="modal-overlay"
-          onClick={handleCloseModal}
-          onKeyDown={(e) => { if (e.key === 'Escape') handleCloseModal(); }}
-          role="button"
-          tabIndex={0}
-          aria-label="Close modal"
-        >
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-            role="dialog"
-            tabIndex={-1}
-          >
+        <div className="modal-overlay" onClick={handleCloseModal} onKeyDown={(e) => { if (e.key === 'Escape') handleCloseModal(); }} role="button" tabIndex={0} aria-label="Close modal">
+          <div className="modal" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="dialog" tabIndex={-1}>
             <div className="modal-header">
               <h2 className="modal-title">Setup nou</h2>
-              <button className="modal-close" onClick={handleCloseModal}>
-                <X size={20} />
-              </button>
+              <button className="modal-close" onClick={handleCloseModal}><X size={20} /></button>
             </div>
-            <p className="modal-subtitle">
-              Introdu un titlu pentru noul tău setup. Îl vei putea completa mai târziu.
-            </p>
+            <p className="modal-subtitle">Introdu un titlu pentru noul tău setup. Îl vei putea completa mai târziu.</p>
             <div className="modal-field">
               <label className="modal-label">Titlu setup</label>
-              <input
-                className={`modal-input ${titleError ? "input-error" : ""}`}
-                type="text"
-                placeholder="ex: Dormitor Automatizat"
-                value={newTitle}
-                onChange={(e) => { setNewTitle(e.target.value); if (titleError) setTitleError(false); }}
-                onKeyDown={handleKeyDown}
-                autoFocus
-              />
+              <input className={`modal-input ${titleError ? "input-error" : ""}`} type="text" placeholder="ex: Dormitor Automatizat" value={newTitle} onChange={(e) => { setNewTitle(e.target.value); if (titleError) setTitleError(false); }} onKeyDown={handleKeyDown} autoFocus />
               {titleError && <span className="error-msg">⚠ Te rog introdu un titlu.</span>}
             </div>
             <div className="modal-info">
@@ -374,6 +245,111 @@ export default function MySetups({ isDark }) {
             <div className="modal-actions">
               <button className="modal-btn-cancel" onClick={handleCloseModal}>Anulează</button>
               <button className="modal-btn-create" onClick={handleCreateSetup}>Creează setup</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish Modal */}
+      {publishTarget && (
+        <div className="modal-overlay" onClick={() => setPublishTarget(null)} role="button" tabIndex={0} aria-label="Close publish modal">
+          <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" tabIndex={-1} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">Publică setup-ul</h2>
+              <button className="modal-close" onClick={() => setPublishTarget(null)}><X size={20} /></button>
+            </div>
+            <p className="modal-subtitle">
+              <strong>{publishTarget.name}</strong> va apărea pe pagina Community și în profilul tău la secțiunea Published.
+            </p>
+            <div className="modal-field">
+              <label className="modal-label">Descriere</label>
+              <textarea
+                className="modal-input"
+                placeholder="Descrie setup-ul tău: ce dispozitive ai ales, pentru ce cameră..."
+                value={publishDescription}
+                onChange={e => setPublishDescription(e.target.value)}
+                rows={4}
+                style={{ resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+            <div className="modal-field">
+              <label className="modal-label">Taguri <span style={{ fontWeight: 400, opacity: 0.7 }}>({publishSelectedTags.length} selectate)</span></label>
+              <div style={{ maxHeight: '220px', overflowY: 'auto', padding: '4px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px' }}>
+                {SETUP_TAG_GROUPS.map(group => (
+                  <div key={group.label} style={{ padding: '4px 8px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', opacity: 0.6, marginBottom: '6px', textTransform: 'uppercase' }}>{group.label}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {group.tags.map(tag => {
+                        const selected = publishSelectedTags.includes(tag);
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => setPublishSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                            style={{
+                              padding: '6px 12px', borderRadius: '999px',
+                              border: selected ? '2px solid #5092ce' : '2px solid rgba(0,0,0,0.12)',
+                              background: selected ? '#5092ce' : 'transparent',
+                              color: selected ? '#fff' : 'inherit',
+                              fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s'
+                            }}
+                          >
+                            {selected ? '✓ ' : ''}{tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn-cancel" onClick={() => setPublishTarget(null)}>Anulează</button>
+              <button className="modal-btn-create" onClick={handlePublishConfirm} disabled={isPublishing}>
+                {isPublishing ? 'Se publică...' : '🚀 Publică'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)} role="button" tabIndex={0} aria-label="Close delete modal">
+          <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" tabIndex={-1} style={{ maxWidth: '440px' }}>
+            <div className="modal-header" style={{ borderBottom: '1px solid rgba(239,68,68,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertTriangle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+                <h2 className="modal-title" style={{ color: '#ef4444' }}>
+                  {deleteTarget.isDraft ? 'Șterge draft-ul' : 'Șterge setup-ul publicat'}
+                </h2>
+              </div>
+              <button className="modal-close" onClick={() => setDeleteTarget(null)}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '20px 0 8px 0' }}>
+              {deleteTarget.isDraft ? (
+                <p className="modal-subtitle">
+                  Ești sigur că vrei să ștergi draft-ul <strong>"{deleteTarget.name}"</strong>? Această acțiune nu poate fi anulată.
+                </p>
+              ) : (
+                <>
+                  <p className="modal-subtitle">
+                    Setup-ul <strong>"{deleteTarget.name}"</strong> va fi eliminat din feed-ul community și toate comentariile și like-urile asociate vor fi șterse.
+                  </p>
+                  <div style={{ marginTop: '12px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontSize: '12px', color: '#ef4444', fontWeight: 500 }}>
+                    ⚠ Această acțiune este ireversibilă.
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="modal-actions" style={{ marginTop: '8px' }}>
+              <button className="modal-btn-cancel" onClick={() => setDeleteTarget(null)}>Anulează</button>
+              <button
+                onClick={handleDeleteConfirm}
+                style={{ padding: '10px 24px', borderRadius: '999px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                {deleteTarget.isDraft ? 'Da, șterge draft-ul' : 'Da, șterge tot'}
+              </button>
             </div>
           </div>
         </div>

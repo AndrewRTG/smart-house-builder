@@ -4,6 +4,9 @@ import gr.A4.SmartHouseBuilder.dto.CommentRequest;
 import gr.A4.SmartHouseBuilder.dto.CommentResponse;
 import gr.A4.SmartHouseBuilder.entity.Article;
 import gr.A4.SmartHouseBuilder.entity.Comment;
+import static org.mockito.Mockito.doThrow;
+import gr.A4.SmartHouseBuilder.exception.InappropriateContentException;
+import gr.A4.SmartHouseBuilder.exception.TooManyCommentsException;
 import gr.A4.SmartHouseBuilder.entity.Setup;
 import gr.A4.SmartHouseBuilder.entity.User;
 import gr.A4.SmartHouseBuilder.repository.ArticleRepository;
@@ -41,6 +44,8 @@ class CommentServiceTest {
     @Mock private SetupRepository setupRepository;
     @Mock private ArticleRepository articleRepository;
     @Mock private ActivityEmailService activityEmailService;
+    @Mock private BadWordFilterService badWordFilterService;
+    @Mock private CommentRateLimiterService commentRateLimiterService;
 
     @InjectMocks private CommentService commentService;
 
@@ -167,6 +172,16 @@ class CommentServiceTest {
         verify(commentRepository).save(captor.capture());
         assertThat(captor.getValue().getParentComment()).isEqualTo(parent);
     }
+    @Test
+    void createSetupComment_rejectsBadWords() {
+        when(badWordFilterService.containsBadWords("this has badword")).thenReturn(true);
+
+        assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", new CommentRequest("this has badword", null)))
+                .isInstanceOf(InappropriateContentException.class)
+                .hasMessageContaining("limbaj nepotrivit");
+
+        verify(commentRepository, never()).save(any());
+    }
 
     @Test
     void createArticleComment_rejectsParentFromAnotherArticle() {
@@ -181,6 +196,17 @@ class CommentServiceTest {
         assertThatThrownBy(() -> commentService.createArticleComment(11L, "u@e", new CommentRequest("reply", 51L)))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Parent comment does not belong");
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void createArticleComment_rejectsBadWords() {
+        when(badWordFilterService.containsBadWords("this has badword")).thenReturn(true);
+
+        assertThatThrownBy(() -> commentService.createArticleComment(11L, "u@e", new CommentRequest("this has badword", null)))
+                .isInstanceOf(InappropriateContentException.class)
+                .hasMessageContaining("limbaj nepotrivit");
+
         verify(commentRepository, never()).save(any());
     }
 
@@ -476,6 +502,20 @@ class CommentServiceTest {
         assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", new CommentRequest("   ", null)))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("empty");
+        verify(commentRepository, never()).save(any());
+    }
+    @Test
+    void createSetupComment_rejectsWhenRateLimitExceeded() {
+        CommentRequest req = new CommentRequest("hello", null);
+
+        doThrow(new TooManyCommentsException("Ai trimis prea multe comentarii."))
+                .when(commentRateLimiterService)
+                .checkLimit("u@e");
+
+        assertThatThrownBy(() -> commentService.createSetupComment(10L, "u@e", req))
+                .isInstanceOf(TooManyCommentsException.class)
+                .hasMessageContaining("prea multe comentarii");
+
         verify(commentRepository, never()).save(any());
     }
 }

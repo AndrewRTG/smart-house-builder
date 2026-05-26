@@ -224,7 +224,7 @@ class SetupServiceTest {
         when(setupRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(setup));
         when(setupRepository.save(any(Setup.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Setup published = setupService.publishSetup(10L, "u@e");
+        Setup published = setupService.publishSetup(10L, "u@e", null);
 
         assertThat(published.getStatus()).isEqualTo(SetupStatus.PUBLISHED);
         assertThat(published.isPublicSetup()).isTrue();
@@ -237,7 +237,7 @@ class SetupServiceTest {
         when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
         when(setupRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(setup));
 
-        assertThatThrownBy(() -> setupService.publishSetup(10L, "u@e"))
+        assertThatThrownBy(() -> setupService.publishSetup(10L, "u@e", null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("at least one device");
     }
@@ -257,7 +257,7 @@ class SetupServiceTest {
         when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
         when(setupRepository.findByIdAndUserId(20L, 1L)).thenReturn(Optional.of(copy));
 
-        assertThatThrownBy(() -> setupService.publishSetup(20L, "u@e"))
+        assertThatThrownBy(() -> setupService.publishSetup(20L, "u@e", null))
                 .isInstanceOf(UnchangedCopyPublishException.class);
     }
 
@@ -277,7 +277,7 @@ class SetupServiceTest {
         when(setupRepository.findByIdAndUserId(20L, 1L)).thenReturn(Optional.of(copy));
         when(setupRepository.save(any(Setup.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Setup published = setupService.publishSetup(20L, "u@e");
+        Setup published = setupService.publishSetup(20L, "u@e", null);
         assertThat(published.getStatus()).isEqualTo(SetupStatus.PUBLISHED);
     }
 
@@ -344,7 +344,7 @@ class SetupServiceTest {
         when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
         when(setupRepository.findByIdAndUserId(99L, 1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> setupService.publishSetup(99L, "u@e"))
+        assertThatThrownBy(() -> setupService.publishSetup(99L, "u@e", null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("not owned");
     }

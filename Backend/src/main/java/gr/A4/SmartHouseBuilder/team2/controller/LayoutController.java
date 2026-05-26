@@ -9,8 +9,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import gr.A4.SmartHouseBuilder.model.Layout;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
 
@@ -29,19 +36,60 @@ public class LayoutController {
     private final LayoutPersistenceService layoutPersistenceService;
     private final UserRepository userRepository;
     private final LayoutRepository layoutRepository;
+    private final ObjectMapper objectMapper;
 
     public LayoutController(LayoutService layoutService,
                             LayoutPersistenceService layoutPersistenceService,
                             UserRepository userRepository,
-                            LayoutRepository layoutRepository) {
+                            LayoutRepository layoutRepository,
+                            ObjectMapper objectMapper) {
         this.layoutService = layoutService;
         this.layoutPersistenceService = layoutPersistenceService;
         this.userRepository = userRepository;
         this.layoutRepository = layoutRepository;
+        this.objectMapper = objectMapper;
     }
 
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> saveLayout(@RequestBody SetupBuildDTO validated, Authentication authentication) {
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SetupBuildDTO> getLayoutById(@PathVariable Integer id) {
+        return layoutRepository.findById(id)
+                .map(layout -> {
+                    try {
+                        SetupBuildDTO dto = objectMapper.readValue(layout.getDrawing(), SetupBuildDTO.class);
+                        return ResponseEntity.ok(dto);
+                    } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).<SetupBuildDTO>build();
+                    }
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/validate")
+    public ResponseEntity<SetupBuildDTO> validateLayout(@RequestBody SetupBuildDTO data) {
+        StoredLayout tmp = new StoredLayout();
+        tmp.setContent(data);
+        SetupBuildDTO validated = layoutService.validateLayout(tmp);
+        return ResponseEntity.ok(validated);
+    }
+
+    @PostMapping("/save")
+    public ResponseEntity<Map<String, Object>> saveLayout(@RequestBody SetupBuildDTO data, Authentication authentication) {
+        StoredLayout tmp = new StoredLayout();
+        tmp.setContent(data);
+        SetupBuildDTO validated = layoutService.validateLayout(tmp);
+
+        boolean hasInvalid = false;
+        if (validated.getErrors() != null) {
+            hasInvalid = validated.getErrors().stream().anyMatch(r -> r != null && !r.isValid());
+        }
+        if (hasInvalid) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "saved", false,
+                    "errors", validated.getErrors()
+            ));
+        }
+
         Integer userId = null;
         if (authentication != null && authentication.isAuthenticated()) {
             String email = authentication.getName();
@@ -100,7 +148,6 @@ public class LayoutController {
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    public ResponseEntity<SetupBuildDTO> validateLayout(SetupBuildDTO input) {
-        return null;
-    }
 }
+
+

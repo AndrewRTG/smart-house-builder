@@ -202,7 +202,12 @@ export default function CommunityPage({ darkMode }) {
   const [likes, setLikes] = useState(new Map());
   const [likeCounts, setLikeCounts] = useState(new Map());
   const [commentCounts, setCommentCounts] = useState(new Map());
-  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 9;
+
+  const [setupPage, setSetupPage] = useState(0);
+  const [articlePage, setArticlePage] = useState(0);
+  const [setupTotalPages, setSetupTotalPages] = useState(1);
+  const [articleTotalPages, setArticleTotalPages] = useState(1);
   const [user, setUser] = useState(null);
   const [userStats, setUserStats] = useState({ posts: 0, likes: 0 });
   const [copyModalOpen, setCopyModalOpen] = useState(false);
@@ -296,9 +301,16 @@ export default function CommunityPage({ darkMode }) {
     if (location.state?.restore) {
       const saved = sessionStorage.getItem('community:lastState');
       if (saved) {
-        const { scrollY, activeTab: savedTab, page: savedPage } = JSON.parse(saved);
+        const {
+          scrollY,
+          activeTab: savedTab,
+          setupPage: savedSetupPage,
+          articlePage: savedArticlePage
+        } = JSON.parse(saved);
+
         if (savedTab) setActiveTab(savedTab);
-        if (savedPage !== undefined) setPage(savedPage);
+        if (savedSetupPage !== undefined) setSetupPage(savedSetupPage);
+        if (savedArticlePage !== undefined) setArticlePage(savedArticlePage);
         // scroll after next paint so content has rendered
         requestAnimationFrame(() => {
           setTimeout(() => window.scrollTo(0, scrollY), 50);
@@ -308,10 +320,16 @@ export default function CommunityPage({ darkMode }) {
   }, [location]);
 
   useEffect(() => {
-    fetchSetups();
-    fetchArticles();
     fetchCurrentUser();
-  }, [page]);
+  }, []);
+
+  useEffect(() => {
+    fetchSetups();
+  }, [setupPage]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [articlePage]);
 
   useEffect(() => {
     if (!user) {
@@ -409,10 +427,12 @@ export default function CommunityPage({ darkMode }) {
   const fetchSetups = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/setups?page=${page}&size=10`);
+      const response = await fetch(`${API_BASE}/setups?page=${setupPage}&size=${PAGE_SIZE}`);
       const data = await response.json();
       const items = data.content || [];
+
       setSetups(items);
+      setSetupTotalPages(data.totalPages || 1);
 
       // The backend now ships likeCount / wishlistCount / commentCount
       // INLINE on each SetupResponse (see SetupController.toResponse). No
@@ -438,10 +458,12 @@ export default function CommunityPage({ darkMode }) {
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch(`${API_BASE}/articles?page=${page}&size=10`);
+      const response = await fetch(`${API_BASE}/articles?page=${articlePage}&size=${PAGE_SIZE}`);
       const data = await response.json();
       const items = data.content || [];
+
       setArticles(items);
+      setArticleTotalPages(data.totalPages || 1);
 
       // Counts inline (same fix as fetchSetups).
       setLikeCounts((prev) => {
@@ -523,7 +545,8 @@ export default function CommunityPage({ darkMode }) {
     sessionStorage.setItem('community:lastState', JSON.stringify({
       scrollY: window.scrollY,
       activeTab,
-      page
+      setupPage,
+      articlePage
     }));
     navigate(path, { state: { restore: true } });
   };
@@ -632,6 +655,43 @@ export default function CommunityPage({ darkMode }) {
     return likes.get(key) || false;
   };
 
+  const renderPagination = (currentPage, totalPages, onPageChange) => {
+    if (totalPages <= 1) return null;
+
+    return (
+        <div className="community-pagination">
+          <button
+              type="button"
+              className="pagination-btn"
+              disabled={currentPage === 0}
+              onClick={() => onPageChange(currentPage - 1)}
+          >
+            Previous
+          </button>
+
+          {Array.from({ length: totalPages }, (_, index) => (
+              <button
+                  key={index}
+                  type="button"
+                  className={`pagination-btn ${currentPage === index ? 'active' : ''}`}
+                  onClick={() => onPageChange(index)}
+              >
+                {index + 1}
+              </button>
+          ))}
+
+          <button
+              type="button"
+              className="pagination-btn"
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => onPageChange(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
+    );
+  };
+
   return (
     <div className="community-container">
       {/* SIDEBAR */}
@@ -699,6 +759,7 @@ export default function CommunityPage({ darkMode }) {
             {loading ? (
               <div className="loading">Loading setups...</div>
             ) : filteredSetups.length > 0 ? (
+                    <>
               <div className="setups-grid">
                 {filteredSetups.map((setup) => (
                   <div key={setup.id} className="setup-card">
@@ -754,17 +815,32 @@ export default function CommunityPage({ darkMode }) {
                     </button>
                     <p className="setup-description">{setup.description}</p>
 
-                    <div className="setup-image-placeholder">
-                      <svg viewBox="0 0 200 150" className="placeholder-icon">
-                        <rect width="200" height="150" fill="currentColor" />
-                        <path
-                          d="M80 60 L120 90 L100 120 L60 90 Z"
-                          fill="white"
-                          opacity="0.3"
+                    <button
+                      type="button"
+                      className="setup-image-placeholder"
+                      onClick={() => openSetupDetail(setup.id)}
+                      style={setup.thumbnailUrl ? { padding: 8, overflow: 'hidden', cursor: 'pointer', border: 'none', background: '#1a1a1e', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' } : { cursor: 'pointer', border: 'none' }}
+                      title="Vezi detalii"
+                    >
+                      {setup.thumbnailUrl ? (
+                        <img
+                          src={setup.thumbnailUrl}
+                          alt={setup.name}
+                          style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+                          onError={e => { e.target.style.display = 'none'; }}
                         />
-                        <circle cx="90" cy="70" r="5" fill="white" opacity="0.3" />
-                      </svg>
-                    </div>
+                      ) : (
+                        <svg viewBox="0 0 200 150" className="placeholder-icon">
+                          <rect width="200" height="150" fill="currentColor" />
+                          <path
+                            d="M80 60 L120 90 L100 120 L60 90 Z"
+                            fill="white"
+                            opacity="0.3"
+                          />
+                          <circle cx="90" cy="70" r="5" fill="white" opacity="0.3" />
+                        </svg>
+                      )}
+                    </button>
 
                     <div className="setup-footer">
                       <div className="footer-actions">
@@ -789,6 +865,10 @@ export default function CommunityPage({ darkMode }) {
                   </div>
                 ))}
               </div>
+
+                {renderPagination(setupPage, setupTotalPages, setSetupPage)}
+                    </>
+
             ) : (
               <div className="empty-state">No setups found</div>
             )}
@@ -815,6 +895,7 @@ export default function CommunityPage({ darkMode }) {
             {loading ? (
               <div className="loading">Loading articles...</div>
             ) : filteredArticles.length > 0 ? (
+                <>
               <div className="articles-grid">
                 {filteredArticles.map((article) => (
                   <div key={article.id} className="article-card">
@@ -901,6 +982,8 @@ export default function CommunityPage({ darkMode }) {
                   </div>
                 ))}
               </div>
+              {renderPagination(articlePage, articleTotalPages, setArticlePage)}
+              </>
             ) : (
               <div className="empty-state">
                 {activeTagFilter

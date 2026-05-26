@@ -209,6 +209,26 @@ class PhysicalDiscrepancyEngineTest {
     }
 
     @Test
+    void checkLightCoverage_lightNameContainsBec_noWarning() {
+        SetupBuild build = createBasicSetup();
+
+        Room room = new Room();
+        room.setId("Small Room");
+        room.setSquareMeters(40.0);
+        room.setWalls(createRectangleWalls(0, 0, 10, 10));
+        build.setRooms(List.of(room));
+
+        PlacedDevice light = createPlacedDevice("Bec dormitor", "Switch", 5.0, 5.0);
+        build.setDevices(List.of(light));
+
+        List<ValidationResult> results = engine.runAllChecks(build);
+
+        assertFalse(results.stream().anyMatch(r ->
+            r.getMessage().contains("necesită cel puțin")
+        ));
+    }
+
+    @Test
     void checkHubRange_deviceOutOfRange_returnsError() {
         SetupBuild build = createBasicSetup();
 
@@ -352,6 +372,48 @@ class PhysicalDiscrepancyEngineTest {
     }
 
     @Test
+    void checkDeviceOverlaps_scaleCm_devicesAtFiftyCentimeters_noError() {
+        SetupBuild build = createBasicSetup();
+        build.setScale("cm");
+
+        Room room = createRoom("Living Room", 0, 0, 100, 100);
+        build.setRooms(List.of(room));
+
+        PlacedDevice device1 = createPlacedDevice("Device1", "Furniture", 10.0, 10.0);
+        PlacedDevice device2 = createPlacedDevice("Device2", "Furniture", 60.0, 10.0);
+
+        build.setDevices(List.of(device1, device2));
+
+        List<ValidationResult> results = engine.runAllChecks(build);
+
+        assertFalse(results.stream().anyMatch(r ->
+            !r.isValid() && r.getMessage().contains("sunt prea aproape")
+        ));
+    }
+
+    @Test
+    void checkDeviceOverlaps_scaleCm_devicesUnderFiftyCentimeters_returnsError() {
+        SetupBuild build = createBasicSetup();
+        build.setScale("cm");
+
+        Room room = createRoom("Living Room", 0, 0, 100, 100);
+        build.setRooms(List.of(room));
+
+        PlacedDevice device1 = createPlacedDevice("Device1", "Furniture", 10.0, 10.0);
+        PlacedDevice device2 = createPlacedDevice("Device2", "Furniture", 59.0, 10.0);
+
+        build.setDevices(List.of(device1, device2));
+
+        List<ValidationResult> results = engine.runAllChecks(build);
+
+        assertTrue(results.stream().anyMatch(r ->
+            !r.isValid() &&
+            r.getLevel().equals("ERROR") &&
+            r.getMessage().contains("sunt prea aproape")
+        ));
+    }
+
+    @Test
     void checkDeviceOverlaps_withNullCoordinates_noError() {
         SetupBuild build = createBasicSetup();
 
@@ -367,6 +429,53 @@ class PhysicalDiscrepancyEngineTest {
 
         // Nu ar trebui să genereze excepții
         assertNotNull(results);
+    }
+
+    @Test
+    void checkHubRange_gridScaleUsesHalfMeterPerPoint() {
+        SetupBuild build = createBasicSetup();
+        build.setScale("grid");
+
+        Room room = createRoom("Long Room", 0, 0, 40, 10);
+        build.setRooms(List.of(room));
+
+        PlacedDevice hub = createPlacedDevice("Gateway", "Controller", 0.0, 0.0);
+        PlacedDevice deviceInRange = createPlacedDevice("Sensor", "Motion Sensor", 30.0, 0.0);
+        PlacedDevice deviceOutOfRange = createPlacedDevice("Camera", "Security Camera", 31.0, 0.0);
+
+        build.setDevices(List.of(hub, deviceInRange, deviceOutOfRange));
+
+        List<ValidationResult> results = engine.runAllChecks(build);
+
+        assertFalse(results.stream().anyMatch(r ->
+            r.getMessage().contains("Sensor") && r.getMessage().contains("peste raza")
+        ));
+        assertTrue(results.stream().anyMatch(r ->
+            r.getMessage().contains("Camera") && r.getMessage().contains("peste raza")
+        ));
+    }
+
+    @Test
+    void checkDevicesOnDoorsWindows_zeroLengthDoorStillDetectsNonLockDevice() {
+        SetupBuild build = createBasicSetup();
+
+        Room room = new Room();
+        room.setId("Entry");
+        room.setSquareMeters(16.0);
+        room.setWalls(createRectangleWalls(0, 0, 4, 4));
+        room.setDoors(List.of(createSegment(2.0, 0.0, 2.0, 0.0)));
+        build.setRooms(List.of(room));
+
+        PlacedDevice device = createPlacedDevice("Door Camera", "Security Camera", 2.0, 0.0);
+        build.setDevices(List.of(device));
+
+        List<ValidationResult> results = engine.runAllChecks(build);
+
+        assertTrue(results.stream().anyMatch(r ->
+            !r.isValid() &&
+            r.getLevel().equals("ERROR") &&
+            r.getMessage().contains("plasat pe o u")
+        ));
     }
 
     // Helper methods

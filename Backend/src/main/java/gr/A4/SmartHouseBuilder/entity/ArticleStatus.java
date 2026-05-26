@@ -11,5 +11,6 @@ package gr.A4.SmartHouseBuilder.entity;
  */
 public enum ArticleStatus {
     DRAFT,
-    PUBLISHED
+    PUBLISHED,
+    FLAGGED
 }

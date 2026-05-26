@@ -20,8 +20,13 @@ public class SpecificationMapper {
             case 3  -> GamingConsoleSpecificationExtractor.extract(title, description, sourceStore);
             case 4  -> ApplianceSpecificationExtractor.extract(title, description, sourceStore);
             case 5  -> HubSpecificationExtractor.extract(title, description, sourceStore);
+            case 6  -> MonitorSpecificationExtractor.extract(title, description, sourceStore);
             case 7  -> PlugSpecificationExtractor.extract(title, description, sourceStore);
             case 8  -> SensorSpecificationExtractor.extract(title, description, sourceStore);
+            case 9  -> AudioSystemSpecificationExtractor.extract(title, description, sourceStore);
+            case 10 -> TVSpecificationExtractor.extract(title, description, sourceStore);
+            case 11 -> VacuumRobotSpecificationExtractor.extract(title, description, sourceStore);
+            case 12 -> RouterSpecificationExtractor.extract(title, description, sourceStore);
             case 13 -> BulbSpecificationExtractor.extract(title, description, sourceStore);
             default -> GenericSpecificationExtractor.empty();
         };

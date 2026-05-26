@@ -286,6 +286,14 @@ const getSetupDevices = (setup) => {
             name: icon.name || '',
             type: icon.type || '',
             brand: icon.brand || '',
+            categoryId: icon.categoryId ?? null,
+            categoryName: icon.categoryName || '',
+            protocol: icon.communicationProtocol || '',
+            priceEUR: icon.priceEUR ?? null,
+            col: icon.col ?? null,
+            row: icon.row ?? null,
+            scale: icon.scale ?? null,
+            rotation: icon.rotation ?? null,
         }));
     }
 
@@ -293,28 +301,61 @@ const getSetupDevices = (setup) => {
         return deviceSnapshots.map((device) => ({
             id: device.id,
             name: device.name || '',
-            type: device.type || device.categoryName || '',
+            type: device.type || '',
             brand: device.brand || '',
+            categoryId: device.categoryId ?? null,
+            categoryName: device.categoryName || '',
+            protocol: device.communicationProtocol || '',
+            priceEUR: device.priceEUR ?? null,
         }));
     }
 
     return (setup.deviceIds || []).map((id) => ({ id }));
 };
 
-const buildCriteria = (setup, s) => {
-    const roomId = setup?.id || null;
-    const devices = getSetupDevices(setup);
+const getSetupFurniture = (setup) => {
+    if (!setup) return [];
 
-    return JSON.stringify({
-        roomId,
-        devices,
-        budget: s.priceRange[1],
-        ecosystem: s.ecosystem || null,
-        techLevel: s.techLevel || null,
-        categories: s.categories,
-        protocols: s.protocols,
-    });
+    const canvasState = parseJsonValue(setup.canvasState, {});
+    const placedFurniture = Array.isArray(canvasState.placedFurniture) ? canvasState.placedFurniture : [];
+
+    return placedFurniture.map((item) => ({
+        id: item.id || '',
+        name: item.name || '',
+        type: item.type || '',
+        centerCol: item.centerCol ?? null,
+        centerRow: item.centerRow ?? null,
+        widthCols: item.widthCols ?? null,
+        heightCols: item.heightCols ?? null,
+        rotation: item.rotation ?? null,
+    }));
 };
+
+const getSetupLines = (setup) => {
+    if (!setup) return [];
+
+    const canvasState = parseJsonValue(setup.canvasState, {});
+    const lines = Array.isArray(canvasState.lines) ? canvasState.lines : [];
+
+    return lines.map((line) => ({
+        id: line.id || '',
+        type: line.type || '',
+        start: line.start || null,
+        end: line.end || null,
+    }));
+};
+
+const buildRoomContext = (setup) => JSON.stringify({
+    roomId: setup?.id || null,
+    roomName: setup?.name || '',
+    roomStatus: setup?.status || '',
+    devices: getSetupDevices(setup),
+    furniture: getSetupFurniture(setup),
+    lines: getSetupLines(setup),
+});
+
+const buildCriteria = (setup, s) =>
+    `Proiect/Cameră: ${setup?.name || 'Nespecificat'}. CameraData: ${buildRoomContext(setup)}. Buget: ${s.priceRange[1]} EUR. Ecosistem: ${s.ecosystem || 'Oricare'}. Nivel: ${s.techLevel || 'Nespecificat'}. Categorii: ${s.categories.length > 0 ? s.categories.join(', ') : 'Oricare'}. Protocoale: ${s.protocols.length > 0 ? s.protocols.join(', ') : 'Oricare'}`;
 
 const mapDevices = (data) =>
     data.map(item => ({
@@ -398,7 +439,7 @@ const SetupWizard = ({ onFinish }) => {
     const handleAgentSearch = async () => {
         if (!agentPrompt.trim()) return;
         setIsAgentLoading(true);
-        const userContext = buildCriteria(selectedSetup);
+        const userContext = buildCriteria(selectedSetup, s);
         try {
             const res = await authFetch('/api/ai/agent-search', {
                 method: 'POST',

@@ -68,6 +68,48 @@ class LayoutControllerTest {
     }
 
     @Test
+    void getLayoutById_returnsSavedLayoutPayload() {
+        SetupBuildDTO saved = new SetupBuildDTO();
+        saved.setId("layout-1");
+        when(layoutPersistenceService.loadAsJson(1)).thenReturn(Optional.of(saved));
+
+        ResponseEntity<SetupBuildDTO> response = controller.getLayoutById(1);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(saved, response.getBody());
+    }
+
+    @Test
+    void openLayout_returnsSavedLayoutPayload() {
+        SetupBuildDTO saved = new SetupBuildDTO();
+        saved.setId("layout-open");
+        when(layoutPersistenceService.loadAsJson(2)).thenReturn(Optional.of(saved));
+
+        ResponseEntity<SetupBuildDTO> response = controller.openLayout(2);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(saved, response.getBody());
+    }
+
+    @Test
+    void openLayout_returns404WhenLayoutMissing() {
+        when(layoutPersistenceService.loadAsJson(404)).thenReturn(Optional.empty());
+
+        ResponseEntity<SetupBuildDTO> response = controller.openLayout(404);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void openLayout_returns500WhenPayloadCannotBeRead() {
+        when(layoutPersistenceService.loadAsJson(5)).thenThrow(new RuntimeException("bad json"));
+
+        ResponseEntity<SetupBuildDTO> response = controller.openLayout(5);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    }
+
+    @Test
     void saveLayout_returns400WhenValidationHasInvalidResult() {
         SetupBuildDTO input = new SetupBuildDTO();
         SetupBuildDTO validated = new SetupBuildDTO();
@@ -80,6 +122,21 @@ class LayoutControllerTest {
         assertNotNull(response.getBody());
         assertEquals(Boolean.FALSE, response.getBody().get("saved"));
         verify(layoutPersistenceService, never()).saveAsJson(any(), any());
+    }
+
+    @Test
+    void saveLayout_allowsSaveWhenOnlyWarningsPresent() {
+        SetupBuildDTO input = new SetupBuildDTO();
+        SetupBuildDTO validated = new SetupBuildDTO();
+        validated.setErrors(List.of(new ValidationResult(false, "WARNING", "insufficient lights")));
+        when(layoutService.validateLayout(any())).thenReturn(validated);
+        when(layoutPersistenceService.saveAsJson(eq(validated), eq(null))).thenReturn(12);
+
+        ResponseEntity<Map<String, Object>> response = controller.saveLayout(input, null);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals(Boolean.TRUE, response.getBody().get("saved"));
+        verify(layoutPersistenceService).saveAsJson(validated, null);
     }
 
     @Test

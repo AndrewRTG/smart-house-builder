@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import gr.A4.SmartHouseBuilder.model.Layout;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
 
@@ -36,33 +35,36 @@ public class LayoutController {
     private final LayoutPersistenceService layoutPersistenceService;
     private final UserRepository userRepository;
     private final LayoutRepository layoutRepository;
-    private final ObjectMapper objectMapper;
 
     public LayoutController(LayoutService layoutService,
                             LayoutPersistenceService layoutPersistenceService,
                             UserRepository userRepository,
-                            LayoutRepository layoutRepository,
-                            ObjectMapper objectMapper) {
+                            LayoutRepository layoutRepository) {
         this.layoutService = layoutService;
         this.layoutPersistenceService = layoutPersistenceService;
         this.userRepository = userRepository;
         this.layoutRepository = layoutRepository;
-        this.objectMapper = objectMapper;
     }
 
 
     @GetMapping("/{id}")
     public ResponseEntity<SetupBuildDTO> getLayoutById(@PathVariable Integer id) {
-        return layoutRepository.findById(id)
-                .map(layout -> {
-                    try {
-                        SetupBuildDTO dto = objectMapper.readValue(layout.getDrawing(), SetupBuildDTO.class);
-                        return ResponseEntity.ok(dto);
-                    } catch (Exception e) {
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).<SetupBuildDTO>build();
-                    }
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return loadLayoutPayload(id);
+    }
+
+    @GetMapping("/open/{id}")
+    public ResponseEntity<SetupBuildDTO> openLayout(@PathVariable Integer id) {
+        return loadLayoutPayload(id);
+    }
+
+    private ResponseEntity<SetupBuildDTO> loadLayoutPayload(Integer id) {
+        try {
+            return layoutPersistenceService.loadAsJson(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PostMapping("/validate")
@@ -79,11 +81,11 @@ public class LayoutController {
         tmp.setContent(data);
         SetupBuildDTO validated = layoutService.validateLayout(tmp);
 
-        boolean hasInvalid = false;
+        boolean hasBlocking = false;
         if (validated.getErrors() != null) {
-            hasInvalid = validated.getErrors().stream().anyMatch(r -> r != null && !r.isValid());
+            hasBlocking = validated.getErrors().stream().anyMatch(r -> r != null && r.isBlocking());
         }
-        if (hasInvalid) {
+        if (hasBlocking) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                     "saved", false,
                     "errors", validated.getErrors()
@@ -149,5 +151,4 @@ public class LayoutController {
     }
 
 }
-
 

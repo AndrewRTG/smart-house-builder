@@ -56,15 +56,17 @@ function formatEur(n: number): string {
     }).format(Math.round(n));
 }
 
-interface LayoutCanvasProps { isDarkMode: boolean; onBack: () => void; setupId?: number | null; }
+type EntityId = number | string;
 
-const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}) => {
+interface LayoutCanvasProps { isDarkMode: boolean; onBack: () => void; setupId?: EntityId | null; layoutId?: EntityId | null; }
+
+const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId, layoutId: requestedLayoutId}) => {
     const generateLayoutId = () => {
         const r = () => Math.floor(1000 + Math.random() * 9000).toString();
         return `layout-uuid-${r()}-${r()}`;
     };
 
-    const [layoutId] = useState(generateLayoutId);
+    const [clientLayoutId] = useState(generateLayoutId);
     const [showFurnitureMenu, setShowFurnitureMenu] = useState(false);
     const [selectedDevice, setSelectedDevice] = useState<any | null>(null);
     const [hoveredIconIndex, setHoveredIconIndex] = useState<number | null>(null);
@@ -129,10 +131,11 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
     }, [placedIcons, lines]);
     const exportDataRef = useRef(exportData);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
     const [validationInfos, setValidationInfos] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
-    const [lastSavedId, setLastSavedId] = useState<number | null>(null);
-    const [currentSetupId, setCurrentSetupId] = useState<number | null>(setupId ?? null);
+    const [lastSavedId, setLastSavedId] = useState<EntityId | null>(null);
+    const [currentSetupId, setCurrentSetupId] = useState<EntityId | null>(setupId ?? null);
     const [currentSetupName, setCurrentSetupName] = useState<string>('');
     const [currentLayoutDbId, setCurrentLayoutDbId] = useState<number | null>(null);
     const [showSaveModal, setShowSaveModal] = useState(false);
@@ -166,63 +169,11 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
     const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [wizardDeviceIds, setWizardDeviceIds] = useState<number[]>([]);
-    const [showWizardSuggestions, setShowWizardSuggestions] = useState(false);
-
-    useEffect(() => {
-        const checkWizardStorage = () => {
-            const savedData = sessionStorage.getItem('wizard_selected_devices');
-            if (savedData) {
-                try {
-                    const ids = JSON.parse(savedData);
-                    if (Array.isArray(ids) && ids.length > 0) {
-                        setWizardDeviceIds(ids.map(Number));
-                        return true;
-                    }
-                } catch (e) {
-                    console.error("Eroare la parsarea device-urilor din wizard:", e);
-                }
-            }
-            return false;
-        };
-
-        const foundInstantly = checkWizardStorage();
-
-        let t1: ReturnType<typeof setTimeout>;
-        let t2: ReturnType<typeof setTimeout>;
-
-        if (!foundInstantly) {
-            t1 = setTimeout(checkWizardStorage, 300);
-            t2 = setTimeout(checkWizardStorage, 1000);
-        }
-
-        return () => {
-            if (t1) clearTimeout(t1);
-            if (t2) clearTimeout(t2);
-        };
-    }, []);
 
     const filteredDevices = useMemo(() => {
-        console.log("Buton Wizard activat:", showWizardSuggestions);
-        console.log("ID-uri primite din Wizard:", wizardDeviceIds);
-
-        let baseList = fetchedDevices;
-
-        if (showWizardSuggestions && wizardDeviceIds.length > 0) {
-            const wizardIdsAsStrings = wizardDeviceIds.map(String);
-
-            baseList = baseList.filter(d => {
-                const currentDeviceId = String(d.id);
-                return wizardIdsAsStrings.includes(currentDeviceId);
-            });
-
-            console.log("Produse rămase după filtrarea de Wizard:", baseList.length);
-        }
-
-        if (!searchQuery.trim()) return baseList;
-        return fuzzyFilter(baseList, searchQuery, (d: any) => [d.name, d.brand]);
-
-    }, [fetchedDevices, searchQuery, showWizardSuggestions, wizardDeviceIds]);
+        if (!searchQuery.trim()) return fetchedDevices;
+        return fuzzyFilter(fetchedDevices, searchQuery, (d: any) => [d.name, d.brand]);
+    }, [fetchedDevices, searchQuery]);
 
     const normalizeText = (value?: string | null) =>
         (value || '')
@@ -509,6 +460,88 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
         }).catch(() => {});
     }, [setupId]);
 
+    const loadCanvasPayload = (payload: any) => {
+        const nextLines: any[] = [];
+        const rooms = Array.isArray(payload?.rooms) ? payload.rooms : [];
+
+        rooms.forEach((room: any, roomIndex: number) => {
+            (Array.isArray(room?.walls) ? room.walls : []).forEach((wall: any, index: number) => {
+                nextLines.push({
+                    id: `loaded-wall-${roomIndex}-${index}`,
+                    type: 'wall',
+                    start: { col: Math.round(Number(wall.x1 || 0) / GRID_POINT_CM), row: Math.round(Number(wall.y1 || 0) / GRID_POINT_CM) },
+                    end: { col: Math.round(Number(wall.x2 || 0) / GRID_POINT_CM), row: Math.round(Number(wall.y2 || 0) / GRID_POINT_CM) }
+                });
+            });
+
+            (Array.isArray(room?.windows) ? room.windows : []).forEach((windowItem: any, index: number) => {
+                const startCol = Math.round(Number(windowItem.x || 0) / GRID_POINT_CM);
+                const startRow = Math.round(Number(windowItem.y || 0) / GRID_POINT_CM);
+                const widthCols = Math.max(1, Math.round(Number(windowItem.width || GRID_POINT_CM) / GRID_POINT_CM));
+                const heightCols = Math.round(Number(windowItem.height || 0) / GRID_POINT_CM);
+                nextLines.push({
+                    id: `loaded-window-${roomIndex}-${index}`,
+                    type: 'window',
+                    start: { col: startCol, row: startRow },
+                    end: { col: startCol + widthCols, row: startRow + heightCols }
+                });
+            });
+
+            (Array.isArray(room?.doors) ? room.doors : []).forEach((door: any, index: number) => {
+                const col = Math.round(Number(door.x || 0) / GRID_POINT_CM);
+                const row = Math.round(Number(door.y || 0) / GRID_POINT_CM);
+                nextLines.push({
+                    id: `loaded-door-${roomIndex}-${index}`,
+                    type: 'door',
+                    start: { col, row },
+                    end: { col: col + 1, row }
+                });
+            });
+        });
+
+        const nextIcons = (Array.isArray(payload?.devices) ? payload.devices : []).map((item: any, index: number) => {
+            const device = item?.device || {};
+            const type = device.deviceType || 'bec';
+            return {
+                id: `loaded-device-${device.id || index}`,
+                deviceId: device.id || String(index),
+                col: Math.round(Number(item?.coordinates?.x || 0) / GRID_POINT_CM),
+                row: Math.round(Number(item?.coordinates?.y || 0) / GRID_POINT_CM),
+                type,
+                name: device.name || 'Device',
+                brand: device.ecosystem || 'Generic',
+                status: 'online',
+                priceEUR: Number(device.price || 0),
+                communicationProtocol: device.protocol,
+                scale: 1,
+                rotation: Number(item?.rotationAngle || 0)
+            };
+        });
+
+        setLines(nextLines);
+        setPlacedIcons(nextIcons);
+        setPlacedFurniture([]);
+        setUndoStack([]);
+        setRedoStack([]);
+        setValidationErrors([]);
+        setValidationWarnings([]);
+        setValidationInfos([]);
+    };
+
+    useEffect(() => {
+        if (!requestedLayoutId) return;
+
+        authFetch(`${API_BASE}/api/team2/layouts/open/${requestedLayoutId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(payload => {
+                if (!payload) return;
+                const parsedLayoutId = Number(requestedLayoutId);
+                if (!Number.isNaN(parsedLayoutId)) setCurrentLayoutDbId(parsedLayoutId);
+                loadCanvasPayload(payload);
+            })
+            .catch(() => setValidationErrors(['Nu am putut deschide desenul salvat.']));
+    }, [requestedLayoutId]);
+
     // --- LOGIC ---
     const saveHistory = () => {
         setUndoStack(prev => [{
@@ -599,13 +632,14 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
             if (!placedIconsRef.current.length && !linesRef.current.length) {
                 if (requestId !== validationRequestIdRef.current) return;
                 setValidationErrors([]);
+                setValidationWarnings([]);
                 setValidationInfos([]);
                 return;
             }
 
             const data = exportDataRef.current;
-            const payload = {
-                id: layoutId,
+        const payload = {
+                id: clientLayoutId,
                 scale: 'cm',
                 maxBudget: 15000,
                 targetEcosystem: 'Apple HomeKit',
@@ -623,27 +657,35 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                     if (requestId !== validationRequestIdRef.current) return;
                     if (!r.ok) {
                         setValidationErrors(['Eroare la validare']);
+                        setValidationWarnings([]);
                         setValidationInfos([]);
                         return;
                     }
                     const errs = Array.isArray(json?.errors) ? json.errors : [];
+                    const levelOf = (e: any) => (e?.level ?? '').toUpperCase();
                     const infos = errs
-                        .filter((e: any) => (e?.level ?? '').toUpperCase() === 'INFO')
+                        .filter((e: any) => levelOf(e) === 'INFO')
                         .map((e: any) => e?.message)
                         .filter(Boolean);
-                    const blocking = errs
+                    const warnings = errs
                         .filter((e: any) => {
-                            const lvl = (e?.level ?? '').toUpperCase();
-                            return lvl === 'ERROR' || lvl === 'WARN' || lvl === 'WARNING';
+                            const lvl = levelOf(e);
+                            return lvl === 'WARN' || lvl === 'WARNING';
                         })
                         .map((e: any) => e?.message)
                         .filter(Boolean);
+                    const blocking = errs
+                        .filter((e: any) => levelOf(e) === 'ERROR')
+                        .map((e: any) => e?.message)
+                        .filter(Boolean);
                     setValidationInfos(infos);
+                    setValidationWarnings(warnings);
                     setValidationErrors(blocking);
                 })
                 .catch(() => {
                     if (requestId !== validationRequestIdRef.current) return;
                     setValidationErrors(['Eroare la validare']);
+                    setValidationWarnings([]);
                     setValidationInfos([]);
                 });
         }, 0);
@@ -664,7 +706,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
         }
 
         const payload: Record<string, unknown> = {
-            id: layoutId,
+            id: clientLayoutId,
             scale: 'cm',
             maxBudget: 15000,
             targetEcosystem: 'Apple HomeKit',
@@ -733,7 +775,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
         };
     };
 
-    const doSaveSetup = async (name: string, existingId: number | null) => {
+    const doSaveSetup = async (name: string, existingId: EntityId | null) => {
         setIsSaving(true);
         setSaveSuccess(false);
 
@@ -941,6 +983,16 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                     </button>
                 </div>
             </div>
+
+            {validationWarnings.length > 0 && (
+                <div style={{
+                    padding: '12px 16px', borderRadius: '16px',
+                    background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)',
+                    color: colors.textMain, fontSize: '13px', fontWeight: 600
+                }}>
+                    {validationWarnings.join(' | ')}
+                </div>
+            )}
 
             {validationErrors.length > 0 && (
                 <div style={{
@@ -1194,29 +1246,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId}
                         background: colors.panel, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                         display: 'flex', flexDirection: 'column'
                     }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <p style={{fontWeight: 700, fontSize: '13px', color: colors.textMain, margin: 0}}>Device Catalog</p>
-
-                            {wizardDeviceIds.length > 0 && (
-                                <button
-                                    onClick={() => setShowWizardSuggestions(!showWizardSuggestions)}
-                                    style={{
-                                        padding: '4px 10px',
-                                        borderRadius: '8px',
-                                        border: `1px solid ${showWizardSuggestions ? '#00B4D8' : colors.border}`,
-                                        background: showWizardSuggestions ? '#00B4D8' : 'transparent',
-                                        color: showWizardSuggestions ? '#fff' : colors.textMain,
-                                        fontSize: '11px',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        fontFamily: 'inherit'
-                                    }}
-                                >
-                                    Wizard Suggestions
-                                </button>
-                            )}
-                        </div>
+                        <p style={{fontWeight: 700, fontSize: '13px', marginBottom: '16px', color: colors.textMain, margin: '0 0 16px 0'}}>Device Catalog</p>
                         <div style={{position: 'relative', marginBottom: '16px'}}>
                             <span style={{position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '14px'}}>🔍</span>
                             <input

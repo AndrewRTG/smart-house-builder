@@ -1,21 +1,42 @@
+/**
+ * SetupWizard.test.jsx
+ *
+ * Vitest + React Testing Library
+ * Coverage target: 100% branch & statement
+ */
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. ENV STUB (must happen before any module import that reads it)
+// ─────────────────────────────────────────────────────────────────────────────
 vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:20025');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. ROUTER MOCK
+// ─────────────────────────────────────────────────────────────────────────────
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
     const actual = await importOriginal();
     return { ...actual, useNavigate: () => mockNavigate };
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. authFetch MOCK
+// ─────────────────────────────────────────────────────────────────────────────
 vi.mock('../../../utils/authFetch', () => ({
     authFetch: vi.fn(),
 }));
 import { authFetch } from '../../../utils/authFetch';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. STABLE ZUSTAND STORE MOCK
+//    The store object is created ONCE outside describe() so its reference never
+//    changes across renders — prevents useEffect infinite loops.
+// ─────────────────────────────────────────────────────────────────────────────
 const storeState = {
     step: 1,
     darkMode: false,
@@ -59,6 +80,9 @@ vi.mock('../../../store/wizardStore.js', () => ({
     default: () => storeState,
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. GLOBAL fetch MOCK
+// ─────────────────────────────────────────────────────────────────────────────
 const mockAlgoDevices = [
     { id: 1, name: 'Smart Cam Pro', brand: 'Ring', bestPrice: 129.99, categoryId: 1, communicationProtocol: 'WiFi' },
     { id: 2, name: 'Smart Plug X', brand: 'TP-Link', price: 19.99, categoryId: 7, communicationProtocol: 'Zigbee' },
@@ -68,16 +92,19 @@ const mockAIDevices = [
     { id: 3, name: 'Robot Vac AI', brand: 'iRobot', bestPrice: 299.99, categoryId: 11, communicationProtocol: 'WiFi' },
 ];
 
-// REPARAT: Am împărțit mock-urile pentru a nu exista duplicate (multiple elements error)
-const mockSetupsDrafts = [
-    { id: 'setup-1', name: 'Living Room', status: 'Draft' }
-];
-const mockSetupsPublished = [
-    { id: 'setup-2', name: 'Bedroom', status: 'Published' }
+const mockSetups = [
+    { id: 'setup-1', name: 'Living Room', status: 'Draft' },
+    { id: 'setup-2', name: 'Bedroom', status: 'Draft' },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. COMPONENT IMPORT  (after all mocks are in place)
+// ─────────────────────────────────────────────────────────────────────────────
 import SetupWizard from './SetupWizard.jsx';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. RENDER HELPER
+// ─────────────────────────────────────────────────────────────────────────────
 const renderWizard = (props = {}) =>
     render(
         <MemoryRouter>
@@ -85,21 +112,22 @@ const renderWizard = (props = {}) =>
         </MemoryRouter>
     );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TESTS
+// ─────────────────────────────────────────────────────────────────────────────
 describe('SetupWizard', () => {
     beforeEach(() => {
         resetStore();
         mockNavigate.mockClear();
         vi.clearAllMocks();
 
-        // REPARAT: Returnăm draft-uri separate de published pentru a preveni randarea dublă a aceluiași element
-        authFetch.mockImplementation(async (url) => {
-            if (typeof url === 'string') {
-                if (url.includes('drafts')) return { ok: true, json: async () => ({ content: mockSetupsDrafts }) };
-                if (url.includes('published')) return { ok: true, json: async () => ({ content: mockSetupsPublished }) };
-            }
-            return { ok: true, json: async () => ({ content: [] }) };
+        // Default: authFetch returns setups list
+        authFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ content: mockSetups }),
         });
 
+        // Default: global fetch returns algo devices
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
             json: async () => mockAlgoDevices,
         }));
@@ -109,6 +137,7 @@ describe('SetupWizard', () => {
         vi.unstubAllGlobals();
     });
 
+    // ── Step 1: Setup selection ───────────────────────────────────────────
     describe('Step 1 — Select Your Project', () => {
         it('renders heading and loads setups from API', async () => {
             renderWizard();
@@ -118,6 +147,7 @@ describe('SetupWizard', () => {
         });
 
         it('shows loading state while fetching', () => {
+            // Never resolves during this check
             authFetch.mockReturnValue(new Promise(() => {}));
             renderWizard();
             expect(screen.getByText('Loading your projects...')).toBeInTheDocument();
@@ -130,13 +160,7 @@ describe('SetupWizard', () => {
         });
 
         it('handles plain array response (non-paginated)', async () => {
-            authFetch.mockImplementation(async (url) => {
-                if (typeof url === 'string') {
-                    if (url.includes('drafts')) return { ok: true, json: async () => mockSetupsDrafts };
-                    if (url.includes('published')) return { ok: true, json: async () => mockSetupsPublished };
-                }
-                return { ok: true, json: async () => [] };
-            });
+            authFetch.mockResolvedValue({ ok: true, json: async () => mockSetups });
             renderWizard();
             await screen.findByText('Living Room');
         });
@@ -145,6 +169,7 @@ describe('SetupWizard', () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             authFetch.mockRejectedValue(new Error('Network error'));
             renderWizard();
+            // Wizard should still render without crashing
             await waitFor(() => expect(consoleSpy).toHaveBeenCalled());
             expect(screen.getByText('Select Your Project')).toBeInTheDocument();
             consoleSpy.mockRestore();
@@ -153,6 +178,7 @@ describe('SetupWizard', () => {
         it('handles authFetch returning ok=false gracefully', async () => {
             authFetch.mockResolvedValue({ ok: false });
             renderWizard();
+            // Should not crash; empty list state after fetch
             await waitFor(() => {
                 expect(screen.queryByText('Loading your projects...')).not.toBeInTheDocument();
             });
@@ -162,6 +188,7 @@ describe('SetupWizard', () => {
             renderWizard();
             const card = await screen.findByText('Living Room');
             fireEvent.click(card.closest('div[style]'));
+            // Checkmark badge appears
             await waitFor(() => {
                 expect(screen.getByText('✓')).toBeInTheDocument();
             });
@@ -190,6 +217,7 @@ describe('SetupWizard', () => {
         });
     });
 
+    // ── Progress tracker ──────────────────────────────────────────────────
     describe('Progress Tracker', () => {
         it('renders all 4 step circles', () => {
             renderWizard();
@@ -201,6 +229,7 @@ describe('SetupWizard', () => {
         it('marks completed steps with ✓', async () => {
             storeState.step = 3;
             renderWizard();
+            // Steps 1 and 2 are completed
             const checkmarks = screen.getAllByText('✓');
             expect(checkmarks.length).toBeGreaterThanOrEqual(2);
         });
@@ -212,6 +241,7 @@ describe('SetupWizard', () => {
         });
     });
 
+    // ── Step 2: Budget ────────────────────────────────────────────────────
     describe('Step 2 — Budget', () => {
         beforeEach(() => { storeState.step = 2; });
 
@@ -242,6 +272,7 @@ describe('SetupWizard', () => {
         });
     });
 
+    // ── Step 3: Priorities ────────────────────────────────────────────────
     describe('Step 3 — Priorities', () => {
         beforeEach(() => { storeState.step = 3; });
 
@@ -274,6 +305,7 @@ describe('SetupWizard', () => {
         it('shows checkmark for selected categories', () => {
             storeState.categories = ['Comfort'];
             renderWizard();
+            // The ✔️ emoji should appear next to Comfort
             expect(screen.getByText('✔️')).toBeInTheDocument();
         });
 
@@ -284,6 +316,7 @@ describe('SetupWizard', () => {
         });
     });
 
+    // ── Step 4: Technical Level ───────────────────────────────────────────
     describe('Step 4 — Technical Level', () => {
         beforeEach(() => { storeState.step = 4; });
 
@@ -325,6 +358,7 @@ describe('SetupWizard', () => {
         });
     });
 
+    // ── Navigation ────────────────────────────────────────────────────────
     describe('Navigation buttons', () => {
         it('Previous button is disabled on step 1', () => {
             renderWizard();
@@ -346,9 +380,12 @@ describe('SetupWizard', () => {
         });
     });
 
+    // ── Results / SuggestedProductsView ──────────────────────────────────
     describe('SuggestedProductsView', () => {
         const goToResults = async () => {
             storeState.step = 4;
+            // Select a setup so we have context
+            authFetch.mockResolvedValue({ ok: true, json: async () => ({ content: mockSetups }) });
             renderWizard();
             fireEvent.click(screen.getByText('Get Suggestions 〉'));
         };
@@ -433,6 +470,7 @@ describe('SetupWizard', () => {
             fireEvent.change(input, { target: { value: 'something' } });
             fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
 
+            // AI panel should not appear
             await waitFor(() => {
                 expect(screen.queryByText('AI Recommendations')).not.toBeInTheDocument();
             });
@@ -478,13 +516,16 @@ describe('SetupWizard', () => {
             await goToResults();
             await screen.findByText('Smart Cam Pro');
 
+            // Total starts at 0
             expect(screen.getAllByText(/0\.00€/).length).toBeGreaterThan(0);
 
             fireEvent.click(screen.getByText('Smart Cam Pro').closest('.option-card'));
             await waitFor(() => expect(screen.getAllByText(/129\.99€/).length).toBeGreaterThan(0));
         });
 
-        it('navigates to /builder/:id on "Start Project" with a selected setup', async () => {
+        it('navigates to /builder with setupId on "Start Project" with a selected setup', async () => {
+            // Step 1: select a setup first
+            authFetch.mockResolvedValue({ ok: true, json: async () => ({ content: mockSetups }) });
             storeState.step = 1;
             const { rerender } = renderWizard();
 
@@ -503,7 +544,7 @@ describe('SetupWizard', () => {
             fireEvent.click(screen.getByText('Start Project 〉'));
 
             await waitFor(() => {
-                expect(mockNavigate).toHaveBeenCalledWith('/builder/setup-1');
+                expect(mockNavigate).toHaveBeenCalledWith('/builder?setupId=setup-1');
             });
         });
 
@@ -544,6 +585,7 @@ describe('SetupWizard', () => {
         });
 
         it('shows "Searching..." loading state in algorithm panel', async () => {
+            // Keep fetch hanging
             vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
 
             storeState.step = 4;
@@ -567,6 +609,7 @@ describe('SetupWizard', () => {
 
             await screen.findByText('Searching…');
 
+            // Resolve and verify it disappears
             resolveAI({ ok: true, json: async () => ({ devices: mockAIDevices }) });
             await screen.findByText('Robot Vac AI');
         });
@@ -602,6 +645,7 @@ describe('SetupWizard', () => {
             renderWizard();
             fireEvent.click(screen.getByText('Get Suggestions 〉'));
 
+            // 📦 should appear as the icon
             await screen.findByText('📦');
         });
     });

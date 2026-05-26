@@ -13,8 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.stream.Collectors;
-import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
-import gr.A4.SmartHouseBuilder.model.Layout;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -26,45 +25,32 @@ public class DeviceSuggestionAlgorithmService {
     private static final String GOOGLE="google";
     private static final String AMAZON="amazon";
     private static final String MATTER="MATTER";
+
     private final HardwareDeviceRepository deviceRepository;
-    private final LayoutRepository layoutRepository;
 
-
-    public DeviceSuggestionAlgorithmService(HardwareDeviceRepository deviceRepository, LayoutRepository layoutRepository) {
+    public DeviceSuggestionAlgorithmService(HardwareDeviceRepository deviceRepository) {
         this.deviceRepository = deviceRepository;
-        this.layoutRepository = layoutRepository;
     }
 
     public List<HardwareDevice> getSmartSuggestions(String criteriaString) {
         Map<String, String> criteria = parseCriteriaString(criteriaString);
 
+        System.out.println(criteriaString);
+
         double budget = extractBudget(criteria.getOrDefault("Buget", "0"));
-        String desiredCategoriesStr = criteria.getOrDefault("Categorii dorite", "Toate");
+        String desiredCategoriesStr = criteria.getOrDefault("Categorii", criteria.getOrDefault("Categorii dorite", "Toate"));
         String ecosystem = criteria.getOrDefault("Ecosistem", ORICARE);
         String level = criteria.getOrDefault("Nivel", ORICARE);
 
-        // NOU: Extragem ID-ul layout-ului curent (daca frontend-ul il trimite)
-        String layoutIdStr = criteria.getOrDefault("Layout", "");
-
         List<Integer> allowedCategoryIds = determineAllowedCategoryIds(desiredCategoriesStr);
         double maxAllowedPrice = budget > 0 ? budget + (budget * 0.05) : 0.0;
-
-        // Folosim lista mutabila pentru a putea sterge elemente din ea
         List<HardwareDevice> dbCandidates = new ArrayList<>(deviceRepository.findCandidatesForAlgorithm(allowedCategoryIds, maxAllowedPrice));
 
-        if (!layoutIdStr.isEmpty()) {
-            try {
-                Integer layoutId = Integer.parseInt(layoutIdStr);
-                layoutRepository.findById(layoutId).ifPresent(layout -> {
-                    String drawingJson = layout.getDrawing();
-                    List<Long> existingDeviceIds = extractDeviceIdsFromJson(drawingJson);
-
-                    if (!existingDeviceIds.isEmpty()) {
-                        dbCandidates.removeIf(device -> existingDeviceIds.contains(device.getId()));
-                    }
-                });
-            } catch (NumberFormatException e) {
-                // Daca frontend-ul trimite un layout invalid, ignoram si mergem mai departe
+        String cameraDataJson = criteria.getOrDefault("CameraData", "");
+        if (!cameraDataJson.isEmpty()) {
+            List<Long> existingDeviceIds = extractDeviceIdsFromCameraData(cameraDataJson);
+            if (!existingDeviceIds.isEmpty()) {
+                dbCandidates.removeIf(device -> existingDeviceIds.contains(device.getId()));
             }
         }
 
@@ -75,46 +61,24 @@ public class DeviceSuggestionAlgorithmService {
         return buildBalancedSetupWithinBudget(filteredByCategory, budget);
     }
 
-    // --- METODA NOUA ---
-    // Transforma cuvintele in ID-uri pentru baza de date
-    private List<Integer> determineAllowedCategoryIds(String categoriesStr) {
-        if (categoriesStr.equalsIgnoreCase("Toate") || categoriesStr.equalsIgnoreCase(ORICARE)) {
-            // Daca vrea toate, returnam toate cele 12 ID-uri posibile (sau cate ai in total)
-            return Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-        }
-
-        List<String> requestedCats = Arrays.stream(categoriesStr.split(","))
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .toList();
-
-        List<Integer> ids = new ArrayList<>();
-
-        // Hub-urile (5) si Routerele (12) sunt fundatia oricarei case smart, le cerem mereu
-        ids.add(5);
-        ids.add(12);
-
-        if (requestedCats.contains("security")) {
-            ids.addAll(Arrays.asList(1, 8)); // Camere si Senzori
-        }
-        if (requestedCats.contains("comfort")) {
-            ids.addAll(Arrays.asList(4, 11, 8)); // Electrocasnice, Aspiratoare, Senzori
-        }
-        if (requestedCats.contains("energy")) {
-            ids.addAll(Arrays.asList(2, 7, 8)); // Prelungitoare, Prize, Senzori
-        }
-        if (requestedCats.contains("entertainment")) {
-            ids.addAll(Arrays.asList(3, 6, 9, 10)); // Console, Monitoare, Boxe, TV
-        }
-
-        // Eliminam duplicatele in caz ca a cerut si security si comfort (amandoi folosesc senzori = 8)
-        return ids.stream().distinct().collect(Collectors.toList());
-    }
-
     private Map<String, String> parseCriteriaString(String text) {
         Map<String, String> map = new HashMap<>();
         if (text == null || text.isEmpty()) {
             return map;
+        }
+
+        if (text.contains("CameraData:")) {
+            int start = text.indexOf("CameraData:") + 11;
+            int end = text.indexOf(". Buget:");
+            if (end == -1) {
+                end = text.indexOf(" Buget:");
+            }
+
+            if (end != -1 && start < end) {
+                String json = text.substring(start, end).trim();
+                map.put("CameraData", json);
+                text = text.substring(0, text.indexOf("CameraData:")) + text.substring(end);
+            }
         }
 
         String[] parts = text.split("\\.\\s*");
@@ -125,6 +89,62 @@ public class DeviceSuggestionAlgorithmService {
             }
         }
         return map;
+    }
+
+    private List<Integer> determineAllowedCategoryIds(String categoriesStr) {
+        if (categoriesStr.equalsIgnoreCase("Toate") || categoriesStr.equalsIgnoreCase(ORICARE)) {
+            return Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+        }
+
+        List<String> requestedCats = Arrays.stream(categoriesStr.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .toList();
+
+        List<Integer> ids = new ArrayList<>();
+        ids.add(5);
+        ids.add(12);
+
+        if (requestedCats.contains("security")) {
+            ids.addAll(Arrays.asList(1, 8));
+        }
+        if (requestedCats.contains("comfort")) {
+            ids.addAll(Arrays.asList(4, 11, 8));
+        }
+        if (requestedCats.contains("energy")) {
+            ids.addAll(Arrays.asList(2, 7, 8));
+        }
+        if (requestedCats.contains("entertainment")) {
+            ids.addAll(Arrays.asList(3, 6, 9, 10));
+        }
+
+        return ids.stream().distinct().collect(Collectors.toList());
+    }
+
+    private List<Long> extractDeviceIdsFromCameraData(String json) {
+        List<Long> ids = new ArrayList<>();
+        if (json == null || json.isBlank()) {
+            return ids;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            JsonNode devicesNode = root.path("devices");
+
+            if (devicesNode.isArray()) {
+                for (JsonNode node : devicesNode) {
+                    if (node.has("id")) {
+                        try {
+                            ids.add(Long.parseLong(node.get("id").asText()));
+                        } catch (NumberFormatException e) {
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+        }
+        return ids;
     }
 
     private double extractBudget(String budgetStr) {
@@ -226,12 +246,10 @@ public class DeviceSuggestionAlgorithmService {
     private boolean isDeviceIncluded(HardwareDevice d, List<String> requestedCats, String ecosystem) {
         int cid = d.getCategoryId();
 
-        // Categoriile 5 (Hub) si 12 (Router) sunt mereu incluse by default
         if (cid == 5 || cid == 12) {
             return true;
         }
 
-        // Verificare specifica pentru boxe smart
         if (cid == 9 && isCompatibleSpeaker(d, ecosystem)) {
             return true;
         }
@@ -275,10 +293,18 @@ public class DeviceSuggestionAlgorithmService {
     }
 
     private List<HardwareDevice> buildBalancedSetupWithinBudget(List<HardwareDevice> availableDevices, double maxBudget) {
-        Map<Integer, Queue<HardwareDevice>> groupedDevices = groupAndSortDevices(availableDevices);
+        Map<Integer, Queue<HardwareDevice>> groupedDevices = new HashMap<>();
+
+        for (HardwareDevice d : availableDevices) {
+            groupedDevices.computeIfAbsent(d.getCategoryId(), k -> new LinkedList<>()).add(d);
+        }
+
+        for (Queue<HardwareDevice> q : groupedDevices.values()) {
+            ((LinkedList<HardwareDevice>) q).sort(Comparator.comparing(d -> d.getBestPrice() != null ? d.getBestPrice() : Double.MAX_VALUE));
+        }
 
         List<HardwareDevice> recommendedSetup = new ArrayList<>();
-        double[] currentTotal = {0.0}; // Folosim un array pentru a putea modifica valoarea din metoda ajutatoare
+        double currentTotal = 0.0;
 
         Map<Integer, Double> basePricePerCategory = new HashMap<>();
         Map<Integer, Integer> categoryCount = new HashMap<>();
@@ -287,107 +313,50 @@ public class DeviceSuggestionAlgorithmService {
         do {
             addedInRound = false;
             for (Integer catId : new ArrayList<>(groupedDevices.keySet())) {
-                boolean itemAdded = processCategoryRound(
-                        catId, groupedDevices, recommendedSetup, currentTotal,
-                        basePricePerCategory, categoryCount, maxBudget
-                );
+                Queue<HardwareDevice> queue = groupedDevices.get(catId);
 
-                if (itemAdded) {
-                    addedInRound = true;
+                if (queue != null && !queue.isEmpty()) {
+                    if (categoryCount.getOrDefault(catId, 0) >= 3) {
+                        groupedDevices.remove(catId);
+                        continue;
+                    }
+
+                    HardwareDevice candidate = queue.peek();
+                    assert candidate != null;
+                    double price = candidate.getBestPrice() != null ? candidate.getBestPrice() : 0.0;
+
+                    if (price <= 0) {
+                        queue.poll();
+                        addedInRound = true;
+                        continue;
+                    }
+
+                    double costToCompute;
+                    if (!basePricePerCategory.containsKey(catId)) {
+                        costToCompute = price;
+                    } else {
+                        costToCompute = price - basePricePerCategory.get(catId);
+                    }
+
+                    if (currentTotal + costToCompute <= maxBudget + (maxBudget * 0.05)) {
+                        recommendedSetup.add(queue.poll());
+                        currentTotal += costToCompute;
+
+                        if (!basePricePerCategory.containsKey(catId)) {
+                            basePricePerCategory.put(catId, price);
+                        }
+
+                        categoryCount.put(catId, categoryCount.getOrDefault(catId, 0) + 1);
+                        addedInRound = true;
+                    } else {
+                        queue.clear();
+                    }
                 }
             }
         } while (addedInRound);
 
         recommendedSetup.sort(Comparator.comparing(HardwareDevice::getCategoryId));
-        System.out.println("Lista de sugestii generata cu succes (Capacitate maxima simulata: " + currentTotal[0] + " EUR)");
+        System.out.println("Lista de sugestii generata cu succes (Capacitate maxima simulata: " + currentTotal + " EUR)");
         return recommendedSetup;
-    }
-
-    private Map<Integer, Queue<HardwareDevice>> groupAndSortDevices(List<HardwareDevice> devices) {
-        Map<Integer, Queue<HardwareDevice>> grouped = new HashMap<>();
-        for (HardwareDevice d : devices) {
-            grouped.computeIfAbsent(d.getCategoryId(), k -> new LinkedList<>()).add(d);
-        }
-
-        for (Queue<HardwareDevice> q : grouped.values()) {
-            ((LinkedList<HardwareDevice>) q).sort(Comparator.comparing(d -> d.getPrice() != null ? d.getPrice() : Double.MAX_VALUE));
-        }
-        return grouped;
-    }
-
-    private boolean processCategoryRound(
-            Integer catId, Map<Integer, Queue<HardwareDevice>> groupedDevices,
-            List<HardwareDevice> recommendedSetup, double[] currentTotal,
-            Map<Integer, Double> basePricePerCategory, Map<Integer, Integer> categoryCount,
-            double maxBudget) {
-
-        Queue<HardwareDevice> queue = groupedDevices.get(catId);
-        if (queue == null || queue.isEmpty()) {
-            return false;
-        }
-
-        if (categoryCount.getOrDefault(catId, 0) >= 3) {
-            groupedDevices.remove(catId);
-            return false;
-        }
-
-        HardwareDevice candidate = queue.peek();
-        assert candidate != null;
-        double price = candidate.getPrice() != null ? candidate.getPrice() : 0.0;
-
-        if (price <= 0) {
-            queue.poll();
-            return true;
-        }
-
-        double costToCompute = calculateUpgradeCost(catId, price, basePricePerCategory);
-
-        if (currentTotal[0] + costToCompute <= maxBudget + (maxBudget * 0.05)) {
-            recommendedSetup.add(queue.poll());
-            currentTotal[0] += costToCompute;
-
-            basePricePerCategory.putIfAbsent(catId, price);
-            categoryCount.put(catId, categoryCount.getOrDefault(catId, 0) + 1);
-            return true;
-        } else {
-            queue.clear();
-            return false;
-        }
-    }
-
-    private double calculateUpgradeCost(Integer catId, double price, Map<Integer, Double> basePricePerCategory) {
-        if (!basePricePerCategory.containsKey(catId)) {
-            return price; // Setup de baza
-        }
-        return price - basePricePerCategory.get(catId); // Cost de upgrade
-    }
-
-    private List<Long> extractDeviceIdsFromJson(String drawingJson) {
-        List<Long> ids = new ArrayList<>();
-        if (drawingJson == null || drawingJson.isBlank()) {
-            return ids;
-        }
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(drawingJson);
-            JsonNode devicesNode = root.path("devices");
-
-            if (devicesNode.isArray()) {
-                for (JsonNode node : devicesNode) {
-                    JsonNode deviceNode = node.path("device");
-                    if (!deviceNode.isMissingNode() && deviceNode.has("id")) {
-                        try {
-                            ids.add(Long.parseLong(deviceNode.get("id").asText()));
-                        } catch (NumberFormatException e) {
-                            // Ignoram ID-urile care nu pot fi transformate in numere
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // In caz ca JSON-ul este invalid, nu stricam algoritmul, returnam o lista goala
-        }
-        return ids;
     }
 }

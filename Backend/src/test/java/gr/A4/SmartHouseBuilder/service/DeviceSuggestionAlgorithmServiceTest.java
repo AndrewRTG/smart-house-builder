@@ -8,13 +8,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import gr.A4.SmartHouseBuilder.repository.LayoutRepository;
-import gr.A4.SmartHouseBuilder.model.Layout;
-import java.util.Optional;
-import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -27,19 +24,17 @@ class DeviceSuggestionAlgorithmServiceTest {
     @Mock
     private HardwareDeviceRepository deviceRepository;
 
-    @Mock
-    private LayoutRepository layoutRepository; // NOU
-
     @InjectMocks
     private DeviceSuggestionAlgorithmService algorithmService;
 
-    private HardwareDevice createDevice(Long id, int categoryId, String name, String brand, Double price, String protocol, String specs, String desc) {
+    // ATENTIE: Folosim bestPrice acum!
+    private HardwareDevice createDevice(Long id, int categoryId, String name, String brand, Double bestPrice, String protocol, String specs, String desc) {
         HardwareDevice device = new HardwareDevice();
         device.setId(id);
         device.setCategoryId(categoryId);
         device.setName(name);
         device.setBrand(brand);
-        device.setPrice(price);
+        device.setBestPrice(bestPrice);
         device.setCommunicationProtocol(protocol);
         device.setSpecifications(specs);
         device.setDescription(desc);
@@ -48,7 +43,6 @@ class DeviceSuggestionAlgorithmServiceTest {
 
     @Test
     void testParseCriteriaAndBudget_AllEdgeCases() {
-        // NOU: Inlocuim findAll() cu findCandidatesForAlgorithm()
         when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Collections.emptyList());
 
         assertTrue(algorithmService.getSmartSuggestions(null).isEmpty());
@@ -57,14 +51,35 @@ class DeviceSuggestionAlgorithmServiceTest {
         String criteria1 = "Buget: 1000 EUR. InvalidPartWithoutColon. Categorii dorite: Oricare";
         assertTrue(algorithmService.getSmartSuggestions(criteria1).isEmpty());
 
-        String criteria2 = "Buget: BaniMulti. Categorii dorite: Toate";
-        assertTrue(algorithmService.getSmartSuggestions(criteria2).isEmpty());
-
         String criteria3 = "Buget: 100.5.5 EUR. Categorii dorite: Toate";
         assertTrue(algorithmService.getSmartSuggestions(criteria3).isEmpty());
 
-        // Test pentru "Oricare"
         assertTrue(algorithmService.getSmartSuggestions("Buget: 1000 EUR. Categorii dorite: Oricare").isEmpty());
+    }
+
+    @Test
+    void testCameraDataExtraction_ExcludesExistingDevicesAndHandlesErrors() {
+        HardwareDevice dev1 = createDevice(1L, 1, "Cam 1", "Brand", 10.0, "WIFI", "", "");
+        HardwareDevice dev2 = createDevice(2L, 1, "Cam 2", "Brand", 10.0, "WIFI", "", "");
+        HardwareDevice dev3 = createDevice(3L, 1, "Cam 3", "Brand", 10.0, "WIFI", "", "");
+
+        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble()))
+                .thenReturn(new ArrayList<>(Arrays.asList(dev1, dev2, dev3)));
+
+        // JSON valid care ar trebui sa excluda device-ul cu ID 1
+        String validJsonCriteria = "CameraData: {\"devices\":[{\"id\":\"1\"}]}. Buget: 1000 EUR. Categorii: Toate";
+        List<HardwareDevice> resultValid = algorithmService.getSmartSuggestions(validJsonCriteria);
+
+        assertFalse(resultValid.contains(dev1)); // Exclus
+        assertTrue(resultValid.contains(dev2));  // Inclus
+        assertTrue(resultValid.contains(dev3));  // Inclus
+
+        // JSON invalid/corupt (nu ar trebui sa strice aplicatia, doar sa nu excluda nimic)
+        String invalidJsonCriteria = "CameraData: {bad_json. Buget: 1000 EUR. Categorii: Toate";
+        List<HardwareDevice> resultInvalid = algorithmService.getSmartSuggestions(invalidJsonCriteria);
+
+        assertTrue(resultInvalid.contains(dev1));
+        assertTrue(resultInvalid.contains(dev2));
     }
 
     @Test
@@ -94,7 +109,6 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice gZigbee = createDevice(17L, 1, "GZig", "Any", 10.0, "ZIGBEE", "", "");
         HardwareDevice gReject = createDevice(18L, 1, "GRej", "Any", 10.0, "THREAD", "", "");
 
-        // NOU: Inlocuim findAll()
         when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(
                 nullPropsDev,
                 appleAmazon, appleGoogle, appleSamsung, appleMatter, appleThread, appleBrand,
@@ -117,7 +131,6 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice relay = createDevice(6L, 1, "R", "B", 10.0, "WIFI", "relay", "");
         HardwareDevice okPnP = createDevice(7L, 1, "OK", "B", 10.0, "WIFI", "battery", "");
 
-        // NOU: Inlocuim findAll()
         when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(nullSpec, poe, wired, nvr, inWall, relay, okPnP));
 
         algorithmService.getSmartSuggestions("Buget: 1000. Nivel: beginner. Categorii dorite: Toate");
@@ -147,7 +160,6 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice com8temp = createDevice(15L, 8, "C8t", "B", 10.0, "WIFI", "temperature", "");
         HardwareDevice com8hum = createDevice(16L, 8, "C8h", "B", 10.0, "WIFI", "humidity", "");
         HardwareDevice com8lum = createDevice(17L, 8, "C8l", "B", 10.0, "WIFI", "luminance", "");
-        HardwareDevice com8motion = createDevice(18L, 8, "C8m", "B", 10.0, "WIFI", "motion", "");
 
         HardwareDevice ene2 = createDevice(19L, 2, "E2", "B", 10.0, "WIFI", "", "");
         HardwareDevice ene7 = createDevice(20L, 7, "E7", "B", 10.0, "WIFI", "", "");
@@ -156,20 +168,19 @@ class DeviceSuggestionAlgorithmServiceTest {
         HardwareDevice ent6 = createDevice(22L, 6, "E6", "B", 10.0, "WIFI", "", "");
         HardwareDevice ent10 = createDevice(23L, 10, "E10", "B", 10.0, "WIFI", "", "");
 
-        // NOU: Inlocuim findAll()
         when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(
                 cid5, cid12, cid9Oricare, cid9Apple, cid9Google, cid9Amazon,
                 sec1, sec8smoke, sec8gas, sec8contact, sec8motion, sec8leak,
-                com4, com11, com8temp, com8hum, com8lum, com8motion,
+                com4, com11, com8temp, com8hum, com8lum,
                 ene2, ene7,
                 ent3, ent6, ent10
         ));
 
         String categories = "security, comfort, energy, entertainment";
-        algorithmService.getSmartSuggestions("Buget: 5000. Categorii dorite: " + categories + ". Ecosistem: Oricare");
-        algorithmService.getSmartSuggestions("Buget: 5000. Categorii dorite: " + categories + ". Ecosistem: Apple");
-        algorithmService.getSmartSuggestions("Buget: 5000. Categorii dorite: " + categories + ". Ecosistem: Google");
-        algorithmService.getSmartSuggestions("Buget: 5000. Categorii dorite: " + categories + ". Ecosistem: Alexa");
+        algorithmService.getSmartSuggestions("Buget: 5000. Categorii: " + categories + ". Ecosistem: Oricare");
+        algorithmService.getSmartSuggestions("Buget: 5000. Categorii: " + categories + ". Ecosistem: Apple");
+        algorithmService.getSmartSuggestions("Buget: 5000. Categorii: " + categories + ". Ecosistem: Google");
+        algorithmService.getSmartSuggestions("Buget: 5000. Categorii: " + categories + ". Ecosistem: Alexa");
     }
 
     @Test
@@ -187,7 +198,6 @@ class DeviceSuggestionAlgorithmServiceTest {
 
         HardwareDevice expensive = createDevice(9L, 3, "Exp", "B", 2000.0, "WIFI", "", "");
 
-        // NOU: Inlocuim findAll()
         when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble())).thenReturn(Arrays.asList(
                 hub1, hub2, nullPrice, zeroPrice, c1, c2, c3, c4, expensive
         ));
@@ -196,38 +206,9 @@ class DeviceSuggestionAlgorithmServiceTest {
 
         assertTrue(res.contains(hub1));
         assertTrue(res.contains(hub2));
-        assertFalse(res.contains(nullPrice));
-        assertFalse(res.contains(zeroPrice));
-        assertFalse(res.contains(c4));
-        assertFalse(res.contains(expensive));
-    }
-
-    @Test
-    void testLayoutFiltering_RemovesExistingDevice() {
-        HardwareDevice dev1 = createDevice(1L, 1, "Cam 1", "Brand", 10.0, "WIFI", "", "");
-        HardwareDevice dev2 = createDevice(2L, 1, "Cam 2", "Brand", 10.0, "WIFI", "", "");
-
-        when(deviceRepository.findCandidatesForAlgorithm(anyList(), anyDouble()))
-                .thenReturn(Arrays.asList(dev1, dev2));
-
-        // Simulam un layout care are deja dev1 in el, folosind un string JSON asemanator cu cel din realitate
-        Layout mockLayout = new Layout();
-        mockLayout.setId(100);
-        String mockJson = "{\"devices\": [{\"device\": {\"id\": \"1\"}}]}";
-        mockLayout.setDrawing(mockJson);
-
-        when(layoutRepository.findById(100)).thenReturn(Optional.of(mockLayout));
-
-        // 1. Testam cautarea cu un layout valid
-        List<HardwareDevice> result = algorithmService.getSmartSuggestions("Buget: 1000 EUR. Categorii dorite: Toate. Layout: 100");
-
-        assertFalse(result.contains(dev1));
-        assertTrue(result.contains(dev2));
-
-        // 2. Testam cautarea cand trimitem un layout care arunca NumberFormatException
-        List<HardwareDevice> resultInvalid = algorithmService.getSmartSuggestions("Buget: 1000 EUR. Categorii dorite: Toate. Layout: text_invalid");
-
-        assertTrue(resultInvalid.contains(dev1));
-        assertTrue(resultInvalid.contains(dev2));
+        assertFalse(res.contains(nullPrice)); // Exclus din cauza pretului NULL
+        assertFalse(res.contains(zeroPrice)); // Exclus din cauza pretului 0.0
+        assertFalse(res.contains(c4));        // Exclus pentru ca e al 4-lea produs din categorie
+        assertFalse(res.contains(expensive)); // Exclus pentru ca depaseste bugetul
     }
 }

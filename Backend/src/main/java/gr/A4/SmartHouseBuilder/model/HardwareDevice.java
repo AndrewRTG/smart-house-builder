@@ -43,4 +43,8 @@ public class HardwareDevice {
     private String specifications;
 
     private Double price;
+
+    @Column(name = "best_price")
+    private Double bestPrice;
+
 }

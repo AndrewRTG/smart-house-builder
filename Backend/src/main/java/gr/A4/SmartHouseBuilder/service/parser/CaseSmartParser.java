@@ -170,9 +170,7 @@ public class CaseSmartParser implements StoreParser {
             return 7;
         }
 
-        if (isSmartPlug(title, text)) {
-            return 7;
-        }
+
 
         return CategoryMapper.determineCategoryId(
                 item.title,
@@ -279,7 +277,28 @@ public class CaseSmartParser implements StoreParser {
         String title = normalized(item.title);
         String description = normalized(item.description);
         String text = title + " " + description;
-
+        if (containsAny(title,
+                "videointerfon",
+                "video interfon",
+                "videointerfon wireless",
+                "videointerfon cu fir",
+                "scs sentinel airvisio 200",
+                "scs sentinel wdp-200",
+                "scs sentinel visiodoor 7+",
+                "scs sentinel visiodoor 4.3+",
+                "scs sentinel visiokit 4.3",
+                "scs sentinel visiokit 7"
+        )) {
+            return true;
+        }
+        if (containsAny(title,
+                "termostat computherm",
+                "termostat inteligent cu fir",
+                "termostat smart pentru aer conditionat",
+                "sensibo sky"
+        )) {
+            return true;
+        }
         if (containsAny(title,
                 "releu",
                 "relee"

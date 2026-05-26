@@ -245,7 +245,20 @@ public class VonMagParser implements StoreParser {
         )) {
             return 5;
         }
-
+        if (containsAny(title,
+                "televizor",
+                "smart tv",
+                "android tv",
+                "google tv",
+                "oled tv",
+                "qled tv",
+                "led tv",
+                "uhd tv",
+                "4k ultra hd",
+                "4k uhd"
+        )) {
+            return 10;
+        }
         /*
          * 7 - PRIZE / INTRERUPATOARE / RELEE SMART.
          * Trebuie verificat inainte de categoria 13 ca sa nu intre prizele Gosund la becuri.
@@ -673,13 +686,36 @@ public class VonMagParser implements StoreParser {
         String description = normalized(item.description);
         String text = title + " " + description;
 
-        /*
-         * Daca este bec/banda/lampa smart, nu o eliminam ca junk.
-         */
+
         if (isSmartLight(title, text)) {
             return false;
         }
-
+        if (containsAny(title,
+                "videointerfon",
+                "video interfon",
+                "interfon",
+                "post videointerfon",
+                "post interior videointerfon",
+                "post exterior videointerfon",
+                "post de interior video",
+                "post de exterior videointerfon",
+                "post de apel video",
+                "panou de apel video",
+                "panoul de apel video",
+                "panou exterior videointerfon",
+                "panou interior suplimentar",
+                "modul statie usa video interfon",
+                "kit videointerfon",
+                "kit video-interfon",
+                "kit videointerfon ip",
+                "kit video interfon",
+                "set videointerfon",
+                "hk set videointerfon",
+                "hk monitor videointerfon",
+                "monitor videointerfon"
+        )) {
+            return true;
+        }
         if (containsAny(title,
                 "statie incarcare",
                 "statie incarcat",
@@ -693,7 +729,32 @@ public class VonMagParser implements StoreParser {
         )) {
             return true;
         }
-
+        if (containsAny(title,
+                "thermostat",
+                "termostat",
+                "radiator thermostat",
+                "smart radiator thermostat",
+                "tp-link smart radiator thermostat",
+                "ke100",
+                "pni ct36",
+                "pni ct45",
+                "nth-pro",
+                "gosund str1",
+                "aqara w600",
+                "somfy conectat",
+                "linkedgo",
+                "xg8002",
+                "netatmo home coach",
+                "monitorizare a calitatii aerului",
+                "monitorizare calitatii aerului",
+                "monitorizare calitate aer",
+                "aparat de masurat calitatea aerului",
+                "aparat masurare calitate aer",
+                "airmon-a15f",
+                "airmon-a25m"
+        )) {
+            return true;
+        }
         if (containsAny(title,
                 "camera auto",
                 "camera de bord",

@@ -339,11 +339,22 @@ public class RovisionParser implements StoreParser {
         String description = normalized(item.description);
         String text = title + " " + description;
 
-        /*
-         * Daca este smart light clar, il lasam sa intre la categoria 13.
-         * Totusi, reflectoarele/proiectoarele/lampile solare simple raman excluse mai jos,
-         * pentru ca nu vrem orice LED in categoria 13.
-         */
+        if (containsAny(title,
+                "videointerfon",
+                "video interfon",
+                "monitor videointerfon",
+                "post exterior videointerfon",
+                "post interior videointerfon",
+                "kit videointerfon",
+                "kit video-interfon",
+                "panou exterior videointerfon",
+                "modul videointerfon",
+                "modul afisaj",
+                "modul extensie videointerfon",
+                "modul tastatura videointerfon"
+        )) {
+            return true;
+        }
         if (isSmartLight(title, text)
                 && !containsAny(title,
                 "reflector led",
@@ -435,7 +446,9 @@ public class RovisionParser implements StoreParser {
                 "kit montare in rack",
                 "suport perete pentru access point",
                 "suporti de montare pentru access point",
-                "set 10 suporti de montare"
+                "set 10 suporti de montare",
+                "kit home gateway smart home + 2x termostat inteligent",
+                "termostat inteligent ezviz pentru calorifer"
         );
     }
 

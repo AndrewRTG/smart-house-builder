@@ -133,8 +133,11 @@ export async function captureLayoutThumbnailRoot(
         // factor.
         if (placedIcons?.length) {
             const canvasRect = sourceCanvas.getBoundingClientRect();
-            const cssToOutX = canvasRect.width > 0 ? drawW / canvasRect.width : 1;
-            const cssToOutY = canvasRect.height > 0 ? drawH / canvasRect.height : 1;
+            // Fall back to drawing-buffer dimensions when the DOM rect is
+            // unavailable (jsdom test environment, detached element). Real
+            // browsers use the live CSS rect so retina dpr scaling stays right.
+            const cssToOutX = canvasRect.width > 0 ? drawW / canvasRect.width : drawW / sw;
+            const cssToOutY = canvasRect.height > 0 ? drawH / canvasRect.height : drawH / sh;
 
             for (const icon of placedIcons) {
                 let cx: number;

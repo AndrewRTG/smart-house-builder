@@ -23,7 +23,12 @@ const mockOutputCanvas = (dataUrl = 'data:image/jpeg;base64,AAABBBCCC') => {
     beginPath: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
+    fillRect: vi.fn(),
     fillText: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
     imageSmoothingEnabled: false,
     imageSmoothingQuality: 'low',
     fillStyle: '',
@@ -85,7 +90,9 @@ describe('captureLayoutThumbnailRoot', () => {
     const result = await captureLayoutThumbnailRoot(el);
 
     expect(result).toBe('AAABBBCCC');
-    expect(mockCtx.drawImage).toHaveBeenCalledWith(canvas, 0, 0, 500, 300);
+    // 500x300 canvas (aspect 5:3) letterboxed into 800x450 (16:9) output:
+    // height-limited (drawH=450, drawW=750), centered horizontally (offX=25).
+    expect(mockCtx.drawImage).toHaveBeenCalledWith(canvas, 25, 0, 750, 450);
   });
 
   test('returns base64 string when canvas is exactly max width', async () => {
@@ -96,6 +103,7 @@ describe('captureLayoutThumbnailRoot', () => {
     const result = await captureLayoutThumbnailRoot(el);
 
     expect(result).toBe('AAABBBCCC');
+    // 1200x675 already matches the 16:9 output; no letterbox needed.
     expect(mockCtx.drawImage).toHaveBeenCalledWith(canvas, 0, 0, 1200, 675);
   });
 
@@ -107,6 +115,7 @@ describe('captureLayoutThumbnailRoot', () => {
     const result = await captureLayoutThumbnailRoot(el);
 
     expect(result).toBe('SCALEDDATA');
+    // 1920x1080 source is exactly 16:9 — fits the 1200x675 output without letterbox.
     expect(mockCtx.drawImage).toHaveBeenCalledWith(canvas, 0, 0, 1200, 675);
   });
 
@@ -141,7 +150,11 @@ describe('captureLayoutThumbnailRoot', () => {
 
     expect(result).toBe('WITHMARKERS');
     expect(mockCtx.arc).toHaveBeenCalled();
-    expect(mockCtx.fillText).toHaveBeenCalledWith('R', 70, 110);
+    // Layout-based fallback (no DOM element with data-placed-icon attribute).
+    // 500x300 source → letterboxed at offX=25, offY=0, scale 1.5 css→output.
+    // Icon center = offX + offsetX*1.5 + col*(dotSpacing*1.5) = 25 + 15 + 90 = 130.
+    // Icon center y = offY + offsetY*1.5 + row*(dotSpacing*1.5) = 0 + 30 + 135 = 165.
+    expect(mockCtx.fillText).toHaveBeenCalledWith('R', 130, 165);
   });
 
   test('returns null when toDataURL throws', async () => {

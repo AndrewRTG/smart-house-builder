@@ -795,7 +795,7 @@ export default function CommunityPage({ darkMode }) {
         {/* CONTENT - Slider effect */}
         <div className="content-slider">
           <div className={`content-pane ${activeTab === 'setups' ? 'active' : ''}`}>
-            {loading ? (
+            {loading && setups.length === 0 ? (
               <div className="loading">Loading setups...</div>
             ) : filteredSetups.length > 0 ? (
                     <>
@@ -931,7 +931,7 @@ export default function CommunityPage({ darkMode }) {
               </div>
             )}
 
-            {loading ? (
+            {loading && articles.length === 0 ? (
               <div className="loading">Loading articles...</div>
             ) : filteredArticles.length > 0 ? (
                 <>

@@ -180,9 +180,7 @@ export default function MyArticles({ isDark, profile }) {
 
   const rawList = activeTab === 'drafts' ? drafts : published;
   const list = fuzzyFilter(rawList, search, (a) => [a.title, a.content, ...(a.tags || [])]);
-  const emptyCopy = activeTab === 'drafts'
-    ? "You don't have any drafts. Start writing — your in-progress work will live here."
-    : "You haven't published any articles yet.";
+  const emptyCopy = activeTab === 'drafts' ? 'No drafts yet.' : 'No published articles yet.';
 
   return (
     <div className={`my-articles-container ${isDark ? 'dark' : 'light'}`}>

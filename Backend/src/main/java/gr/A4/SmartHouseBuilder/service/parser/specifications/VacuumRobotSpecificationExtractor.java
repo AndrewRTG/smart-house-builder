@@ -14,7 +14,6 @@ public class VacuumRobotSpecificationExtractor {
 
         Map<String, Object> specs = SpecificationUtils.base(
                 "suction_power_pa",
-                "battery_capacity_mah",
                 "has_mopping_function",
                 "navigation_type",
                 "dustbin_capacity_ml"

@@ -148,7 +148,7 @@ const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
     // ── On mount: ONLY fetch algorithm suggestions ─────────────────────────
     useEffect(() => {
         setLoadingAlgo(true);
-        const criterii = buildCriteria(selectedSetup);
+        const criterii = buildCriteria(selectedSetup, s);
         const encodedCriteria = encodeURIComponent(criterii);
 
         fetch(`${API_BASE}/api/devices/algorithmSuggestions?criteria=${encodedCriteria}`)
@@ -166,7 +166,7 @@ const SuggestedProductsView = ({ selectedSetup, onConfirm, onBack }) => {
         setHasRequestedAI(true);
         setLoadingAI(true);
 
-        const userContext = buildCriteria(selectedSetup); // Algoritmul și filtrele setate de user
+        const userContext = buildCriteria(selectedSetup, s); // Algoritmul și filtrele setate de user
 
         try {
             const res = await authFetch('/api/ai/agent-search', {
@@ -301,13 +301,18 @@ const getSetupDevices = (setup) => {
     return (setup.deviceIds || []).map((id) => ({ id }));
 };
 
-const buildCriteria = (setup) => {
+const buildCriteria = (setup, s) => {
     const roomId = setup?.id || null;
     const devices = getSetupDevices(setup);
 
     return JSON.stringify({
         roomId,
         devices,
+        budget: s.priceRange[1],
+        ecosystem: s.ecosystem || null,
+        techLevel: s.techLevel || null,
+        categories: s.categories,
+        protocols: s.protocols,
     });
 };
 

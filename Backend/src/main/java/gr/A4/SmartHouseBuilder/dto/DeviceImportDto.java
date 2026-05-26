@@ -1,5 +1,5 @@
 package gr.A4.SmartHouseBuilder.dto;
-
+import java.util.Map;
 public class DeviceImportDto {
 
     private String name;
@@ -9,6 +9,9 @@ public class DeviceImportDto {
     private String imageUrl;
     private String sourceStore;
     private Integer categoryId;
+    private String productUrl;
+    private String communicationProtocol;
+    private Map<String, Object> specifications;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -30,4 +33,13 @@ public class DeviceImportDto {
 
     public Integer getCategoryId() { return categoryId; }
     public void setCategoryId(Integer categoryId) { this.categoryId = categoryId; }
+
+    public String getProductUrl() { return productUrl; }
+    public void setProductUrl(String productUrl) { this.productUrl = productUrl; }
+
+    public String getCommunicationProtocol() { return communicationProtocol; }
+    public void setCommunicationProtocol(String communicationProtocol) { this.communicationProtocol = communicationProtocol; }
+
+    public Map<String, Object> getSpecifications() { return specifications;}
+    public void setSpecifications(Map<String, Object> specifications) {this.specifications = specifications;}
 }

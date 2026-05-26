@@ -431,6 +431,53 @@ class PhysicalDiscrepancyEngineTest {
         assertNotNull(results);
     }
 
+    @Test
+    void checkHubRange_gridScaleUsesHalfMeterPerPoint() {
+        SetupBuild build = createBasicSetup();
+        build.setScale("grid");
+
+        Room room = createRoom("Long Room", 0, 0, 40, 10);
+        build.setRooms(List.of(room));
+
+        PlacedDevice hub = createPlacedDevice("Gateway", "Controller", 0.0, 0.0);
+        PlacedDevice deviceInRange = createPlacedDevice("Sensor", "Motion Sensor", 30.0, 0.0);
+        PlacedDevice deviceOutOfRange = createPlacedDevice("Camera", "Security Camera", 31.0, 0.0);
+
+        build.setDevices(List.of(hub, deviceInRange, deviceOutOfRange));
+
+        List<ValidationResult> results = engine.runAllChecks(build);
+
+        assertFalse(results.stream().anyMatch(r ->
+            r.getMessage().contains("Sensor") && r.getMessage().contains("peste raza")
+        ));
+        assertTrue(results.stream().anyMatch(r ->
+            r.getMessage().contains("Camera") && r.getMessage().contains("peste raza")
+        ));
+    }
+
+    @Test
+    void checkDevicesOnDoorsWindows_zeroLengthDoorStillDetectsNonLockDevice() {
+        SetupBuild build = createBasicSetup();
+
+        Room room = new Room();
+        room.setId("Entry");
+        room.setSquareMeters(16.0);
+        room.setWalls(createRectangleWalls(0, 0, 4, 4));
+        room.setDoors(List.of(createSegment(2.0, 0.0, 2.0, 0.0)));
+        build.setRooms(List.of(room));
+
+        PlacedDevice device = createPlacedDevice("Door Camera", "Security Camera", 2.0, 0.0);
+        build.setDevices(List.of(device));
+
+        List<ValidationResult> results = engine.runAllChecks(build);
+
+        assertTrue(results.stream().anyMatch(r ->
+            !r.isValid() &&
+            r.getLevel().equals("ERROR") &&
+            r.getMessage().contains("plasat pe o u")
+        ));
+    }
+
     // Helper methods
 
     private SetupBuild createBasicSetup() {

@@ -2,7 +2,7 @@
 
 .community-container {
   display: grid;
-  grid-template-columns: 225px 1fr;
+  grid-template-columns: 285px 1fr;
   grid-template-rows: 1fr auto;
   min-height: calc(100vh - 64px);
   background-color: var(--bg-main);
@@ -28,7 +28,7 @@
   margin-bottom: 20px;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 15px;
+  padding: 10px;
 }
 
 .user-profile {
@@ -503,7 +503,22 @@ button.sidebar-section.user-profile:focus-visible {
 .pill-row-equal {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 8px;
+  gap: 4px;
+}
+
+.pill-row-equal .pill {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  padding: 5px 2px;
+  gap: 3px;
+}
+
+.pill-row-equal .pill svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
 }
 
 .pill-row-wrap {
@@ -918,7 +933,7 @@ button.sidebar-section.user-profile:focus-visible {
 
 @media (max-width: 1024px) {
   .community-container {
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 240px 1fr;
   }
   .community-sidebar { padding: 16px 12px; }
   .community-main { padding: 32px 24px; }

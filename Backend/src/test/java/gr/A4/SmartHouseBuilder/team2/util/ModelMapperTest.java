@@ -202,4 +202,71 @@ class ModelMapperTest {
         assertNull(pd.getX());
         assertNull(pd.getY());
     }
+
+    @Test
+    void toEngineModel_handlesNullRoomEntries() {
+        SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setRooms(Arrays.asList((RoomDTO) null));
+
+        SetupBuild model = mapper.toEngineModel(dto);
+
+        assertNotNull(model.getRooms());
+        assertEquals(1, model.getRooms().size());
+
+        Room room = model.getRooms().get(0);
+        assertNull(room.getId());
+        assertNull(room.getSquareMeters());
+        assertNull(room.getWallType());
+    }
+
+    @Test
+    void toEngineModel_mapsNullNestedRoomElementsToEmptyModels() {
+        SetupBuildDTO dto = new SetupBuildDTO();
+
+        WindowDTO windowWithoutWidth = new WindowDTO();
+        windowWithoutWidth.setX(4.0);
+        windowWithoutWidth.setY(1.0);
+
+        WindowDTO windowWithoutX = new WindowDTO();
+        windowWithoutX.setY(2.0);
+        windowWithoutX.setWidth(3.0);
+
+        RoomDTO roomDto = new RoomDTO();
+        roomDto.setWalls(Arrays.asList((WallDTO) null));
+        roomDto.setDoors(Arrays.asList((PointDTO) null));
+        roomDto.setWindows(Arrays.asList(windowWithoutWidth, windowWithoutX));
+        roomDto.setPlugs(Arrays.asList((PointDTO) null));
+
+        dto.setRooms(List.of(roomDto));
+
+        SetupBuild model = mapper.toEngineModel(dto);
+
+        Room room = model.getRooms().get(0);
+        Segment2D emptyWall = room.getWalls().get(0);
+        assertNull(emptyWall.getX1());
+        assertNull(emptyWall.getY1());
+        assertNull(emptyWall.getX2());
+        assertNull(emptyWall.getY2());
+
+        Segment2D emptyDoor = room.getDoors().get(0);
+        assertNull(emptyDoor.getX1());
+        assertNull(emptyDoor.getY1());
+        assertNull(emptyDoor.getX2());
+        assertNull(emptyDoor.getY2());
+
+        Segment2D windowSameEnd = room.getWindows().get(0);
+        assertEquals(4.0, windowSameEnd.getX1());
+        assertEquals(1.0, windowSameEnd.getY1());
+        assertEquals(4.0, windowSameEnd.getX2());
+        assertEquals(1.0, windowSameEnd.getY2());
+
+        Segment2D windowWithoutStart = room.getWindows().get(1);
+        assertNull(windowWithoutStart.getX1());
+        assertEquals(2.0, windowWithoutStart.getY1());
+        assertNull(windowWithoutStart.getX2());
+        assertEquals(2.0, windowWithoutStart.getY2());
+
+        assertNull(room.getPlugs().get(0).getX());
+        assertNull(room.getPlugs().get(0).getY());
+    }
 }

@@ -83,7 +83,8 @@ public class LayoutController {
 
         boolean hasBlocking = false;
         if (validated.getErrors() != null) {
-            hasBlocking = validated.getErrors().stream().anyMatch(r -> r != null && r.isBlocking());
+            hasBlocking = validated.getErrors().stream()
+                    .anyMatch(r -> r != null && !r.isValid() && "ERROR".equalsIgnoreCase(r.getLevel()));
         }
         if (hasBlocking) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
@@ -151,4 +152,3 @@ public class LayoutController {
     }
 
 }
-

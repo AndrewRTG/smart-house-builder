@@ -188,7 +188,7 @@ describe('shared UI components', () => {
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith({ id: 9, name: 'Copy of Kitchen' }));
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/3/copy',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/3/copy`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ name: 'My copy' }),

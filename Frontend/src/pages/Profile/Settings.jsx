@@ -5,7 +5,7 @@ import { useError } from "../../context/ErrorContext";
 import { authFetch } from "../../utils/authFetch";
 import "./Settings.css";
 
-const API_BASE = "http://localhost:20025/api/v1";
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 
 const MOCK_UPLOAD = false;
 

@@ -258,7 +258,7 @@ describe('Profile area', () => {
     fireEvent.click(screen.getByText('Publish'));
     fireEvent.click(screen.getByRole('button', { name: /public/i }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/1/publish',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/1/publish`,
       expect.objectContaining({ method: 'PUT' })
     ));
 
@@ -282,7 +282,7 @@ describe('Profile area', () => {
     fireEvent.click(screen.getByLabelText('Delete published setup'));
     fireEvent.click(screen.getByRole('button', { name: /tot/i }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/2',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/2`,
       expect.objectContaining({ method: 'DELETE' })
     ));
   });
@@ -303,7 +303,7 @@ describe('Profile area', () => {
     fireEvent.change(screen.getByPlaceholderText(/Dormitor/), { target: { value: 'New setup' } });
     fireEvent.click(screen.getByText(/Creeaz/));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups`,
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ name: 'New setup' }) })
     ));
   });
@@ -332,12 +332,12 @@ describe('Profile area', () => {
     fireEvent.click(screen.getAllByText('Edit')[0]);
     fireEvent.change(screen.getByDisplayValue('ana'), { target: { value: 'anca' } });
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/auth/check-username',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/check-username`,
       expect.objectContaining({ method: 'POST' })
     ), { timeout: 1500 });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/users/username',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/users/username`,
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ newUsername: 'anca' }) })
     ));
 
@@ -345,13 +345,13 @@ describe('Profile area', () => {
     fireEvent.change(screen.getByDisplayValue('ana@example.com'), { target: { value: 'anca@example.com' } });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/users/email',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/users/email`,
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ newEmail: 'anca@example.com' }) })
     ));
 
     fireEvent.click(screen.getByRole('checkbox', { name: /two-factor/i }));
     await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/auth/mfa/disable',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/mfa/disable`,
       { method: 'DELETE' }
     ));
 
@@ -405,7 +405,7 @@ describe('Profile area', () => {
       target: { files: [new File(['avatar'], 'avatar.png', { type: 'image/png' })] },
     });
     await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/images/avatars',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/images/avatars`,
       expect.objectContaining({ method: 'POST' })
     ));
     expect(await screen.findByText('Profile photo updated.')).toBeInTheDocument();
@@ -424,7 +424,7 @@ describe('Profile area', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     fireEvent.keyDown(usernameInput, { key: 'Enter' });
     await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/users/username',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/users/username`,
       expect.objectContaining({ method: 'PUT' })
     ));
 

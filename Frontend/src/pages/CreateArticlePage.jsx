@@ -90,7 +90,7 @@ export default function CreateArticlePage({ darkMode }) {
       const formData = new FormData();
       formData.append("file", file);
       // Nu seta Content-Type — browser-ul îl setează automat cu boundary
-      const res = await authFetch("http://localhost:20025/api/v1/images/articles", {
+      const res = await authFetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/images/articles`, {
         method: "POST",
         body: formData,
       });

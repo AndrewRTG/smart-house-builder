@@ -15,7 +15,7 @@ import { getCurrentUser } from '../utils/currentUser';
 import { getStoredLike, setStoredLike } from '../utils/likedItemsStorage';
 import '../styles/DetailPage.css';
 
-const API_BASE = 'http://localhost:20025/api/v1';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 const EURO_SYMBOL = '\u20AC';
 
 const ARTICLE_TOPIC_MAP = [

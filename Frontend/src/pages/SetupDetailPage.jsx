@@ -23,7 +23,7 @@ import { getStoredLike, setStoredLike } from '../utils/likedItemsStorage';
 import { formatDate as fmtDate, formatRelativeDate as fmtRel } from '../utils/parseDate';
 import '../styles/DetailPage.css';
 
-const API_BASE = 'http://localhost:20025/api/v1';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 
 const SETUP_TOPIC_MAP = [
   { label: 'Bucatarie', keywords: ['bucatarie', 'kitchen', 'fridge', 'cuptor', 'oven', 'mixer'] },

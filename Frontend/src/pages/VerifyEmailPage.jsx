@@ -10,7 +10,7 @@ import { Link, useSearchParams } from 'react-router-dom';
  * Calls GET /api/v1/auth/verify-email?token=... and shows the result.
  * The endpoint is publicly accessible (no Authorization header).
  */
-const API_BASE = 'http://localhost:20025/api/v1';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 
 export default function VerifyEmailPage() {
   const [params] = useSearchParams();

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../../../utils/authFetch';
 import './wizard.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}`;
 
 // ── HELPER: map categoryId → icon ───────────────────────────────────────────
 const getCategoryIcon = (categoryId) => {

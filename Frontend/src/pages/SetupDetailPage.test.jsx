@@ -102,7 +102,7 @@ describe('SetupDetailPage', () => {
 
     fireEvent.click(wishlistButton);
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/42/wishlist',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/42/wishlist`,
       expect.objectContaining({ method: 'POST' })
     ));
     expect(wishlistButton).toHaveClass('saved');

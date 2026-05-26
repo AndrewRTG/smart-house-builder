@@ -97,7 +97,7 @@ describe('NotificationBell', () => {
 
     await waitFor(() => expect(screen.getByText('Profile page')).toBeInTheDocument());
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/notifications/read-all',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/notifications/read-all`,
       expect.objectContaining({ method: 'PATCH' })
     );
     expect(screen.queryByText('3')).not.toBeInTheDocument();

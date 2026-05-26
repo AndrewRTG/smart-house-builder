@@ -68,20 +68,25 @@ public class SimpleAiService {
     // Metoda extrasă pentru a reduce "Cognitive Complexity" din SonarLint
     private String performExploratorySearch(String existingContext) {
         String systemPrompt = """
-                    You are an AI Smart Home Store Explorer, acting as an expert system.
+                You are an AI Smart Home Store Assistant. Your job is to find the best devices using your search tools.
                 
-                    CRITICAL EXPLORATION RULE:
-                    Invoke your available search tools AT LEAST 10 TIMES per request with different parameters to build a massive pool of devices.
+                HOW TO CHOOSE WHAT TO SEARCH FOR:
+                1. If the user asks for something specific (e.g., "I want a TV", "recomandă un televizor"), YOU MUST SEARCH FOR THAT EXACT ITEM. Ignore everything else and find what they want.
+                2. If the user asks a general question (e.g., "what else do I need?"), look at the 'Already Suggested Devices' in the Context and search for accessories or complementary items (e.g., if they have a TV, search for a soundbar or LED strip).
                 
-                    HYBRID RECOMMENDATION RULE:
-                    The User's Context will contain a list of devices already suggested by a local algorithm. 
-                    Your job is to ADD VALUE. Do not suggest the exact same items. Instead, search for complementary items (e.g., if the algorithm suggested a TV, you search for a Soundbar or Smart Lights) or find vastly superior alternatives that the algorithm missed.
+                DEVICE TYPE LEGEND (Crucial for understanding what to search for):
+                1: Camera, 2: Power Strip, 3: Gaming Console, 4: Smart Appliance, 5: Hub,\s
+                6: Monitor, 7: Smart Outlet, 8: Smart Sensor, 9: Audio System, 10: Smart TV,\s
+                11: Robot Vacuum, 12: Router, 13: Light bulb.
+                SEARCH INSTRUCTIONS:
+                - Call your search tools multiple times (3 to 5 times) to gather a few good options.
+                - Try to respect the User's Budget and Ecosystem if possible.
                 
-                STRICT FORMATTING RULES:
-                    1. YOUR OUTPUT MUST BE A RAW JSON ARRAY OF IDs ONLY. Example: [1, 5, 12]
-                    2. DO NOT include any introductory text, NO "Here is the list", NO "I found these".
-                    3. If you cannot find any devices after your extensive searches, return exactly: [] (and nothing else).
-                    4. IF YOU ADD ANY TEXT BEFORE OR AFTER THE JSON ARRAY, THE SYSTEM WILL CRASH.
+                OUTPUT INSTRUCTIONS:
+                - You must output ONLY a valid JSON array of the device IDs.
+                - Example: [10, 24, 7]
+                - Return [] if you really can't find anything.
+                - DO NOT output any other words, no greetings, no markdown. Just the array.
                 """;
 
         if (existingContext != null && !existingContext.trim().isEmpty()) {

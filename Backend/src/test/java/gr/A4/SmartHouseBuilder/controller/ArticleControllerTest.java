@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -365,48 +366,52 @@ class ArticleControllerTest {
                 .status(ArticleStatus.DRAFT)
                 .build();
 
-        when(articleService.getUserDrafts("alexandra")).thenReturn(List.of(draftArticle));
+        when(articleService.getUserDrafts(eq("alexandra"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(draftArticle)));
         when(likeRepository.countByArticleId(101L)).thenReturn(0L);
         when(commentRepository.countByArticleId(101L)).thenReturn(0L);
 
         mockMvc.perform(get("/api/v1/articles/user/drafts"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].title").value("Draft Article"));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Draft Article"));
     }
 
     @Test
     @WithMockUser(username = "alexandra")
     void getUserDrafts_ReturnsEmptyList() throws Exception {
-        when(articleService.getUserDrafts("alexandra")).thenReturn(List.of());
+        when(articleService.getUserDrafts(eq("alexandra"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/v1/articles/user/drafts"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.content.length()").value(0));
     }
 
     // ==================== GET USER PUBLISHED TESTS ====================
     @Test
     @WithMockUser(username = "alexandra")
     void getUserPublished_ReturnsList() throws Exception {
-        when(articleService.getUserPublished("alexandra")).thenReturn(List.of(mockArticle));
+        when(articleService.getUserPublished(eq("alexandra"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(mockArticle)));
         when(likeRepository.countByArticleId(100L)).thenReturn(5L);
         when(commentRepository.countByArticleId(100L)).thenReturn(2L);
 
         mockMvc.perform(get("/api/v1/articles/user/published"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].title").value("Smart Home Tutorial"));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Smart Home Tutorial"));
     }
 
     @Test
     @WithMockUser(username = "alexandra")
     void getUserPublished_ReturnsEmptyList() throws Exception {
-        when(articleService.getUserPublished("alexandra")).thenReturn(List.of());
+        when(articleService.getUserPublished(eq("alexandra"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/v1/articles/user/published"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.content.length()").value(0));
     }
 
     // ==================== PUBLISH ARTICLE TESTS ====================

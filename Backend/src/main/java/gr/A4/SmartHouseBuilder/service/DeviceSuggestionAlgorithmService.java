@@ -35,8 +35,6 @@ public class DeviceSuggestionAlgorithmService {
     public List<HardwareDevice> getSmartSuggestions(String criteriaString) {
         Map<String, String> criteria = parseCriteriaString(criteriaString);
 
-        System.out.println(criteriaString);
-
         double budget = extractBudget(criteria.getOrDefault("Buget", "0"));
         String desiredCategoriesStr = criteria.getOrDefault("Categorii", criteria.getOrDefault("Categorii dorite", "Toate"));
         String ecosystem = criteria.getOrDefault("Ecosistem", ORICARE);

@@ -54,7 +54,8 @@ public class SimpleAiService {
         }
 
         try {
-            List<Long> deviceIds = mapper.readValue(cleanJson, new TypeReference<List<Long>>() {});
+            List<Long> deviceIds = mapper.readValue(cleanJson, new TypeReference<List<Long>>() {
+            });
 
             // Preluăm produsele din DB și eliminăm duplicatele (distinct)
             return deviceRepository.findAllById(deviceIds.stream().distinct().toList());
@@ -67,19 +68,21 @@ public class SimpleAiService {
     // Metoda extrasă pentru a reduce "Cognitive Complexity" din SonarLint
     private String performExploratorySearch(String existingContext) {
         String systemPrompt = """
-            You are an AI Smart Home Store Explorer. 
-            Your goal is to provide the user with the most diverse and high-quality product recommendations.
-            
-            EXPLORATION STRATEGY (CRITICAL):
-            1. You MUST perform multiple (at least 3-5) distinct search operations using your tools before answering.
-            2. Vary your search angles based on the user request:
-               - Search by exact category.
-               - Search for budget-friendly alternatives.
-               - Search by specific brands if mentioned.
-            3. Aggregate all results from these multiple searches in your "mind".
-            4. Return ONLY the final unique list of IDs as a raw JSON array. Example: [1, 5, 12, 18]
-            5. Do NOT include Markdown (no ```json). Do NOT add text explanations.
-            """;
+                    You are an AI Smart Home Store Explorer, acting as an expert system.
+                
+                    CRITICAL EXPLORATION RULE:
+                    Invoke your available search tools AT LEAST 10 TIMES per request with different parameters to build a massive pool of devices.
+                
+                    HYBRID RECOMMENDATION RULE:
+                    The User's Context will contain a list of devices already suggested by a local algorithm. 
+                    Your job is to ADD VALUE. Do not suggest the exact same items. Instead, search for complementary items (e.g., if the algorithm suggested a TV, you search for a Soundbar or Smart Lights) or find vastly superior alternatives that the algorithm missed.
+                
+                STRICT FORMATTING RULES:
+                    1. YOUR OUTPUT MUST BE A RAW JSON ARRAY OF IDs ONLY. Example: [1, 5, 12]
+                    2. DO NOT include any introductory text, NO "Here is the list", NO "I found these".
+                    3. If you cannot find any devices after your extensive searches, return exactly: [] (and nothing else).
+                    4. IF YOU ADD ANY TEXT BEFORE OR AFTER THE JSON ARRAY, THE SYSTEM WILL CRASH.
+                """;
 
         if (existingContext != null && !existingContext.trim().isEmpty()) {
             systemPrompt += "\n\nCONTEXT (User History/Preferences): " + existingContext;

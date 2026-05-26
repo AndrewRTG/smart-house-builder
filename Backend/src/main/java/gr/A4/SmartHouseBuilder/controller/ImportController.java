@@ -21,14 +21,9 @@ public class ImportController {
             @RequestParam String feedUrl) {
 
         try {
-            // 1. Deschidem o conexiune directă către link-ul magazinului
             System.out.println("Se descarcă datele de la: " + feedUrl);
             InputStream xmlStream = new URL(feedUrl).openStream();
-
-            // 2. Trimitem "tubul" de date direct în serviciul nostru
             importService.importDevicesFromXml(store, xmlStream);
-
-            // 3. Închidem conexiunea
             xmlStream.close();
 
             return ResponseEntity.ok("Import finalizat cu succes pentru magazinul: " + store);

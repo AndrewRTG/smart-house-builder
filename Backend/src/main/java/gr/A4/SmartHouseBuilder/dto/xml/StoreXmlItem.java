@@ -17,4 +17,11 @@ public class StoreXmlItem {
 
     @JsonProperty("description")
     public String description;
+
+    @JsonProperty("aff_code")
+    public String affCode;
+
+    @JsonProperty("campaign_name")
+    public String campaignName;
+
 }

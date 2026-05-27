@@ -9,6 +9,7 @@ export default function CatalogPage({ darkMode }) {
     const [sortBy, setSortBy] = useState("Price");
     const [sortOrder, setSortOrder] = useState('asc');
     const [selectedSortLabel, setSelectedSortLabel] = useState("Price");
+    const [wishlistDeviceIds, setWishlistDeviceIds] = useState([]);
     const [filters, setFilters] = useState({
         minPrice: 0,
         maxPrice: 10000,
@@ -17,6 +18,26 @@ export default function CatalogPage({ darkMode }) {
         brand: ""
     });
     const [viewMode, setViewMode] = useState('grid');
+
+    useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+        fetch(`http://localhost:20025/api/v1/wishlists/devices?size=100`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.ok ? res.json() : null)
+        .then(pageData => {
+            if (pageData && pageData.content) {
+                const ids = pageData.content.map(item => item.deviceId);
+                setWishlistDeviceIds(ids);
+            }
+        })
+        .catch(err => console.error("Eroare la preluarea wishlist-ului:", err));
+    } else {
+        setWishlistDeviceIds([]);
+    }
+}, [searchTerm, filters]);
 
     useEffect(() => {
         let isMounted = true;
@@ -43,7 +64,19 @@ export default function CatalogPage({ darkMode }) {
 
             if (filters.protocols.length > 0) {
                 filters.protocols.forEach(prot => {
-                    url.searchParams.append('protocols', prot);
+                    const protocolMapping = {
+                        "WiFi": ["WiFi", "WIFI", "wifi", "Wi-Fi"],
+                        "Zigbee": ["Zigbee", "ZIGBEE"],
+                        "Z-Wave": ["Z-Wave", "Z-WAVE", "ZWave", "ZWAVE"],
+                        "Bluetooth": ["Bluetooth", "BLUETOOTH", "bluetooth"],
+                        "Matter": ["Matter", "MATTER"]
+                    };
+
+                    const variants = protocolMapping[prot] || [prot];
+
+                    variants.forEach(variant => {
+                        url.searchParams.append('protocols', variant);
+                    });
                 });
             }
 
@@ -52,7 +85,7 @@ export default function CatalogPage({ darkMode }) {
                 .then(data => {
                     if (isMounted) {
                         setDevices(data);
-                        setLoading(false); // Oprim loading-ul doar când au venit datele noi
+                        setLoading(false);
                     }
                 })
                 .catch(error => {
@@ -223,11 +256,19 @@ export default function CatalogPage({ darkMode }) {
                                 No products found.
                             </div>
                         ) : (
-                            sortedDevices.map((device) => (
-                                <div className="col" key={device.id}>
-                                    <ProductCard device={device} viewMode={viewMode} />
-                                </div>
-                            ))
+                            sortedDevices.map((device) => {
+                                const isSaved = wishlistDeviceIds.includes(device.id);
+
+                                return (
+                                    <div className="col" key={device.id}>
+                                        <ProductCard 
+                                            device={device} 
+                                            viewMode={viewMode} 
+                                            initialIsWishlisted={isSaved} 
+                                        />
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
                 </div>

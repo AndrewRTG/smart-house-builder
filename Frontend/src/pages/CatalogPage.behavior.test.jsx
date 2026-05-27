@@ -104,7 +104,10 @@ describe('CatalogPage', () => {
       expect(lastUrl.searchParams.get('minPrice')).toBe('50');
       expect(lastUrl.searchParams.get('maxPrice')).toBe('500');
       expect(lastUrl.searchParams.getAll('categoryIds')).toEqual(['1']);
-      expect(lastUrl.searchParams.getAll('protocols')).toEqual(['Matter', 'WiFi']);
+      const actualProtocols = lastUrl.searchParams.getAll('protocols');
+      const lowerCaseProtocols = actualProtocols.map(p => p.toLowerCase());
+      expect(lowerCaseProtocols).toContain('matter');
+      expect(lowerCaseProtocols).toContain('wifi');
     });
   });
 

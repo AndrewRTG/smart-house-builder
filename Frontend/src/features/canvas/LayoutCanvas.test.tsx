@@ -206,7 +206,7 @@ describe('LayoutCanvas - Suita de Testare', () => {
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'http://localhost:20025/api/v1/setups',
+        `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups`,
         expect.objectContaining({ method: 'POST' })
       );
     });
@@ -369,7 +369,7 @@ describe('LayoutCanvas - Suita de Testare', () => {
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'http://localhost:20025/api/v1/setups/42',
+        `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/42`,
         expect.objectContaining({ method: 'PUT' })
       );
     });
@@ -405,14 +405,14 @@ describe('LayoutCanvas - Suita de Testare', () => {
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'http://localhost:20025/api/v1/setups',
+        `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups`,
         expect.objectContaining({ method: 'POST' })
       );
     });
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'http://localhost:20025/api/v1/setups/777/publish',
+        `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/777/publish`,
         expect.objectContaining({
           method: 'PUT',
           body: expect.stringContaining('Automated living room'),

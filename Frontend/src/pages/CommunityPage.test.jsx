@@ -158,7 +158,7 @@ describe('CommunityPage', () => {
     const securityCard = screen.getByText('Security Pack').closest('.setup-card');
     fireEvent.click(within(securityCard).getByLabelText('Save to wishlist'));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/2/wishlist',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/2/wishlist`,
       expect.objectContaining({ method: 'POST' })
     ));
 
@@ -190,7 +190,7 @@ describe('CommunityPage', () => {
 
     fireEvent.click(within(articleCard).getByTitle('Like'));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/articles/10/like',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/articles/10/like`,
       expect.objectContaining({ method: 'POST' })
     ));
 

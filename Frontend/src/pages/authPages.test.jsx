@@ -42,7 +42,7 @@ describe('authentication pages', () => {
     expect(localStorage.getItem('accessToken')).toBe('access');
     expect(localStorage.getItem('refreshToken')).toBe('refresh');
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/auth/login',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/login`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ identifier: 'ana', password: 'secret' }),

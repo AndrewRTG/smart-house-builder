@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './NotificationBell.css';
 
-const API_BASE = 'http://localhost:20025/api/v1';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 const POLL_INTERVAL_MS = 30_000;
 
 export default function NotificationBell({ darkMode }) {

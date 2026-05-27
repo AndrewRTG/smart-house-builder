@@ -43,7 +43,7 @@ export default function CatalogPage({ darkMode }) {
         let isMounted = true;
 
         const fetchDevices = () => {
-            let url = new URL('http://localhost:20025/api/devices');
+            let url = new URL(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/devices`);
 
             url.searchParams.append('minPrice', filters.minPrice);
             url.searchParams.append('maxPrice', filters.maxPrice);

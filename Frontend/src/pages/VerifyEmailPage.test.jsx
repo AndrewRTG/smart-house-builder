@@ -26,7 +26,7 @@ describe('VerifyEmailPage', () => {
     expect(await screen.findByText('Your email is verified. You can now sign in.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Go to Login/i })).toHaveAttribute('href', '/login');
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/auth/verify-email?token=a%20b%20c',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/verify-email?token=a%20b%20c`,
       { method: 'GET' }
     );
   });

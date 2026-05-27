@@ -20,6 +20,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProductsPage from "./pages/CatalogPage";
+import ProductPage from "./pages/ProductPage";
 import './App.css';
 
 const BuilderPage = lazy(() => import("./pages/BuilderPage"));
@@ -59,6 +60,7 @@ function AppContent({ darkMode, setDarkMode }) {
             }
           />
           <Route path="/products" element={<ProductsPage darkMode={darkMode} />} />
+          <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/community" element={<CommunityPage darkMode={darkMode} />} />
           <Route path="/mfa/verify" element={<MfaVerifyPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

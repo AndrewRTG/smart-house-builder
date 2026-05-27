@@ -245,91 +245,159 @@
   color: #2d4e6c;
 }
 
+
+.builder-navbar-mobile-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+.builder-navbar-mobile-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #2d4e6c;
+  border-radius: 999px;
+  margin: 5px auto;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.builder-navbar.dark-mode .builder-navbar-mobile-toggle span {
+  background: #eaf0ff;
+}
+
+.builder-navbar-mobile-toggle.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.builder-navbar-mobile-toggle.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.builder-navbar-mobile-toggle.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.builder-navbar-mobile-menu {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .builder-navbar {
-    padding: 0 12px;
-    height: 56px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    height: 58px;
+    padding: 0 14px;
+    overflow: visible;
     flex-wrap: nowrap;
   }
 
-  .builder-navbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .builder-navbar-logo,
-  .builder-navbar-links,
-  .builder-navbar-actions {
-    flex-shrink: 0;
-  }
-
   .builder-navbar-logo {
-    padding-right: 16px;
-  }
-
-  .builder-navbar-links {
-    margin-left: 12px;
-    gap: 2px;
-  }
-
-  .builder-navbar-link {
-    font-size: 0.82rem;
-    padding: 5px 10px;
-    white-space: nowrap;
-  }
-
-  .builder-navbar-logo-text {
-    font-size: 0.9rem;
-    white-space: nowrap;
-  }
-
-  .builder-navbar-wizard-btn {
-    white-space: nowrap;
-    padding: 8px 14px;
-    font-size: 0.8rem;
-  }
-
-  .builder-navbar-actions {
-    gap: 6px;
-    margin-left: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .builder-navbar {
-    padding: 0 10px;
-    height: 52px;
+    border-right: none;
+    padding-right: 0;
+    height: auto;
   }
 
   .builder-navbar-logo-icon {
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
   }
 
   .builder-navbar-logo-text {
+    font-size: 0.88rem;
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .builder-navbar-links,
+  .builder-navbar-actions {
+    display: none;
+  }
+
+  .builder-navbar-mobile-toggle {
+    display: block;
+  }
+
+  .builder-navbar-mobile-menu {
+    display: flex;
+    position: absolute;
+    top: 58px;
+    left: 12px;
+    right: 12px;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    background: #bdd3e7;
+    border: 1px solid #a8c2d8;
+    border-radius: 0 0 18px 18px;
+    box-shadow: 0 18px 36px rgba(20, 35, 60, 0.22);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 200;
+  }
+
+  .builder-navbar.dark-mode .builder-navbar-mobile-menu {
+    background: #162040;
+    border-color: #1e3060;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+  }
+
+  .builder-navbar-mobile-menu.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .builder-navbar-mobile-link,
+  .builder-navbar-mobile-primary {
+    width: 100%;
+    text-align: left;
+    text-decoration: none;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 12px;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .builder-navbar-mobile-link {
+    background: rgba(255, 255, 255, 0.45);
+    color: #2d4e6c;
+  }
+
+  .builder-navbar.dark-mode .builder-navbar-mobile-link {
+    background: rgba(255, 255, 255, 0.06);
+    color: #eaf0ff;
+  }
+
+  .builder-navbar-mobile-primary {
+    background: #2d4e6c;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(45, 78, 108, 0.28);
+  }
+
+  .builder-navbar-mobile-button {
+    display: block;
+  }
+}
+
+@media (max-width: 420px) {
+  .builder-navbar-logo-text {
+    max-width: 135px;
     font-size: 0.82rem;
   }
 
-  .builder-navbar-wizard-btn {
-    font-size: 0.76rem;
-    padding: 7px 12px;
-  }
-
-  .builder-toggle-track {
-    width: 40px;
-    height: 22px;
-  }
-
-  .builder-toggle-thumb {
-    width: 15px;
-    height: 15px;
-  }
-
-  .builder-navbar-theme-toggle.active .builder-toggle-thumb {
-    transform: translateX(18px);
+  .builder-navbar-logo-icon {
+    width: 32px;
+    height: 32px;
   }
 }

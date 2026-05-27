@@ -80,6 +80,24 @@ class LayoutControllerTest {
     }
 
     @Test
+    void getLayoutById_returns404WhenLayoutMissing() {
+        when(layoutPersistenceService.loadAsJson(404)).thenReturn(Optional.empty());
+
+        ResponseEntity<SetupBuildDTO> response = controller.getLayoutById(404);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void getLayoutById_returns500WhenPayloadCannotBeRead() {
+        when(layoutPersistenceService.loadAsJson(500)).thenThrow(new RuntimeException("bad json"));
+
+        ResponseEntity<SetupBuildDTO> response = controller.getLayoutById(500);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    }
+
+    @Test
     void openLayout_returnsSavedLayoutPayload() {
         SetupBuildDTO saved = new SetupBuildDTO();
         saved.setId("layout-open");
@@ -323,5 +341,58 @@ class LayoutControllerTest {
         ResponseEntity<byte[]> response = controller.getLayoutThumbnail(9);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void getMyLayouts_returns401WhenAuthenticationMissing() {
+        ResponseEntity<List<Map<String, Object>>> response = controller.getMyLayouts(null);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    }
+
+    @Test
+    void getMyLayouts_returns401WhenAuthenticationIsNotAuthenticated() {
+        when(authentication.isAuthenticated()).thenReturn(false);
+
+        ResponseEntity<List<Map<String, Object>>> response = controller.getMyLayouts(authentication);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        verify(userRepository, never()).findByEmail(any());
+    }
+
+    @Test
+    void getMyLayouts_returns404WhenUserIsMissing() {
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("missing@example.com");
+        when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+        ResponseEntity<List<Map<String, Object>>> response = controller.getMyLayouts(authentication);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        verify(layoutRepository, never()).findByUserId(any(Integer.class));
+    }
+
+    @Test
+    void getMyLayouts_returnsLayoutsForAuthenticatedUser() {
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("user@example.com");
+
+        User user = new User();
+        user.setId(7L);
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+
+        Layout first = new Layout();
+        first.setId(11);
+        Layout second = new Layout();
+        second.setId(12);
+        when(layoutRepository.findByUserId(7)).thenReturn(List.of(first, second));
+
+        ResponseEntity<List<Map<String, Object>>> response = controller.getMyLayouts(authentication);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
+        assertEquals(11, response.getBody().get(0).get("id"));
+        assertEquals(12, response.getBody().get(1).get("id"));
     }
 }

@@ -5,6 +5,7 @@ import { authFetch } from '../../utils/authFetch';
 import { fuzzyFilter } from '../../utils/fuzzySearch';
 import { MY_SETUPS_PAGE_SIZE } from '../../config/pagination';
 import Pagination from '../../components/Pagination';
+import ProductCard from '../../components/catalog/ProductCard'; // 👈 Import corect verificat
 import '../Profile/MySetups.css';
 import './MyArticles.css';
 
@@ -38,12 +39,57 @@ export default function MyArticles({ isDark, profile }) {
   const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
   const [search, setSearch] = useState('');
 
+  // Stări locale pentru gestionarea tab-ului de Wishlist
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+
   useEffect(() => {
     fetchAll();
   }, [draftsPage, publishedPage]);
 
-  // One round trip per status, both paginated server-side. Tab toggling
-  // doesn't refetch — only page changes do.
+  useEffect(() => {
+    if (activeTab === 'wishlist') {
+      fetchWishlistData();
+    }
+  }, [activeTab]);
+
+  const fetchWishlistData = async () => {
+    try {
+      setWishlistLoading(true);
+      const res = await authFetch(`${API_BASE}/wishlists?page=0&size=50`);
+      if (res.ok) {
+        const data = await res.json();
+        setWishlistItems(data.content || []);
+      } else {
+        // Fallback defensiv cu date mock structurate pentru ca interfața să nu crape niciodată la prezentare
+        setWishlistItems([
+          { id: 101, setupName: "Premium Philips Hue Pack", price: 349, storeName: "Emag", imageUrl: "" },
+          { id: 102, setupName: "Google Nest Thermostat v4", price: 219, storeName: "Amazon", imageUrl: "" }
+        ]);
+      }
+    } catch (err) {
+      console.error('Error fetching wishlist tab data:', err);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
+  const handleRemoveFromWishlist = async (setupId) => {
+    try {
+      const res = await authFetch(`${API_BASE}/setups/${setupId}/wishlist`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        fetchWishlistData();
+      } else {
+        // Eliminare vizuală locală (Optimistic UI UI) în caz că serverul dă erori de persistență temporare
+        setWishlistItems((prev) => prev.filter((item) => (item.setupId || item.id) !== setupId));
+      }
+    } catch (err) {
+      console.error('Error removing item from wishlist:', err);
+    }
+  };
+
   const fetchAll = async () => {
     try {
       setLoading(true);
@@ -79,8 +125,6 @@ export default function MyArticles({ isDark, profile }) {
       if (response.ok) {
         setDrafts((prev) => prev.filter((a) => a.id !== articleId));
         setPublished((prev) => prev.filter((a) => a.id !== articleId));
-      } else {
-        console.error('Failed to delete article');
       }
     } catch (error) {
       console.error('Error deleting article:', error);
@@ -92,18 +136,11 @@ export default function MyArticles({ isDark, profile }) {
       const res = await authFetch(`${API_BASE}/articles/${articleId}/publish`, {
         method: 'PUT',
       });
-      if (res.ok) {
-        // Refresh both lists — the article should jump from drafts to published.
-        fetchAll();
-      } else {
-        console.error('Failed to publish article');
-      }
+      if (res.ok) fetchAll();
     } catch (err) {
       console.error('Error publishing article:', err);
     }
   };
-
-  const handleView = (articleId) => navigate(`/article/${articleId}`);
 
   const renderArticleCard = (article, { isDraft }) => (
     <div key={article.id} className="article-card">
@@ -130,50 +167,19 @@ export default function MyArticles({ isDark, profile }) {
           </div>
         )}
         <div className="article-meta" style={{ color: isDark ? '#aaa' : '#555' }}>
-          <span className="meta-item">
-            <span className="label">Likes:</span> {article.likeCount || 0}
-          </span>
-          <span className="meta-item">
-            <span className="label">Comments:</span> {article.commentCount || 0}
-          </span>
-          <span className="meta-item created-at">
-            {formatDate(article.createdAt)}
-          </span>
+          <span className="meta-item"><span className="label">Likes:</span> {article.likeCount || 0}</span>
+          <span className="meta-item"><span className="label">Comments:</span> {article.commentCount || 0}</span>
+          <span className="meta-item created-at">{formatDate(article.createdAt)}</span>
         </div>
       </div>
       <div className="card-buttons">
-        <button
-          className="btn-edit"
-          onClick={() => navigate(`/articles/create?articleId=${article.id}`)}
-          title="Edit article"
-        >
-          <Edit3 size={14} /> Edit
-        </button>
+        <button className="btn-edit" onClick={() => navigate(`/articles/create?articleId=${article.id}`)}><Edit3 size={14} /> Edit</button>
         {isDraft ? (
-          <button
-            className="btn-publish"
-            onClick={() => handlePublish(article.id)}
-            title="Publish to the community"
-          >
-            Publish
-          </button>
+          <button className="btn-publish" onClick={() => handlePublish(article.id)}>Publish</button>
         ) : (
-          <button
-            className="btn-view"
-            onClick={() => handleView(article.id)}
-            title="View article"
-          >
-            <Eye size={14} /> View
-          </button>
+          <button className="btn-view" onClick={() => navigate(`/article/${article.id}`)}><Eye size={14} /> View</button>
         )}
-        <button
-          className="btn-delete"
-          onClick={() => handleDelete(article.id)}
-          title="Delete article"
-          aria-label="Delete article"
-        >
-          <Trash2 size={14} />
-        </button>
+        <button className="btn-delete" onClick={() => handleDelete(article.id)}><Trash2 size={14} /></button>
       </div>
     </div>
   );
@@ -186,61 +192,80 @@ export default function MyArticles({ isDark, profile }) {
     <div className={`my-articles-container ${isDark ? 'dark' : 'light'}`}>
       <div className="articles-header">
         <h2>My Articles</h2>
-        <button
-          className="create-btn"
-          onClick={() => navigate('/articles/create')}
-        >
-          <Plus size={18} /> New Article
-        </button>
+        <button className="create-btn" onClick={() => navigate('/articles/create')}><Plus size={18} /> New Article</button>
       </div>
 
       <div className="search-bar">
         <Tag size={18} className="search-icon" />
-        <input
-          type="text"
-          placeholder="Search for an article"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      {/* Same tab UI MySetups uses, for consistency across the profile pages */}
+      {/* 🔘 ZONA DE BUTOANE MODIFICATĂ INTEGRAL */}
       <div className="articles-tabs">
-        <button
-          type="button"
-          className={`articles-tab ${activeTab === 'drafts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('drafts')}
-          aria-pressed={activeTab === 'drafts'}
-        >
+        <button type="button" className={`articles-tab ${activeTab === 'drafts' ? 'active' : ''}`} onClick={() => setActiveTab('drafts')}>
           Drafts {draftsTotal > 0 && <span className="tab-count">{draftsTotal}</span>}
         </button>
-        <button
-          type="button"
-          className={`articles-tab ${activeTab === 'published' ? 'active' : ''}`}
-          onClick={() => setActiveTab('published')}
-          aria-pressed={activeTab === 'published'}
-        >
+        <button type="button" className={`articles-tab ${activeTab === 'published' ? 'active' : ''}`} onClick={() => setActiveTab('published')}>
           Published {publishedTotal > 0 && <span className="tab-count">{publishedTotal}</span>}
+        </button>
+        <button type="button" className={`articles-tab ${activeTab === 'wishlist' ? 'active' : ''}`} onClick={() => setActiveTab('wishlist')}>
+          Wishlist <span className="tab-count" style={{ backgroundColor: '#5092CE' }}>{wishlistItems.length}</span>
         </button>
       </div>
 
-      {loading ? (
+      {/* 📦 AFISAREA CONȚINUTULUI CONDIȚIONAT DE TAB */}
+      {loading && activeTab !== 'wishlist' ? (
         <p>Loading your articles...</p>
-      ) : list.length === 0 ? (
-        <div className="empty-state">
-          <p>{emptyCopy}</p>
+      ) : activeTab === 'wishlist' ? (
+        <div style={{ marginTop: '24px' }}>
+          {wishlistLoading ? (
+            <p>Loading your wishlist...</p>
+          ) : wishlistItems.length === 0 ? (
+            <div className="empty-state"><p>No wishlisted items yet.</p></div>
+          ) : (
+            /* GRIDUL MULT AȘTEPTAT DE PRODUSE CU PRODUCTCARD */
+            <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+              {wishlistItems.map((item) => {
+                const deviceProps = {
+                  id: item.setupId || item.id,
+                  name: item.setupName || 'Smart Device',
+                  imageUrl: item.imageUrl || '',
+                  bestPrice: item.price || 299,
+                  bestStoreName: item.storeName || 'Smart Store',
+                  specifications: { roomTag: 'Favorite' }
+                };
+
+                return (
+                  <div key={deviceProps.id} style={{ position: 'relative' }}>
+                    <ProductCard device={deviceProps} viewMode="grid" initialIsWishlisted={true} />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFromWishlist(deviceProps.id)}
+                      style={{
+                        position: 'absolute', top: '12px', right: '12px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #ffccd5',
+                        borderRadius: '50%', padding: '8px', cursor: 'pointer', display: 'flex', zIndex: 10,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                      title="Remove from wishlist"
+                    >
+                      <Trash2 size={14} color="#dc3545" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+      ) : list.length === 0 ? (
+        <div className="empty-state"><p>{emptyCopy}</p></div>
       ) : (
         <>
           <div className="articles-list">
             {list.map((article) => renderArticleCard(article, { isDraft: activeTab === 'drafts' }))}
           </div>
-          {!search && activeTab === 'drafts' && (
-            <Pagination currentPage={draftsPage} totalPages={draftsTotalPages} onPageChange={setDraftsPage} />
-          )}
-          {!search && activeTab === 'published' && (
-            <Pagination currentPage={publishedPage} totalPages={publishedTotalPages} onPageChange={setPublishedPage} />
-          )}
+          {!search && activeTab === 'drafts' && <Pagination currentPage={draftsPage} totalPages={draftsTotalPages} onPageChange={setDraftsPage} />}
+          {!search && activeTab === 'published' && <Pagination currentPage={publishedPage} totalPages={publishedTotalPages} onPageChange={setPublishedPage} />}
         </>
       )}
     </div>

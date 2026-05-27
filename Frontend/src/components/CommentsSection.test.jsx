@@ -205,4 +205,21 @@ describe('CommentsSection', () => {
     expect(await screen.findByText('No comments yet. Be the first!')).toBeInTheDocument();
     expect(consoleSpy).toHaveBeenCalled();
   });
+
+  it('removes the highlight after the timeout and shows reply response errors', async () => {
+    fetch
+      .mockResolvedValueOnce(jsonResponse({ content: comments }))
+      .mockResolvedValueOnce(jsonResponse({ message: 'Reply blocked' }, false, 429));
+
+    renderComments({ highlightCommentId: '1' });
+    expect(await screen.findByText('Root comment')).toBeInTheDocument();
+    await waitFor(() => expect(document.getElementById('comment-1')).not.toHaveClass('comment-highlight'), { timeout: 3800 });
+
+    const root = screen.getByText('Root comment').closest('.comment-node');
+    fireEvent.click(within(root).getAllByText('Reply')[0]);
+    fireEvent.change(within(root).getByPlaceholderText('Write a reply...'), { target: { value: 'Blocked reply' } });
+    fireEvent.click(within(root).getByText('Post'));
+
+    expect(await screen.findByText('Reply blocked')).toBeInTheDocument();
+  }, 7000);
 });

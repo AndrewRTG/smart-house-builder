@@ -118,4 +118,91 @@ describe('CommentsSection', () => {
     fireEvent.click(screen.getByLabelText('Delete comment'));
     expect(await screen.findByText('No delete')).toBeInTheDocument();
   });
+
+  it('uses setup endpoints and surfaces add/reply/delete failures', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let postCalls = 0;
+    fetch.mockImplementation((url, options = {}) => {
+      if (String(url).includes('/comments?page=')) return Promise.resolve(jsonResponse({ content: comments }));
+      if (options.method === 'POST') {
+        postCalls += 1;
+        if (postCalls === 1) return Promise.resolve(jsonResponse({ error: 'Add failed' }, false, 400));
+        return Promise.reject(new Error('reply offline'));
+      }
+      if (options.method === 'DELETE') return Promise.reject(new Error('delete offline'));
+      return Promise.resolve(jsonResponse({}));
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderComments({ targetType: 'SETUP', targetId: '42' });
+    expect(await screen.findByText('Root comment')).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:20025/api/v1/setups/42/comments?page=0&size=10',
+      expect.any(Object)
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Write a comment...'), { target: { value: 'Bad root' } });
+    fireEvent.click(screen.getByText('Post Comment'));
+    expect(await screen.findByText('Add failed')).toBeInTheDocument();
+
+    const root = screen.getByText('Root comment').closest('.comment-node');
+    fireEvent.click(within(root).getAllByText('Reply')[0]);
+    fireEvent.change(within(root).getByPlaceholderText('Write a reply...'), { target: { value: 'Bad reply' } });
+    fireEvent.click(within(root).getByText('Post'));
+    expect(await screen.findByText('Failed to post reply')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Delete comment'));
+    expect(await screen.findByText('Failed to delete comment')).toBeInTheDocument();
+    expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it('skips network work without target id and respects canceled deletes', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    const { unmount } = renderComments({ targetId: '' });
+    expect(screen.getByText('No comments yet. Be the first!')).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+    unmount();
+
+    fetch.mockResolvedValueOnce(jsonResponse({ content: comments }));
+    renderComments();
+    expect(await screen.findByText('Root comment')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Delete comment'));
+
+    await waitFor(() => expect(window.confirm).toHaveBeenCalledWith('Delete this comment?'));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(consoleSpy).not.toHaveBeenCalled();
+  });
+
+  it('handles invalid dates, broken avatars, fetch failures and caught add errors', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fetch
+      .mockResolvedValueOnce(jsonResponse({
+        content: [{
+          id: 4,
+          username: '',
+          avatarUrl: '/broken.png',
+          content: 'Odd comment',
+          createdAt: 'not-a-date',
+          replies: [],
+        }],
+      }))
+      .mockRejectedValueOnce(new Error('add offline'));
+
+    const { unmount } = renderComments();
+    expect(await screen.findByText('Odd comment')).toBeInTheDocument();
+    expect(screen.getByText('recent')).toBeInTheDocument();
+    fireEvent.error(document.querySelector('.comment-avatar img'));
+
+    fireEvent.change(screen.getByPlaceholderText('Write a comment...'), { target: { value: 'Offline root' } });
+    fireEvent.click(screen.getByText('Post Comment'));
+    expect(await screen.findByText('Failed to add comment')).toBeInTheDocument();
+    unmount();
+
+    fetch.mockRejectedValueOnce(new Error('load offline'));
+    renderComments();
+    expect(await screen.findByText('No comments yet. Be the first!')).toBeInTheDocument();
+    expect(consoleSpy).toHaveBeenCalled();
+  });
 });

@@ -348,4 +348,110 @@ describe('CommunityPage', () => {
     images.forEach((img) => fireEvent.error(img));
     expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('Failed to fetch setups'));
   });
+
+  it('uses pagination controls for setups and articles', async () => {
+    global.fetch = vi.fn((url) => {
+      const target = String(url);
+      if (target.includes('/setups?page=1')) {
+        return Promise.resolve(jsonResponse({ content: [{ ...setups[0], id: 3, name: 'Second setup page' }], totalPages: 2 }));
+      }
+      if (target.includes('/setups?page=')) {
+        return Promise.resolve(jsonResponse({ content: setups, totalPages: 2 }));
+      }
+      if (target.includes('/articles?page=1')) {
+        return Promise.resolve(jsonResponse({ content: [{ ...articles[0], id: 12, title: 'Second article page' }], totalPages: 2 }));
+      }
+      if (target.includes('/articles?page=')) {
+        return Promise.resolve(jsonResponse({ content: articles, totalPages: 2 }));
+      }
+      if (target.includes('/wishlists')) return Promise.resolve(jsonResponse({ content: [] }));
+      if (target.includes('/setups/user/published')) return Promise.resolve(jsonResponse({ content: [] }));
+      if (target.includes('/articles/user/my-articles')) return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({}));
+    });
+
+    renderCommunity();
+    expect(await screen.findByText('Kitchen Automation')).toBeInTheDocument();
+    const setupPager = document.querySelector('.content-pane.active .community-pagination');
+    fireEvent.click(within(setupPager).getByText('Next'));
+    expect(await screen.findByText('Second setup page')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Articles'));
+    expect(screen.getByText('Matter guide')).toBeInTheDocument();
+    const articlePane = document.querySelectorAll('.content-pane')[1];
+    fireEvent.click(within(articlePane).getByText('Next'));
+    expect(await screen.findByText('Second article page')).toBeInTheDocument();
+  });
+
+  it('restores navigation state and handles failing feed requests', async () => {
+    sessionStorage.setItem('community:lastState', JSON.stringify({
+      scrollY: 240,
+      activeTab: 'articles',
+      setupPage: 1,
+      articlePage: 1,
+    }));
+    global.requestAnimationFrame = (cb) => {
+      cb();
+      return 1;
+    };
+    window.scrollTo = vi.fn();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    global.fetch = vi.fn((url) => {
+      const target = String(url);
+      if (target.includes('/setups?page=1')) return Promise.reject(new Error('setups offline'));
+      if (target.includes('/articles?page=1')) return Promise.reject(new Error('articles offline'));
+      if (target.includes('/setups/user/published')) return Promise.reject(new Error('stats offline'));
+      if (target.includes('/wishlists')) return Promise.resolve(jsonResponse({ content: [] }));
+      return Promise.resolve(jsonResponse({ content: [] }));
+    });
+
+    renderWithRouter(
+      <ErrorProvider>
+        <ErrorBanner />
+        <Routes>
+          <Route path="/community" element={<CommunityPage darkMode={false} />} />
+        </Routes>
+      </ErrorProvider>,
+      { initialEntries: [{ pathname: '/community', state: { restore: true } }] }
+    );
+
+    expect(await screen.findByText(/No articles found/)).toBeInTheDocument();
+    await waitFor(() => expect(window.scrollTo).toHaveBeenCalledWith(0, 240));
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it('refreshes community data after avatar auth changes and handles wishlist server errors', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    global.fetch = vi.fn((url, options = {}) => {
+      const target = String(url);
+      if (target.includes('/setups?page=')) {
+        return Promise.resolve(jsonResponse({ content: [{ ...setups[0], authorId: 7, thumbnailUrl: '/thumb.png' }] }));
+      }
+      if (target.includes('/articles?page=')) {
+        return Promise.resolve(jsonResponse({ content: [{ ...articles[0], authorId: 7, authorAvatarUrl: '/article-avatar.png', imageUrl: '/article.png' }] }));
+      }
+      if (target.includes('/wishlists')) return Promise.resolve(jsonResponse({ content: [] }));
+      if (target.includes('/setups/user/published')) return Promise.resolve(jsonResponse({ content: [] }));
+      if (target.includes('/articles/user/my-articles')) return Promise.resolve(jsonResponse([]));
+      if (target.includes('/setups/1/wishlist') && options.method === 'POST') {
+        return Promise.resolve(jsonResponse({ message: 'Nope' }, false, 500));
+      }
+      return Promise.resolve(jsonResponse({}));
+    });
+
+    renderCommunity();
+    expect(await screen.findByText('Kitchen Automation')).toBeInTheDocument();
+    window.dispatchEvent(new CustomEvent('auth-change', { detail: { avatarUrl: '/fresh-avatar.png' } }));
+    await waitFor(() => expect(getCurrentUser.mock.calls.length).toBeGreaterThanOrEqual(2));
+
+    fireEvent.error(screen.getByAltText('Kitchen Automation'));
+    fireEvent.click(screen.getByText('Articles'));
+    expect(screen.getByText('Matter guide')).toBeInTheDocument();
+    fireEvent.error(screen.getByAltText('Matter guide'));
+    fireEvent.error(screen.getByAltText('Ioana'));
+
+    fireEvent.click(screen.getByText('Setups'));
+    fireEvent.click(screen.getByLabelText('Save to wishlist'));
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('Wishlist error: 500', expect.any(String)));
+  });
 });

@@ -72,4 +72,30 @@ describe('wizardStore', () => {
     expect(useWizardStore.getState().categories).toEqual([]);
     expect(useWizardStore.getState().rooms).toEqual([]);
   });
+
+  it('updates scalar fields and removes toggled selections', () => {
+    const store = useWizardStore.getState();
+
+    store.nextStep();
+    store.prevStep();
+    store.setEcosystem('Google Home');
+    useWizardStore.getState().setEcosystem('Google Home');
+    useWizardStore.getState().setTechLevel('Avansat');
+    useWizardStore.getState().toggleCategory('lighting');
+    useWizardStore.getState().toggleCategory('lighting');
+    useWizardStore.getState().toggleProtocol('Matter');
+    useWizardStore.getState().toggleProtocol('Matter');
+    useWizardStore.getState().addBrand('   ');
+    useWizardStore.getState().addBrand('Aqara');
+    useWizardStore.getState().removeBrand('Aqara');
+    useWizardStore.getState().setDarkMode(true);
+
+    expect(useWizardStore.getState().step).toBe(1);
+    expect(useWizardStore.getState().ecosystem).toBeNull();
+    expect(useWizardStore.getState().techLevel).toBe('Avansat');
+    expect(useWizardStore.getState().categories).toEqual([]);
+    expect(useWizardStore.getState().protocols).toEqual([]);
+    expect(useWizardStore.getState().brands).toEqual([]);
+    expect(useWizardStore.getState().darkMode).toBe(true);
+  });
 });

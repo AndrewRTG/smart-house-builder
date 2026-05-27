@@ -58,4 +58,26 @@ describe('useFilterStore', () => {
     expect(useFilterStore.getState().darkMode).toBe(true);
     expect(useFilterStore.getState().hasNoFilters()).toBe(true);
   });
+
+  it('toggles the remaining filters and brand actions', () => {
+    const store = useFilterStore.getState();
+
+    store.setEcosystem('Apple Home');
+    expect(useFilterStore.getState().ecosystem).toBe('Apple Home');
+    useFilterStore.getState().setEcosystem('Apple Home');
+    expect(useFilterStore.getState().ecosystem).toBeNull();
+
+    useFilterStore.getState().setPriceRange([50, 700]);
+    useFilterStore.getState().toggleProtocol('Matter');
+    useFilterStore.getState().toggleProtocol('Matter');
+    useFilterStore.getState().addBrand('   ');
+    useFilterStore.getState().addBrand('Philips');
+    useFilterStore.getState().removeBrand('Philips');
+    useFilterStore.getState().toggleDarkMode();
+
+    expect(useFilterStore.getState().priceRange).toEqual([50, 700]);
+    expect(useFilterStore.getState().protocols).toEqual([]);
+    expect(useFilterStore.getState().brands).toEqual([]);
+    expect(useFilterStore.getState().darkMode).toBe(true);
+  });
 });

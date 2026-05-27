@@ -520,61 +520,6 @@ export default function CommunityPage({ darkMode }) {
     }
   };
 
-  const fetchSetupLikeData = async (setupId) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const countResponse = await fetch(`${API_BASE}/setups/${setupId}/like-count`);
-      if (countResponse.ok) {
-        const countData = await countResponse.json();
-        setLikeCounts((prev) => new Map(prev).set(`setup-${setupId}`, countData.likeCount));
-      }
-
-      // Check if current user liked it
-      if (token) {
-        // We could add an endpoint to check if user liked this, for now we'll rely on the toggle to update
-      }
-    } catch (error) {
-      console.error('Failed to fetch like data:', error);
-    }
-  };
-
-  const fetchArticleLikeData = async (articleId) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const countResponse = await fetch(`${API_BASE}/articles/${articleId}/like-count`);
-      if (countResponse.ok) {
-        const countData = await countResponse.json();
-        setLikeCounts((prev) => new Map(prev).set(`article-${articleId}`, countData.likeCount));
-      }
-    } catch (error) {
-      console.error('Failed to fetch like data:', error);
-    }
-  };
-
-  const fetchSetupCommentCount = async (setupId) => {
-    try {
-      const response = await fetch(`${API_BASE}/setups/${setupId}/comment-count`);
-      if (response.ok) {
-        const data = await response.json();
-        setCommentCounts((prev) => new Map(prev).set(`setup-${setupId}`, data.commentCount));
-      }
-    } catch (error) {
-      console.error('Failed to fetch comment count:', error);
-    }
-  };
-
-  const fetchArticleCommentCount = async (articleId) => {
-    try {
-      const response = await fetch(`${API_BASE}/articles/${articleId}/comment-count`);
-      if (response.ok) {
-        const data = await response.json();
-        setCommentCounts((prev) => new Map(prev).set(`article-${articleId}`, data.commentCount));
-      }
-    } catch (error) {
-      console.error('Failed to fetch comment count:', error);
-    }
-  };
-
   const handleCopySetup = (setup) => {
     setSelectedSetupToCopy(setup);
     setCopyModalOpen(true);
@@ -692,43 +637,6 @@ export default function CommunityPage({ darkMode }) {
   const isLiked = (targetId, targetType) => {
     const key = `${targetType.toLowerCase()}-${targetId}`;
     return likes.get(key) || false;
-  };
-
-  const renderPagination = (currentPage, totalPages, onPageChange) => {
-    if (totalPages <= 1) return null;
-
-    return (
-        <div className="community-pagination">
-          <button
-              type="button"
-              className="pagination-btn"
-              disabled={currentPage === 0}
-              onClick={() => onPageChange(currentPage - 1)}
-          >
-            Previous
-          </button>
-
-          {Array.from({ length: totalPages }, (_, index) => (
-              <button
-                  key={index}
-                  type="button"
-                  className={`pagination-btn ${currentPage === index ? 'active' : ''}`}
-                  onClick={() => onPageChange(index)}
-              >
-                {index + 1}
-              </button>
-          ))}
-
-          <button
-              type="button"
-              className="pagination-btn"
-              disabled={currentPage >= totalPages - 1}
-              onClick={() => onPageChange(currentPage + 1)}
-          >
-            Next
-          </button>
-        </div>
-    );
   };
 
   return (

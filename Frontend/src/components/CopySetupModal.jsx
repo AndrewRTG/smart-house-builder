@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { useError } from '../context/ErrorContext';
 import './CopySetupModal.css';
 
-const API_BASE = 'http://localhost:20025/api/v1';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 
 export default function CopySetupModal({ isOpen, onClose, originalSetup, onSuccess }) {
   const { showError, showSuccess } = useError();

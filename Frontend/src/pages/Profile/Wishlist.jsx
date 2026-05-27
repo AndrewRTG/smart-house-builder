@@ -4,7 +4,7 @@ import { Trash2, Eye } from "lucide-react";
 import { useError } from "../../context/ErrorContext";
 import "./Wishlist.css";
 
-const API_BASE = "http://localhost:20025/api/v1";
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 
 /**
  * Wishlist (Profile tab)

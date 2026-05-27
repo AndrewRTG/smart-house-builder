@@ -43,7 +43,7 @@ function RegisterPage() {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:20025/api/v1/auth/register", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,11 +82,11 @@ function RegisterPage() {
   }
 
   function handleGoogleRegister() {
-    window.location.href = "http://localhost:20025/oauth2/authorization/google";
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/oauth2/authorization/google`;
   }
 
   function handleFacebookRegister() {
-    window.location.href = "http://localhost:20025/oauth2/authorization/facebook";
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/oauth2/authorization/facebook`;
   }
 
   return (

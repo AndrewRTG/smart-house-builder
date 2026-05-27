@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. ENV STUB (must happen before any module import that reads it)
 // ─────────────────────────────────────────────────────────────────────────────
-vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:20025');
+vi.stubEnv('VITE_API_BASE_URL', `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}`);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. ROUTER MOCK
@@ -97,7 +97,7 @@ const mockSetupsDrafts = [
         id: 'setup-1',
         name: 'Living Room',
         status: 'DRAFT',
-        thumbnailUrl: 'http://localhost:20025/api/team2/layouts/10/thumbnail',
+        thumbnailUrl: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/team2/layouts/10/thumbnail`,
         canvasState: JSON.stringify({
             placedIcons: [
                 {
@@ -157,7 +157,7 @@ const mockSetupsPublished = [
         id: 'setup-2',
         name: 'Bedroom',
         status: 'PUBLISHED',
-        thumbnailUrl: 'http://localhost:20025/api/team2/layouts/20/thumbnail',
+        thumbnailUrl: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/team2/layouts/20/thumbnail`,
         deviceIds: [202],
     },
 ];
@@ -574,7 +574,7 @@ describe('SetupWizard', () => {
 
             expect(algorithmCall).toBeTruthy();
 
-            const url = new URL(algorithmCall[0], 'http://localhost:20025');
+            const url = new URL(algorithmCall[0], `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}`);
             return url.searchParams.get('criteria');
         };
 

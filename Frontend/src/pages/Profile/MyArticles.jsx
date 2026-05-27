@@ -35,8 +35,8 @@ export default function MyArticles({ isDark, profile }) {
   const [publishedTotal, setPublishedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('drafts');
+  const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
   const [search, setSearch] = useState('');
-  const API_BASE = 'http://localhost:20025/api/v1';
 
   useEffect(() => {
     fetchAll();

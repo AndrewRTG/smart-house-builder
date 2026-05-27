@@ -32,7 +32,7 @@ function LoginPage() {
 
       let response;
       try {
-        response = await fetch("http://localhost:20025/api/v1/auth/login", {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -86,11 +86,11 @@ function LoginPage() {
   }
 
   function handleGoogleLogin() {
-    window.location.href = "http://localhost:20025/oauth2/authorization/google";
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/oauth2/authorization/google`;
   }
 
   function handleFacebookLogin() {
-    window.location.href = "http://localhost:20025/oauth2/authorization/facebook";
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/oauth2/authorization/facebook`;
   }
 
   return (

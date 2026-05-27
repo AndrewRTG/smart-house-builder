@@ -34,7 +34,7 @@ describe('authFetch', () => {
     await authFetch('/api/v1/auth/me');
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/auth/me',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/me`,
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer abc123',
@@ -106,7 +106,7 @@ describe('authFetch', () => {
 
     expect(response.status).toBe(401);
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/auth/login',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/auth/login`,
       expect.objectContaining({
         skipAuth: true,
         headers: {},

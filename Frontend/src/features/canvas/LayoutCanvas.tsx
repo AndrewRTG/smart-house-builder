@@ -34,7 +34,7 @@ interface Room {
 }
 interface HistorySnapshot { lines: any[]; icons: any[]; furniture: any[]; }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025';
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}`;
 const GRID_POINT_CM = 50;
 
 const ICON_MAP: Record<string, React.FC<{ color: string }>> = {

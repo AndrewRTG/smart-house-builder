@@ -71,13 +71,13 @@ describe('CommentsSection', () => {
     fireEvent.change(screen.getByPlaceholderText('Write a comment...'), { target: { value: 'New comment' } });
     fireEvent.click(screen.getByText('Post Comment'));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/articles/7/comments',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/articles/7/comments`,
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ content: 'New comment', parentCommentId: null }) })
     ));
 
     fireEvent.click(screen.getByLabelText('Delete comment'));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/comments/1',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/comments/1`,
       expect.objectContaining({ method: 'DELETE' })
     ));
   });
@@ -92,7 +92,7 @@ describe('CommentsSection', () => {
     fireEvent.click(within(root).getByText('Post'));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/articles/7/comments',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/articles/7/comments`,
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ content: 'Reply text', parentCommentId: 1 }) })
     ));
 

@@ -346,8 +346,11 @@ export default function Settings({ profile }) {
         throw new Error(data.message || data.error || "Failed to save avatar");
       }
 
-      setAvatarUrl(urlForPreview);
-      window.dispatchEvent(new Event("auth-change"));
+      const bustedUrl = urlForPreview.startsWith("data:")
+        ? urlForPreview
+        : `${urlForPreview}${urlForPreview.includes("?") ? "&" : "?"}v=${Date.now()}`;
+      setAvatarUrl(bustedUrl);
+      window.dispatchEvent(new CustomEvent("auth-change", { detail: { avatarUrl: bustedUrl } }));
       showSuccess("Profile photo updated.");
     } catch (err) {
       showError(err.message);

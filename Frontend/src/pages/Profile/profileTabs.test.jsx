@@ -68,8 +68,8 @@ describe('Profile area', () => {
     // so the mock has to stack three authFetch responses: profile, drafts, published.
     authFetch
       .mockResolvedValueOnce(jsonResponse(profile))   // /auth/me on mount
-      .mockResolvedValueOnce(jsonResponse([]))         // /articles/user/drafts
-      .mockResolvedValueOnce(jsonResponse([]));        // /articles/user/published
+      .mockResolvedValueOnce(jsonResponse({ content: [], totalPages: 1, totalElements: 0 }))   // drafts
+      .mockResolvedValueOnce(jsonResponse({ content: [], totalPages: 1, totalElements: 0 })); // published
     fetch.mockResolvedValue(jsonResponse({ content: [] }));
     const { unmount } = renderInShell(<ProfilePage darkMode={false} />);
 
@@ -79,7 +79,7 @@ describe('Profile area', () => {
     // The default tab is "Drafts" with the new tabbed UI, so we look for
     // the drafts-specific empty-state copy.
     expect(
-      await screen.findByText(/don't have any drafts/i)
+      await screen.findByText(/No drafts yet/i)
     ).toBeInTheDocument();
     fireEvent.click(screen.getByText('Settings'));
     expect(screen.getByText('Account Settings')).toBeInTheDocument();
@@ -95,8 +95,8 @@ describe('Profile area', () => {
     // in Published so we can exercise the "View" button (drafts have a
     // Publish button instead of View).
     authFetch
-      .mockResolvedValueOnce(jsonResponse([]))                       // drafts
-      .mockResolvedValueOnce(jsonResponse([                          // published
+      .mockResolvedValueOnce(jsonResponse({ content: [], totalPages: 1, totalElements: 0 }))  // drafts
+      .mockResolvedValueOnce(jsonResponse({ content: [                                       // published
         {
           id: 12,
           title: 'Smart lighting tips',
@@ -108,7 +108,7 @@ describe('Profile area', () => {
           createdAt: '2026-05-11T10:00:00',
           status: 'PUBLISHED',
         },
-      ]))
+      ], totalPages: 1, totalElements: 1 }))
       .mockResolvedValueOnce(jsonResponse({}));                      // delete response (unused here)
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
@@ -126,11 +126,11 @@ describe('Profile area', () => {
     // Article is a draft (default tab), so delete is reachable on the
     // first render without switching tabs.
     authFetch
-      .mockResolvedValueOnce(jsonResponse([                          // drafts
+      .mockResolvedValueOnce(jsonResponse({ content: [                                       // drafts
         { id: 12, title: 'Draft article', content: 'abc', tags: [], status: 'DRAFT' },
-      ]))
-      .mockResolvedValueOnce(jsonResponse([]))                       // published
-      .mockResolvedValueOnce(jsonResponse({}));                      // delete response
+      ], totalPages: 1, totalElements: 1 }))
+      .mockResolvedValueOnce(jsonResponse({ content: [], totalPages: 1, totalElements: 0 }))  // published
+      .mockResolvedValueOnce(jsonResponse({}));                                                // delete response
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderInShell(<MyArticles isDark={false} profile={profile} />);
 
@@ -263,7 +263,7 @@ describe('Profile area', () => {
     ));
 
     fireEvent.click(screen.getByText('Published'));
-    await screen.findByText('No published setups found');
+    await screen.findByText('No published setups yet.');
     unmount();
 
     fetch.mockReset();
@@ -296,8 +296,8 @@ describe('Profile area', () => {
       .mockResolvedValueOnce(jsonResponse({ content: [] }));
 
     renderInShell(<MySetups isDark={false} />);
-    expect(await screen.findByText('No drafts found')).toBeInTheDocument();
-    fireEvent.click(screen.getByText(/setup nou/i));
+    expect(await screen.findByText('No drafts yet.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /new setup/i }));
     fireEvent.click(screen.getByText(/Creeaz/));
     expect(screen.getByText(/Te rog introdu un titlu/i)).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText(/Dormitor/), { target: { value: 'New setup' } });
@@ -314,8 +314,11 @@ describe('Profile area', () => {
       .mockResolvedValueOnce(jsonResponse({ content: [] }));
 
     renderInShell(<MySetups isDark={false} />);
-    expect(await screen.findByText('No drafts found')).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole('button', { name: /setup nou/i }), { key: 'Enter' });
+    expect(await screen.findByText('No drafts yet.')).toBeInTheDocument();
+    // Open via click (native <button> doesn't fire activation on keyDown in
+    // jsdom). Close via Escape on the modal overlay — that path uses our own
+    // onKeyDown handler so jsdom can exercise it.
+    fireEvent.click(screen.getByRole('button', { name: /new setup/i }));
     expect(screen.getByText('Setup nou')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByLabelText('Close modal'), { key: 'Escape' });
     expect(screen.queryByText('Setup nou')).not.toBeInTheDocument();

@@ -336,6 +336,11 @@ export default function CreateArticlePage({ darkMode }) {
           onChange={(e) => setTitle(e.target.value)}
           maxLength={200}
         />
+        {title.trim().length > 0 && title.trim().length < 5 && (
+          <div className="field-hint-error">
+            Title must be at least 5 characters ({title.trim().length}/5).
+          </div>
+        )}
         <div className="char-count">{title.length} / 200</div>
 
         {/* Tags */}
@@ -395,6 +400,11 @@ export default function CreateArticlePage({ darkMode }) {
           onChange={(e) => setContent(e.target.value)}
           rows={14}
         />
+        {content.trim().length > 0 && content.trim().length < 10 && (
+          <div className="field-hint-error">
+            Content must be at least 10 characters ({content.trim().length}/10).
+          </div>
+        )}
 
         {error && (
           <div className="form-error" role="alert">

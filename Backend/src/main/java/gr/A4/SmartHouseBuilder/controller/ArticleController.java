@@ -64,9 +64,12 @@ public class ArticleController {
     @GetMapping
     public ResponseEntity<Page<ArticleResponse>> getAllArticles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9") int size) {
+            @RequestParam(defaultValue = "9") int size,
+            @RequestParam(defaultValue = "createdAt") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Page<Article> articles = articleService.getAllArticles(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+                PageRequest.of(page, size, Sort.by(direction, sortField))
         );
         return ResponseEntity.ok(articles.map(this::toResponse));
     }
@@ -79,17 +82,25 @@ public class ArticleController {
     }
 
     @GetMapping("/user/drafts")
-    public ResponseEntity<List<ArticleResponse>> getUserDrafts(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        List<Article> drafts = articleService.getUserDrafts(userDetails.getUsername());
-        return ResponseEntity.ok(drafts.stream().map(this::toResponse).toList());
+    public ResponseEntity<Page<ArticleResponse>> getUserDrafts(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        Page<Article> drafts = articleService.getUserDrafts(
+                userDetails.getUsername(),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return ResponseEntity.ok(drafts.map(this::toResponse));
     }
 
     @GetMapping("/user/published")
-    public ResponseEntity<List<ArticleResponse>> getUserPublished(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        List<Article> published = articleService.getUserPublished(userDetails.getUsername());
-        return ResponseEntity.ok(published.stream().map(this::toResponse).toList());
+    public ResponseEntity<Page<ArticleResponse>> getUserPublished(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        Page<Article> published = articleService.getUserPublished(
+                userDetails.getUsername(),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return ResponseEntity.ok(published.map(this::toResponse));
     }
 
     @PutMapping("/{id}/publish")

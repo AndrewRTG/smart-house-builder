@@ -43,6 +43,7 @@ public class SetupResponse {
     // the card without joining /auth/me. Populated in SetupController.toResponse.
     private Long authorId;
     private String authorUsername;
+    private String authorAvatarUrl;
 
     private List<String> tags;
     private String thumbnailUrl;

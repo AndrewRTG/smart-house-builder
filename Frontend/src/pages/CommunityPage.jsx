@@ -22,6 +22,8 @@ import { getCurrentUser } from '../utils/currentUser';
 import { fuzzyFilter } from '../utils/fuzzySearch';
 import { getStoredLikedItems, setStoredLike } from '../utils/likedItemsStorage';
 import '../styles/CommunityPage.css';
+import { COMMUNITY_PAGE_SIZE } from '../config/pagination';
+import Pagination from '../components/Pagination';
 
 function parseDate(value) {
   if (!value) return null;
@@ -202,7 +204,7 @@ export default function CommunityPage({ darkMode }) {
   const [likes, setLikes] = useState(new Map());
   const [likeCounts, setLikeCounts] = useState(new Map());
   const [commentCounts, setCommentCounts] = useState(new Map());
-  const PAGE_SIZE = 9;
+  const PAGE_SIZE = COMMUNITY_PAGE_SIZE;
 
   const [setupPage, setSetupPage] = useState(0);
   const [articlePage, setArticlePage] = useState(0);
@@ -255,7 +257,7 @@ export default function CommunityPage({ darkMode }) {
 
   const filteredSetups = useMemo(
     () => fuzzyFilter(sortedSetups, searchQuery, (s) => [
-      s.name, s.description, s.user?.username,
+      s.name, s.description, s.authorUsername,
     ]),
     [sortedSetups, searchQuery]
   );
@@ -285,7 +287,7 @@ export default function CommunityPage({ darkMode }) {
         )
       : sortedArticles;
     return fuzzyFilter(byTag, searchQuery, (a) => [
-      a.title, a.content, a.authorUsername,
+      a.title, a.content, a.authorUsername
     ]);
   }, [sortedArticles, searchQuery, activeTagFilter]);
 
@@ -321,15 +323,39 @@ export default function CommunityPage({ darkMode }) {
 
   useEffect(() => {
     fetchCurrentUser();
+    const onAuthChange = (e) => {
+      const newAvatar = e?.detail?.avatarUrl;
+      if (newAvatar) {
+        setUser((prev) => (prev ? { ...prev, avatarUrl: newAvatar } : prev));
+        setSetups((prev) => prev.map((s) =>
+          user && s.authorId === user.id ? { ...s, authorAvatarUrl: newAvatar } : s
+        ));
+        setArticles((prev) => prev.map((a) =>
+          user && a.authorId === user.id ? { ...a, authorAvatarUrl: newAvatar } : a
+        ));
+      }
+      fetchCurrentUser();
+      fetchSetups();
+      fetchArticles();
+    };
+    window.addEventListener('auth-change', onAuthChange);
+    return () => window.removeEventListener('auth-change', onAuthChange);
   }, []);
+
+  const isSetupFilterActive = Boolean(
+    searchQuery || activeTagFilter || setupFilter === 'saved' || sortMode === 'mostLiked'
+  );
+  const isArticleFilterActive = Boolean(
+    searchQuery || activeTagFilter || sortMode === 'mostLiked'
+  );
 
   useEffect(() => {
     fetchSetups();
-  }, [setupPage]);
+  }, [setupPage, isSetupFilterActive, sortMode]);
 
   useEffect(() => {
     fetchArticles();
-  }, [articlePage]);
+  }, [articlePage, isArticleFilterActive, sortMode]);
 
   useEffect(() => {
     if (!user) {
@@ -427,7 +453,17 @@ export default function CommunityPage({ darkMode }) {
   const fetchSetups = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/setups?page=${setupPage}&size=${PAGE_SIZE}`);
+      const effectivePage = isSetupFilterActive ? 0 : setupPage;
+      const effectiveSize = isSetupFilterActive ? 1000 : PAGE_SIZE;
+      // Server-side sort so newest/oldest work across the entire feed, not
+      // just within the current page. mostLiked stays client-side because
+      // likeCount isn't a column on Setup (it's a derived COUNT query).
+      const sortParam = sortMode === 'oldest'
+        ? '&sort=createdAt,asc'
+        : sortMode === 'newest'
+          ? '&sort=createdAt,desc'
+          : '';
+      const response = await fetch(`${API_BASE}/setups?page=${effectivePage}&size=${effectiveSize}${sortParam}`);
       const data = await response.json();
       const items = data.content || [];
 
@@ -458,7 +494,10 @@ export default function CommunityPage({ darkMode }) {
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch(`${API_BASE}/articles?page=${articlePage}&size=${PAGE_SIZE}`);
+      const effectivePage = isArticleFilterActive ? 0 : articlePage;
+      const effectiveSize = isArticleFilterActive ? 1000 : PAGE_SIZE;
+      const sortDir = sortMode === 'oldest' ? 'asc' : 'desc';
+      const response = await fetch(`${API_BASE}/articles?page=${effectivePage}&size=${effectiveSize}&sortField=createdAt&sortDir=${sortDir}`);
       const data = await response.json();
       const items = data.content || [];
 
@@ -756,7 +795,7 @@ export default function CommunityPage({ darkMode }) {
         {/* CONTENT - Slider effect */}
         <div className="content-slider">
           <div className={`content-pane ${activeTab === 'setups' ? 'active' : ''}`}>
-            {loading ? (
+            {loading && setups.length === 0 ? (
               <div className="loading">Loading setups...</div>
             ) : filteredSetups.length > 0 ? (
                     <>
@@ -766,17 +805,17 @@ export default function CommunityPage({ darkMode }) {
                     <div className="setup-header">
                       <div className="user-info-compact">
                         <div className="avatar-small" style={{ overflow: 'hidden', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {setup.user?.avatarUrl ? (
-                            <img src={setup.user.avatarUrl} alt={setup.user?.username}
+                          {setup.authorAvatarUrl ? (
+                            <img src={setup.authorAvatarUrl} alt={setup.authorUsername}
                               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                               onError={e => e.target.style.display = 'none'} />
                           ) : (
-                            setup.user?.username?.[0]?.toUpperCase() || 'U'
+                            setup.authorUsername?.[0]?.toUpperCase() || 'U'
                           )}
                         </div>
                         <div>
                           <div className="setup-author">
-                            {setup.user?.username || 'User'}
+                            {setup.authorUsername || 'User'}
                           </div>
                           <div className="setup-date">
                             {formatDate(setup.createdAt)}
@@ -866,7 +905,7 @@ export default function CommunityPage({ darkMode }) {
                 ))}
               </div>
 
-                {renderPagination(setupPage, setupTotalPages, setSetupPage)}
+                {!isSetupFilterActive && <Pagination currentPage={setupPage} totalPages={setupTotalPages} onPageChange={setSetupPage} />}
                     </>
 
             ) : (
@@ -892,7 +931,7 @@ export default function CommunityPage({ darkMode }) {
               </div>
             )}
 
-            {loading ? (
+            {loading && articles.length === 0 ? (
               <div className="loading">Loading articles...</div>
             ) : filteredArticles.length > 0 ? (
                 <>
@@ -982,7 +1021,7 @@ export default function CommunityPage({ darkMode }) {
                   </div>
                 ))}
               </div>
-              {renderPagination(articlePage, articleTotalPages, setArticlePage)}
+              {!isArticleFilterActive && <Pagination currentPage={articlePage} totalPages={articleTotalPages} onPageChange={setArticlePage} />}
               </>
             ) : (
               <div className="empty-state">

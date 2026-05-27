@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Eye, Edit3 } from 'lucide-react';
+import { Plus, Trash2, Eye, Edit3, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../../utils/authFetch';
+import { fuzzyFilter } from '../../utils/fuzzySearch';
+import { MY_SETUPS_PAGE_SIZE } from '../../config/pagination';
+import Pagination from '../../components/Pagination';
+import '../Profile/MySetups.css';
 import './MyArticles.css';
 
 function parseDate(value) {
@@ -23,26 +27,42 @@ export default function MyArticles({ isDark, profile }) {
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState([]);
   const [published, setPublished] = useState([]);
+  const [draftsPage, setDraftsPage] = useState(0);
+  const [publishedPage, setPublishedPage] = useState(0);
+  const [draftsTotalPages, setDraftsTotalPages] = useState(1);
+  const [publishedTotalPages, setPublishedTotalPages] = useState(1);
+  const [draftsTotal, setDraftsTotal] = useState(0);
+  const [publishedTotal, setPublishedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('drafts');
   const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchAll();
-  }, []);
+  }, [draftsPage, publishedPage]);
 
-  // One round trip per status. Keeps each list independent so toggling
-  // tabs doesn't refetch — and lets the empty-state copy be tab-specific
-  // ("No drafts yet" vs "Nothing published yet").
+  // One round trip per status, both paginated server-side. Tab toggling
+  // doesn't refetch — only page changes do.
   const fetchAll = async () => {
     try {
       setLoading(true);
       const [draftsRes, pubRes] = await Promise.all([
-        authFetch(`${API_BASE}/articles/user/drafts`),
-        authFetch(`${API_BASE}/articles/user/published`),
+        authFetch(`${API_BASE}/articles/user/drafts?page=${draftsPage}&size=${MY_SETUPS_PAGE_SIZE}`),
+        authFetch(`${API_BASE}/articles/user/published?page=${publishedPage}&size=${MY_SETUPS_PAGE_SIZE}`),
       ]);
-      if (draftsRes.ok) setDrafts(await draftsRes.json());
-      if (pubRes.ok) setPublished(await pubRes.json());
+      if (draftsRes.ok) {
+        const d = await draftsRes.json();
+        setDrafts(d.content || []);
+        setDraftsTotalPages(d.totalPages || 1);
+        setDraftsTotal(d.totalElements || 0);
+      }
+      if (pubRes.ok) {
+        const d = await pubRes.json();
+        setPublished(d.content || []);
+        setPublishedTotalPages(d.totalPages || 1);
+        setPublishedTotal(d.totalElements || 0);
+      }
     } catch (err) {
       console.error('Error fetching articles:', err);
     } finally {
@@ -158,10 +178,9 @@ export default function MyArticles({ isDark, profile }) {
     </div>
   );
 
-  const list = activeTab === 'drafts' ? drafts : published;
-  const emptyCopy = activeTab === 'drafts'
-    ? "You don't have any drafts. Start writing — your in-progress work will live here."
-    : "You haven't published any articles yet.";
+  const rawList = activeTab === 'drafts' ? drafts : published;
+  const list = fuzzyFilter(rawList, search, (a) => [a.title, a.content, ...(a.tags || [])]);
+  const emptyCopy = activeTab === 'drafts' ? 'No drafts yet.' : 'No published articles yet.';
 
   return (
     <div className={`my-articles-container ${isDark ? 'dark' : 'light'}`}>
@@ -175,6 +194,16 @@ export default function MyArticles({ isDark, profile }) {
         </button>
       </div>
 
+      <div className="search-bar">
+        <Tag size={18} className="search-icon" />
+        <input
+          type="text"
+          placeholder="Search for an article"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
       {/* Same tab UI MySetups uses, for consistency across the profile pages */}
       <div className="articles-tabs">
         <button
@@ -183,7 +212,7 @@ export default function MyArticles({ isDark, profile }) {
           onClick={() => setActiveTab('drafts')}
           aria-pressed={activeTab === 'drafts'}
         >
-          Drafts {drafts.length > 0 && <span className="tab-count">{drafts.length}</span>}
+          Drafts {draftsTotal > 0 && <span className="tab-count">{draftsTotal}</span>}
         </button>
         <button
           type="button"
@@ -191,7 +220,7 @@ export default function MyArticles({ isDark, profile }) {
           onClick={() => setActiveTab('published')}
           aria-pressed={activeTab === 'published'}
         >
-          Published {published.length > 0 && <span className="tab-count">{published.length}</span>}
+          Published {publishedTotal > 0 && <span className="tab-count">{publishedTotal}</span>}
         </button>
       </div>
 
@@ -200,17 +229,19 @@ export default function MyArticles({ isDark, profile }) {
       ) : list.length === 0 ? (
         <div className="empty-state">
           <p>{emptyCopy}</p>
-          <button
-            className="cta-btn"
-            onClick={() => navigate('/articles/create')}
-          >
-            {activeTab === 'drafts' ? 'Start a New Article' : 'Write Your First Article'}
-          </button>
         </div>
       ) : (
-        <div className="articles-list">
-          {list.map((article) => renderArticleCard(article, { isDraft: activeTab === 'drafts' }))}
-        </div>
+        <>
+          <div className="articles-list">
+            {list.map((article) => renderArticleCard(article, { isDraft: activeTab === 'drafts' }))}
+          </div>
+          {!search && activeTab === 'drafts' && (
+            <Pagination currentPage={draftsPage} totalPages={draftsTotalPages} onPageChange={setDraftsPage} />
+          )}
+          {!search && activeTab === 'published' && (
+            <Pagination currentPage={publishedPage} totalPages={publishedTotalPages} onPageChange={setPublishedPage} />
+          )}
+        </>
       )}
     </div>
   );

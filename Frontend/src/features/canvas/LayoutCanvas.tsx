@@ -169,11 +169,52 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId,
     const { priceRange, categories, protocols, brands, ecosystem } = useFilterStore();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [wizardDeviceIds, setWizardDeviceIds] = useState<number[]>([]);
+    const [showWizardSuggestions, setShowWizardSuggestions] = useState(false);
+
+    useEffect(() => {
+        const checkWizardStorage = () => {
+            const savedData = sessionStorage.getItem('wizard_selected_devices');
+            if (savedData) {
+                try {
+                    const ids = JSON.parse(savedData);
+                    if (Array.isArray(ids) && ids.length > 0) {
+                        setWizardDeviceIds(ids.map(Number).filter(Number.isFinite));
+                        return true;
+                    }
+                } catch (e) {
+                    console.error('Eroare la parsarea device-urilor din wizard:', e);
+                }
+            }
+            return false;
+        };
+
+        const foundInstantly = checkWizardStorage();
+        let t1: ReturnType<typeof setTimeout> | undefined;
+        let t2: ReturnType<typeof setTimeout> | undefined;
+
+        if (!foundInstantly) {
+            t1 = setTimeout(checkWizardStorage, 300);
+            t2 = setTimeout(checkWizardStorage, 1000);
+        }
+
+        return () => {
+            if (t1) clearTimeout(t1);
+            if (t2) clearTimeout(t2);
+        };
+    }, []);
 
     const filteredDevices = useMemo(() => {
-        if (!searchQuery.trim()) return fetchedDevices;
-        return fuzzyFilter(fetchedDevices, searchQuery, (d: any) => [d.name, d.brand]);
-    }, [fetchedDevices, searchQuery]);
+        let baseList = fetchedDevices;
+
+        if (showWizardSuggestions && wizardDeviceIds.length > 0) {
+            const wizardIdsAsStrings = wizardDeviceIds.map(String);
+            baseList = baseList.filter(d => wizardIdsAsStrings.includes(String(d.id)));
+        }
+
+        if (!searchQuery.trim()) return baseList;
+        return fuzzyFilter(baseList, searchQuery, (d: any) => [d.name, d.brand]);
+    }, [fetchedDevices, searchQuery, showWizardSuggestions, wizardDeviceIds]);
 
     const normalizeText = (value?: string | null) =>
         (value || '')
@@ -1083,6 +1124,7 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId,
                                     return (
                                         <div
                                             key={icon.id}
+                                            data-placed-icon={icon.id}
                                             onMouseEnter={() => setHoveredIconIndex(index)}
                                             onMouseLeave={() => setHoveredIconIndex(null)}
                                             onMouseDown={(e) => {
@@ -1246,7 +1288,29 @@ const LayoutCanvas: React.FC<LayoutCanvasProps> = ({isDarkMode, onBack, setupId,
                         background: colors.panel, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                         display: 'flex', flexDirection: 'column'
                     }}>
-                        <p style={{fontWeight: 700, fontSize: '13px', marginBottom: '16px', color: colors.textMain, margin: '0 0 16px 0'}}>Device Catalog</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <p style={{fontWeight: 700, fontSize: '13px', color: colors.textMain, margin: 0}}>Device Catalog</p>
+
+                            {wizardDeviceIds.length > 0 && (
+                                <button
+                                    onClick={() => setShowWizardSuggestions(!showWizardSuggestions)}
+                                    style={{
+                                        padding: '4px 10px',
+                                        borderRadius: '8px',
+                                        border: `1px solid ${showWizardSuggestions ? '#00B4D8' : colors.border}`,
+                                        background: showWizardSuggestions ? '#00B4D8' : 'transparent',
+                                        color: showWizardSuggestions ? '#fff' : colors.textMain,
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        fontFamily: 'inherit'
+                                    }}
+                                >
+                                    Wizard Suggestions
+                                </button>
+                            )}
+                        </div>
                         <div style={{position: 'relative', marginBottom: '16px'}}>
                             <span style={{position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '14px'}}>🔍</span>
                             <input

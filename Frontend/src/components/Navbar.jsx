@@ -69,7 +69,20 @@ function Navbar({ darkMode, setDarkMode }) {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    const onAuthChange = () => refreshAuthState();
+    const onAuthChange = (e) => {
+      // Optimistic patch — if Settings ships the new avatarUrl on the event,
+      // apply it immediately so the navbar updates with zero round-trip.
+      const newAvatar = e?.detail?.avatarUrl;
+      if (newAvatar) {
+        setUser((prev) => (prev ? { ...prev, avatarUrl: newAvatar } : prev));
+      }
+      refreshAuthState();
+      // currentUser cache is invalidated by the listener in currentUser.js;
+      // re-fetch so other fields (username, email) stay in sync too.
+      if (isTokenValid()) {
+        getCurrentUser({ force: true }).then((data) => { if (data) setUser(data); });
+      }
+    };
     const onStorage = (e) => {
       if (e.key === "accessToken" || e.key === null) refreshAuthState();
     };

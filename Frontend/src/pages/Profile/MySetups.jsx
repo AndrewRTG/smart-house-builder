@@ -4,6 +4,9 @@ import { Home, Tag, Heart, MessageCircle, Plus, X, Trash2, Edit3, ExternalLink, 
 import { useError } from "../../context/ErrorContext";
 import { fuzzyFilter } from "../../utils/fuzzySearch";
 import { SETUP_TAG_GROUPS } from "../../utils/setupTags";
+import { MY_SETUPS_PAGE_SIZE } from "../../config/pagination";
+import Pagination from "../../components/Pagination";
+import "./MyArticles.css";
 import "./MySetups.css";
 
 const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
@@ -15,6 +18,10 @@ export default function MySetups({ isDark }) {
   const [activeTab, setActiveTab] = useState("drafts");
   const [drafts, setDrafts] = useState([]);
   const [published, setPublished] = useState([]);
+  const [draftsPage, setDraftsPage] = useState(0);
+  const [publishedPage, setPublishedPage] = useState(0);
+  const [draftsTotalPages, setDraftsTotalPages] = useState(1);
+  const [publishedTotalPages, setPublishedTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [titleError, setTitleError] = useState(false);
@@ -31,7 +38,7 @@ export default function MySetups({ isDark }) {
 
   useEffect(() => {
     fetchSetups();
-  }, []);
+  }, [draftsPage, publishedPage]);
 
   const fetchSetups = async () => {
     setLoading(true);
@@ -40,11 +47,19 @@ export default function MySetups({ isDark }) {
       if (!token) { setDrafts([]); setPublished([]); setLoading(false); return; }
 
       const [draftsRes, publishedRes] = await Promise.all([
-        fetch(`${API_BASE}/setups/user/drafts?page=0&size=20`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_BASE}/setups/user/published?page=0&size=20`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${API_BASE}/setups/user/drafts?page=${draftsPage}&size=${MY_SETUPS_PAGE_SIZE}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE}/setups/user/published?page=${publishedPage}&size=${MY_SETUPS_PAGE_SIZE}`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
-      if (draftsRes.ok) { const d = await draftsRes.json(); setDrafts(d.content || []); }
-      if (publishedRes.ok) { const d = await publishedRes.json(); setPublished(d.content || []); }
+      if (draftsRes.ok) {
+        const d = await draftsRes.json();
+        setDrafts(d.content || []);
+        setDraftsTotalPages(d.totalPages || 1);
+      }
+      if (publishedRes.ok) {
+        const d = await publishedRes.json();
+        setPublished(d.content || []);
+        setPublishedTotalPages(d.totalPages || 1);
+      }
     } catch (error) {
       console.error('Failed to fetch setups:', error);
     } finally {
@@ -125,101 +140,137 @@ export default function MySetups({ isDark }) {
   const deviceCount = (setup) => setup.deviceCount ?? setup.deviceIds?.length ?? 0;
 
   const renderSetupCard = (setup, isDraft = false) => (
-    <div className="setup-card" key={setup.id}>
-      <div className="card-image" style={setup.thumbnailUrl ? { padding: 8, overflow: 'hidden', background: '#1a1a1e', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}}>
-        {setup.thumbnailUrl ? (
+    <div key={setup.id} className="article-card">
+      {setup.thumbnailUrl && (
+        <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', aspectRatio: '16 / 9', background: '#f3f4f8' }}>
           <img
             src={setup.thumbnailUrl}
             alt={setup.name}
-            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block', borderRadius: 6 }}
-            onError={e => { e.target.style.display = 'none'; }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+            onError={(e) => { e.target.style.display = 'none'; }}
           />
-        ) : null}
-        <span className={`status-badge ${isDraft ? 'draft' : 'published'}`}>
-          {isDraft ? 'Draft' : 'Published'}
-        </span>
-      </div>
-      <div className="card-body">
-        <h3 className="card-title">{setup.name}</h3>
-        <div className="card-meta">
-          <span className="meta-item"><Home size={14} /> {deviceCount(setup)} devices</span>
-          <span className="price">{setup.price || '—'}</span>
         </div>
-        <div className="card-tags">
-          {setup.tags?.map((tag) => <span key={tag} className="tag">{tag}</span>)}
-        </div>
-        <div className="card-actions">
-          <span className="action-item"><Heart size={14} /> {setup.likeCount || 0}</span>
-          <span className="action-item"><MessageCircle size={14} /> {setup.commentCount || 0}</span>
-        </div>
-        {isDraft && (
-          <>
-            {setup.copiedFromId && (
-              <div className="copied-from-banner">
-                <ExternalLink size={12} />
-                <span>Copied from another setup</span>
-              </div>
-            )}
-            <div className="card-buttons">
-              <button className="btn-edit" onClick={() => navigate(`/builder?setupId=${setup.id}`)} title="Edit in builder">
-                <Edit3 size={14} /> Edit
-              </button>
-              {setup.copiedFromId && (
-                <button className="btn-view" onClick={() => navigate(`/setups/${setup.copiedFromId}`)} title="See the original">
-                  <Eye size={14} /> View original
-                </button>
-              )}
-              <button className="btn-publish" onClick={() => { setPublishTarget({ id: setup.id, name: setup.name }); setPublishDescription(setup.description || ''); setPublishSelectedTags(setup.tags || []); }}>
-                Publish
-              </button>
-              <button className="btn-delete" onClick={() => setDeleteTarget({ id: setup.id, isDraft: true, name: setup.name })} title="Delete this draft" aria-label="Delete draft">
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </>
+      )}
+      <div className="article-content">
+        <h3 className="article-title">{setup.name}</h3>
+        {setup.description && (
+          <p className="article-preview">
+            {setup.description.substring(0, 150)}{setup.description.length > 150 ? '...' : ''}
+          </p>
         )}
-        {!isDraft && (
-          <div className="card-buttons">
-            <button className="btn-view" onClick={() => navigate(`/setups/${setup.id}`)}>
-              <Eye size={14} /> View
-            </button>
-            <button className="btn-delete" onClick={() => setDeleteTarget({ id: setup.id, isDraft: false, name: setup.name })} title="Delete this published setup" aria-label="Delete published setup">
-              <Trash2 size={14} />
-            </button>
+        {setup.tags && setup.tags.length > 0 && (
+          <div className="my-article-tags">
+            {setup.tags.map((tag) => <span key={tag} className="my-article-tag">{tag}</span>)}
           </div>
         )}
+        <div className="article-meta">
+          <span className="meta-item"><Home size={14} /> {deviceCount(setup)} devices</span>
+          <span className="meta-item">
+            <span className="label">Likes:</span> {setup.likeCount || 0}
+          </span>
+          <span className="meta-item">
+            <span className="label">Comments:</span> {setup.commentCount || 0}
+          </span>
+          <span className={`status-badge ${isDraft ? 'draft' : 'published'} created-at`}>
+            {isDraft ? 'Draft' : 'Published'}
+          </span>
+        </div>
+        {isDraft && setup.copiedFromId && (
+          <div className="copied-from-banner">
+            <ExternalLink size={12} />
+            <span>Copied from another setup</span>
+          </div>
+        )}
+      </div>
+      <div className="card-buttons">
+        {isDraft ? (
+          <>
+            <button className="btn-edit" onClick={() => navigate(`/builder?setupId=${setup.id}`)} title="Edit in builder">
+              <Edit3 size={14} /> Edit
+            </button>
+            {setup.copiedFromId && (
+              <button className="btn-view" onClick={() => navigate(`/setups/${setup.copiedFromId}`)} title="See the original">
+                <Eye size={14} /> View original
+              </button>
+            )}
+            <button
+              className="btn-publish"
+              onClick={() => {
+                setPublishTarget({ id: setup.id, name: setup.name });
+                setPublishDescription(setup.description || '');
+                setPublishSelectedTags(setup.tags || []);
+              }}
+            >
+              Publish
+            </button>
+          </>
+        ) : (
+          <button className="btn-view" onClick={() => navigate(`/setups/${setup.id}`)}>
+            <Eye size={14} /> View
+          </button>
+        )}
+        <button
+          className="btn-delete"
+          onClick={() => setDeleteTarget({ id: setup.id, isDraft, name: setup.name })}
+          title={isDraft ? 'Delete this draft' : 'Delete this published setup'}
+          aria-label={isDraft ? 'Delete draft' : 'Delete published setup'}
+        >
+          <Trash2 size={14} />
+        </button>
       </div>
     </div>
   );
 
+  const activeList = activeTab === 'drafts' ? filteredDrafts : filteredPublished;
+  const emptyCopy = activeTab === 'drafts' ? 'No drafts yet.' : 'No published setups yet.';
+
   return (
-    <div className="mysetups-container">
+    <div className={`my-articles-container mysetups-container ${isDark ? 'dark' : 'light'}`}>
+      <div className="articles-header">
+        <h2>My Setups</h2>
+        <button className="create-btn" onClick={handleOpenModal}>
+          <Plus size={18} /> New Setup
+        </button>
+      </div>
+
       <div className="search-bar">
         <Tag size={18} className="search-icon" />
         <input type="text" placeholder="Search for a setup" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="tabs-container">
-        <button className={`tab-btn ${activeTab === 'drafts' ? 'active' : ''}`} onClick={() => setActiveTab('drafts')}>Drafts</button>
-        <button className={`tab-btn ${activeTab === 'published' ? 'active' : ''}`} onClick={() => setActiveTab('published')}>Published</button>
+      <div className="articles-tabs">
+        <button
+          type="button"
+          className={`articles-tab ${activeTab === 'drafts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('drafts')}
+          aria-pressed={activeTab === 'drafts'}
+        >
+          Drafts {drafts.length > 0 && <span className="tab-count">{drafts.length}</span>}
+        </button>
+        <button
+          type="button"
+          className={`articles-tab ${activeTab === 'published' ? 'active' : ''}`}
+          onClick={() => setActiveTab('published')}
+          aria-pressed={activeTab === 'published'}
+        >
+          Published {published.length > 0 && <span className="tab-count">{published.length}</span>}
+        </button>
       </div>
 
       {loading ? (
-        <div className="loading-state">Loading setups...</div>
+        <p>Loading setups...</p>
+      ) : activeList.length === 0 ? (
+        <div className="empty-state"><p>{emptyCopy}</p></div>
       ) : (
         <>
-          {activeTab === 'drafts' && (
-            <div className="cards-grid">
-              {filteredDrafts.length > 0 ? filteredDrafts.map((s) => renderSetupCard(s, true)) : <div className="empty-state">No drafts found</div>}
-              <div className="setup-card add-card" onClick={handleOpenModal} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenModal(); } }} role="button" tabIndex={0}>
-                <div className="add-content"><Plus size={32} className="add-icon" /><span>Adaugă setup nou</span></div>
-              </div>
-            </div>
+          <div className="articles-list">
+            {activeList.map((s) => renderSetupCard(s, activeTab === 'drafts'))}
+          </div>
+          {!search && activeTab === 'drafts' && (
+            <Pagination currentPage={draftsPage} totalPages={draftsTotalPages} onPageChange={setDraftsPage} />
           )}
-          {activeTab === 'published' && (
-            <div className="cards-grid">
-              {filteredPublished.length > 0 ? filteredPublished.map((s) => renderSetupCard(s, false)) : <div className="empty-state">No published setups found</div>}
-            </div>
+          {!search && activeTab === 'published' && (
+            <Pagination currentPage={publishedPage} totalPages={publishedTotalPages} onPageChange={setPublishedPage} />
           )}
         </>
       )}

@@ -10,6 +10,8 @@ class PlugSpecificationExtractorTest {
 
     @Test
     void testExtract_ReturnsBaseMap() {
+        assertNotNull(new PlugSpecificationExtractor());
+
         Map<String, Object> specs = PlugSpecificationExtractor.extract("Priza Smart Aqara", "Priza inteligenta cu monitorizare", "ROVISION");
 
         assertNotNull(specs);

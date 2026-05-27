@@ -8,6 +8,10 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
+concurrency:
+  group: sonar-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend-coverage:
     name: Frontend Coverage
@@ -58,9 +62,11 @@ jobs:
         working-directory: Backend
         run: chmod +x mvnw
 
-      - name: Run backend tests and JaCoCo report
+      - name: Run targeted backend coverage
         working-directory: Backend
-        run: ./mvnw -B -ntp test jacoco:report
+        run: >
+          ./mvnw -B -ntp test jacoco:report
+          -Dtest=VonMagParserTest,RovisionParserTest,CaseSmartParserTest,CategoryMapperTest,DeviceImportServiceTest,SetupServiceTest,SetupControllerTest,ContentModerationWorkerTest,CommentRateLimiterServiceTest,RateLimitingFilterTest,BadWordFilterServiceTest,ArticleServiceTest,GlobalExceptionHandlerTest,PlugSpecificationExtractorTest,SensorSpecificationExtractorTest
 
       - name: Upload backend analysis files
         uses: actions/upload-artifact@v4

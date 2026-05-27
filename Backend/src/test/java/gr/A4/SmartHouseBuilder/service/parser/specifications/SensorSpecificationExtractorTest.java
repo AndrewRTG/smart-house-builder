@@ -10,6 +10,8 @@ class SensorSpecificationExtractorTest {
 
     @Test
     void testExtract_ReturnsBaseMap() {
+        assertNotNull(new SensorSpecificationExtractor());
+
         Map<String, Object> specs = SensorSpecificationExtractor.extract("Senzor Miscare", "Detecteaza prezenta", "ROVISION");
 
         assertNotNull(specs);

@@ -112,7 +112,8 @@ class WishlistServiceTest {
         var pageable = PageRequest.of(0, 10);
         var page = new PageImpl<>(List.of(new Wishlist()));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
-        when(wishlistRepository.findByUserId(5L, pageable)).thenReturn(page);
+
+        when(wishlistRepository.findByUserIdAndSetupIsNotNull(5L, pageable)).thenReturn(page);
 
         var result = wishlistService.getUserWishlist("user@example.com", pageable);
 

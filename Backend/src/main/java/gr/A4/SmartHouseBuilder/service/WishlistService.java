@@ -64,7 +64,7 @@ public class WishlistService {
 
     public Page<Wishlist> getUserWishlist(String email, Pageable pageable) {
         Long userId = getUserId(email);
-        return wishlistRepository.findByUserId(userId, pageable);
+        return wishlistRepository.findByUserIdAndSetupIsNotNull(userId, pageable);
     }
 
     public long getWishlistCount(Long setupId) {

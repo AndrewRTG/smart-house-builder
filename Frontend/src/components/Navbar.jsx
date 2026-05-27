@@ -33,6 +33,7 @@ function Navbar({ darkMode, setDarkMode }) {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(isTokenValid());
   const [user, setUser] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const refreshAuthState = useCallback(() => {
     const valid = isTokenValid();
@@ -128,13 +129,14 @@ function Navbar({ darkMode, setDarkMode }) {
 
   const avatarText = user?.username?.charAt(0)?.toUpperCase() || "U";
   const userAvatar = user?.avatarUrl || user?.profileImageUrl || user?.imageUrl || null;
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
   const [avatarError, setAvatarError] = useState(false);
   // Reset error flag when URL changes (după un nou upload)
   useEffect(() => { setAvatarError(false); }, [userAvatar]);
 
   return (
     <nav className={`builder-navbar ${darkMode ? "dark-mode" : ""}`}>
-      <Link className="builder-navbar-logo" to="/">
+      <Link className="builder-navbar-logo" to="/" onClick={closeMobileMenu}>
         <div className="builder-navbar-logo-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
@@ -145,6 +147,17 @@ function Navbar({ darkMode, setDarkMode }) {
           Smart <span className="builder-navbar-logo-accent">House</span> Builder
         </span>
       </Link>
+      <button
+          className={`builder-navbar-mobile-toggle ${isMobileMenuOpen ? "open" : ""}`}
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded={isMobileMenuOpen}
+          onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
 
       <div className="builder-navbar-links">
         <Link to="/builder" className="builder-navbar-link">Builder</Link>
@@ -225,6 +238,81 @@ function Navbar({ darkMode, setDarkMode }) {
               )}
             </div>
           </div>
+        </button>
+      </div>
+      <div className={`builder-navbar-mobile-menu ${isMobileMenuOpen ? "open" : ""}`}>
+        <Link to="/builder" className="builder-navbar-mobile-link" onClick={closeMobileMenu}>
+          Builder
+        </Link>
+
+        <Link to="/products" className="builder-navbar-mobile-link" onClick={closeMobileMenu}>
+          Products
+        </Link>
+
+        <Link to="/community" className="builder-navbar-mobile-link" onClick={closeMobileMenu}>
+          Community
+        </Link>
+
+        <button
+            className="builder-navbar-mobile-primary"
+            type="button"
+            onClick={() => {
+              closeMobileMenu();
+              navigate("/builder?mode=wizard");
+            }}
+        >
+          Setup Wizard
+        </button>
+
+        {isLoggedIn ? (
+            <>
+              <button
+                  className="builder-navbar-mobile-link builder-navbar-mobile-button"
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    navigate("/profile");
+                  }}
+              >
+                Profile
+              </button>
+
+              <Link to="/mfa/settings" className="builder-navbar-mobile-link" onClick={closeMobileMenu}>
+                MFA
+              </Link>
+
+              <button
+                  type="button"
+                  className="builder-navbar-mobile-link builder-navbar-mobile-button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    handleLogout();
+                  }}
+              >
+                Logout
+              </button>
+            </>
+        ) : (
+            <>
+              <Link to="/register" className="builder-navbar-mobile-link" onClick={closeMobileMenu}>
+                Register
+              </Link>
+
+              <Link to="/login" className="builder-navbar-mobile-link" onClick={closeMobileMenu}>
+                Log In
+              </Link>
+            </>
+        )}
+
+        <button
+            className="builder-navbar-mobile-link builder-navbar-mobile-button"
+            type="button"
+            onClick={() => {
+              setDarkMode(!darkMode);
+              closeMobileMenu();
+            }}
+        >
+          {darkMode ? "Light mode" : "Dark mode"}
         </button>
       </div>
     </nav>

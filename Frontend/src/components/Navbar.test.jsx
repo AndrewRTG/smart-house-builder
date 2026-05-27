@@ -27,9 +27,9 @@ describe('Navbar', () => {
     const setDarkMode = vi.fn();
     renderWithRouter(<Navbar darkMode={false} setDarkMode={setDarkMode} />);
 
-    expect(screen.getByText('Builder')).toBeInTheDocument();
-    expect(screen.getByText('Register')).toBeInTheDocument();
-    expect(screen.getByText('Log In')).toBeInTheDocument();
+    expect(screen.getAllByText('Builder').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Register').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Log In').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByLabelText('Toggle dark mode'));
     expect(setDarkMode).toHaveBeenCalledWith(true);
@@ -52,7 +52,7 @@ describe('Navbar', () => {
     fireEvent.error(screen.getByAltText('Profile'));
     expect(screen.getByText('A')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Setup Wizard'));
+    fireEvent.click(screen.getAllByText('Setup Wizard')[0]);
     expect(screen.getByText('Builder route')).toBeInTheDocument();
   });
 
@@ -69,8 +69,8 @@ describe('Navbar', () => {
       </Routes>
     );
 
-    expect(await screen.findByText('Logout')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Logout'));
+    expect(await screen.findAllByText('Logout')).toHaveLength(2);
+    fireEvent.click(screen.getAllByText('Logout')[0]);
 
     await waitFor(() => expect(screen.getByText('Login route')).toBeInTheDocument());
     expect(localStorage.getItem('accessToken')).toBeNull();
@@ -84,8 +84,8 @@ describe('Navbar', () => {
 
     renderWithRouter(<Navbar darkMode={false} setDarkMode={vi.fn()} />);
 
-    expect(screen.getByText('Log In')).toBeInTheDocument();
-    expect(screen.getByText('Register')).toBeInTheDocument();
+    expect(screen.getAllByText('Log In').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Register').length).toBeGreaterThan(0);
   });
 
   it('treats malformed and non-expiring tokens as valid states', async () => {
@@ -119,7 +119,7 @@ describe('Navbar', () => {
 
     localStorage.removeItem('accessToken');
     window.dispatchEvent(new StorageEvent('storage', { key: 'accessToken' }));
-    await waitFor(() => expect(screen.getByText('Log In')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Log In').length).toBeGreaterThan(0));
 
     localStorage.setItem('accessToken', makeToken(Math.floor(Date.now() / 1000) + 600));
     window.dispatchEvent(new StorageEvent('storage', { key: null }));

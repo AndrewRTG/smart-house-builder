@@ -32,6 +32,8 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     @Query("DELETE FROM Wishlist w WHERE w.setup.id = :setupId")
     void deleteAllBySetupId(@Param("setupId") Long setupId);
 
+    Page<Wishlist> findByUserIdAndSetupIsNotNull(Long userId, Pageable pageable);
+
     //Pentru deviceuri
     Optional<Wishlist> findByUserIdAndDeviceId(Long userId, Integer deviceId);
 

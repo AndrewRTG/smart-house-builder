@@ -387,12 +387,13 @@ const SetupWizard = ({ onFinish }) => {
     const handleStartProject = (selectedProducts) => {
         const deviceIds = selectedProducts.map(p => Number(p.id));
         sessionStorage.setItem('wizard_selected_devices', JSON.stringify(deviceIds));
-        if (selectedSetup?.id) {
-            navigate(`/builder/${selectedSetup.id}`);
-        } else {
-            navigate('/builder');
+
+        if (onFinish) {
+            onFinish(selectedProducts, selectedSetup);
+            return;
         }
-        if (onFinish) onFinish(selectedProducts);
+
+        navigate(selectedSetup?.id ? `/builder?setupId=${encodeURIComponent(selectedSetup.id)}` : '/builder');
     };
 
     useEffect(() => {

@@ -547,9 +547,9 @@ describe('SetupWizard', () => {
             await screen.findByText('Recommended Devices');
         };
 
-        const selectSetupAndGoToResults = async () => {
+        const selectSetupAndGoToResults = async (props = {}) => {
             storeState.step = 1;
-            const view = renderWizard();
+            const view = renderWizard(props);
 
             const card = await screen.findByText('Living Room');
             fireEvent.click(card.closest('div[style]'));
@@ -557,7 +557,7 @@ describe('SetupWizard', () => {
             storeState.step = 4;
             view.rerender(
                 <MemoryRouter>
-                    <SetupWizard />
+                    <SetupWizard {...props} />
                 </MemoryRouter>
             );
 
@@ -815,13 +815,13 @@ describe('SetupWizard', () => {
             });
         });
 
-        it('navigates to /builder/:id on "Start Project" with a selected setup', async () => {
+        it('navigates to /builder?setupId=... on "Start Project" with a selected setup', async () => {
             await selectSetupAndGoToResults();
 
             fireEvent.click(screen.getByText('Start Project 〉'));
 
             await waitFor(() => {
-                expect(mockNavigate).toHaveBeenCalledWith('/builder/setup-1');
+                expect(mockNavigate).toHaveBeenCalledWith('/builder?setupId=setup-1');
             });
         });
 
@@ -852,6 +852,26 @@ describe('SetupWizard', () => {
             fireEvent.click(screen.getByText('Start Project 〉'));
 
             await waitFor(() => expect(onFinish).toHaveBeenCalled());
+        });
+
+        it('passes the selected setup to onFinish when Start Project is clicked', async () => {
+            const onFinish = vi.fn();
+
+            await selectSetupAndGoToResults({ onFinish });
+
+            fireEvent.click(screen.getByText('Start Project 〉'));
+
+            await waitFor(() => {
+                expect(onFinish).toHaveBeenCalledWith(
+                    expect.any(Array),
+                    expect.objectContaining({
+                        id: 'setup-1',
+                        name: 'Living Room',
+                    })
+                );
+            });
+
+            expect(mockNavigate).not.toHaveBeenCalled();
         });
 
         it('navigating Back from results returns to wizard', async () => {

@@ -1,5 +1,6 @@
 package gr.A4.SmartHouseBuilder.controller;
 
+import gr.A4.SmartHouseBuilder.entity.Device;
 import gr.A4.SmartHouseBuilder.entity.Setup;
 import gr.A4.SmartHouseBuilder.entity.Wishlist;
 import gr.A4.SmartHouseBuilder.security.JwtAuthenticationFilter;
@@ -45,7 +46,8 @@ class WishlistControllerTest {
     @MockitoBean
     private UserDetailsServiceImpl userDetailsService;
 
-    private Wishlist mockWishlist;
+    private Wishlist mockSetupWishlist;
+    private Wishlist mockDeviceWishlist;
 
     @BeforeEach
     void setUp() {
@@ -53,10 +55,21 @@ class WishlistControllerTest {
         mockSetup.setId(1L);
         mockSetup.setName("Dream Setup");
 
-        mockWishlist = new Wishlist();
-        mockWishlist.setId(100L);
-        mockWishlist.setSetup(mockSetup);
-        mockWishlist.setCreatedAt(LocalDateTime.now());
+        mockSetupWishlist = new Wishlist();
+        mockSetupWishlist.setId(100L);
+        mockSetupWishlist.setSetup(mockSetup);
+        mockSetupWishlist.setCreatedAt(LocalDateTime.now());
+
+        Device mockDevice = new Device();
+        mockDevice.setId(10);
+        mockDevice.setName("Smart Bulb");
+        mockDevice.setBrand("Philips");
+        mockDevice.setBestPrice(99.99);
+
+        mockDeviceWishlist = new Wishlist();
+        mockDeviceWishlist.setId(101L);
+        mockDeviceWishlist.setDevice(mockDevice);
+        mockDeviceWishlist.setCreatedAt(LocalDateTime.now());
     }
 
     @Test
@@ -73,7 +86,7 @@ class WishlistControllerTest {
     @Test
     @WithMockUser(username = "marius")
     void getUserWishlist_ReturnsOk() throws Exception {
-        var page = new PageImpl<>(List.of(mockWishlist));
+        var page = new PageImpl<>(List.of(mockSetupWishlist));
         when(wishlistService.getUserWishlist(eq("marius"), any(PageRequest.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/wishlists?page=0&size=10"))
@@ -90,5 +103,43 @@ class WishlistControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.setupId").value(1))
                 .andExpect(jsonPath("$.count").value(42));
+    }
+
+    @Test
+    @WithMockUser(username = "marius")
+    void toggleDeviceWishlist_ReturnsOk() throws Exception {
+        when(wishlistService.toggleDeviceWishlist(10, "marius")).thenReturn(true);
+        when(wishlistService.getDeviceWishlistCount(10)).thenReturn(5L);
+
+        mockMvc.perform(post("/api/v1/devices/10/wishlist"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deviceId").value(10))
+                .andExpect(jsonPath("$.isWishlisted").value(true))
+                .andExpect(jsonPath("$.wishlistCount").value(5));
+    }
+
+    @Test
+    @WithMockUser(username = "marius")
+    void getUserDeviceWishlist_ReturnsOk() throws Exception {
+        var page = new PageImpl<>(List.of(mockDeviceWishlist));
+        when(wishlistService.getUserDeviceWishlist(eq("marius"), any(PageRequest.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/wishlists/devices?page=0&size=10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(101))
+                .andExpect(jsonPath("$.content[0].deviceId").value(10))
+                .andExpect(jsonPath("$.content[0].deviceName").value("Smart Bulb"))
+                .andExpect(jsonPath("$.content[0].deviceBrand").value("Philips"))
+                .andExpect(jsonPath("$.content[0].deviceBestPrice").value(99.99));
+    }
+
+    @Test
+    void getDeviceWishlistCount_ReturnsOk() throws Exception {
+        when(wishlistService.getDeviceWishlistCount(10)).thenReturn(15L);
+
+        mockMvc.perform(get("/api/v1/devices/10/wishlist-count"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deviceId").value(10))
+                .andExpect(jsonPath("$.count").value(15));
     }
 }

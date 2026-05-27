@@ -102,7 +102,7 @@ describe('SetupDetailPage', () => {
 
     fireEvent.click(wishlistButton);
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/42/wishlist',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/42/wishlist`,
       expect.objectContaining({ method: 'POST' })
     ));
     expect(wishlistButton).toHaveClass('saved');
@@ -161,5 +161,106 @@ describe('SetupDetailPage', () => {
     expect(screen.getAllByText('Setup original').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Fara status').length).toBeGreaterThan(0);
     expect(screen.getByText(/Comments for SETUP 55\s+ana/)).toBeInTheDocument();
+  });
+
+  it('renders thumbnail device snapshots and exercises the lightbox controls', async () => {
+    fetch.mockResolvedValueOnce(jsonResponse({
+      ...setup,
+      thumbnailUrl: '/layout.png',
+      deviceSnapshots: JSON.stringify([
+        { id: 1, name: 'Matter Hub', brand: 'Aqara', priceEUR: 99.49 },
+        { id: 2, name: '', priceEUR: null },
+      ]),
+      description: 'x '.repeat(120),
+      status: 'draft',
+      isPublic: false,
+      publishedAt: null,
+    }));
+
+    renderSetup('/setups/88');
+
+    expect(await screen.findByText('Matter Hub')).toBeInTheDocument();
+    expect(screen.getByText('Aqara')).toBeInTheDocument();
+    expect(screen.getByText('Total: 99 EUR')).toBeInTheDocument();
+    expect(screen.getAllByText(/^x x x/).length).toBeGreaterThan(1);
+
+    const preview = screen.getByTitle('Click pentru zoom');
+    fireEvent.keyDown(preview, { key: 'Enter' });
+    expect(screen.getByLabelText('Close zoom')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle('Zoom in (+)'));
+    expect(screen.getByText('125%')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Zoom out (-)'));
+    expect(screen.getByText('100%')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Reset (0)'));
+    fireEvent.keyDown(window, { key: '+' });
+    expect(screen.getByText('125%')).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: '-' });
+    fireEvent.keyDown(window, { key: '0' });
+    expect(screen.getByText('100%')).toBeInTheDocument();
+
+    fireEvent.error(screen.getAllByAltText(setup.name)[0]);
+    fireEvent.click(screen.getByTitle('Close (Esc)'));
+    expect(screen.queryByLabelText('Close zoom')).not.toBeInTheDocument();
+
+    fireEvent.click(preview);
+    const overlay = screen.getByLabelText('Close zoom');
+    fireEvent.click(screen.getAllByAltText(setup.name)[1]);
+    expect(screen.getByLabelText('Close zoom')).toBeInTheDocument();
+    fireEvent.click(overlay);
+    expect(screen.queryByLabelText('Close zoom')).not.toBeInTheDocument();
+  });
+
+  it('handles fetch, like, wishlist and malformed snapshot failures', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fetch.mockRejectedValueOnce(new Error('load failed'));
+    const { unmount } = renderSetup('/setups/99');
+    expect(await screen.findByText('Setup not found')).toBeInTheDocument();
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch setup:', expect.any(Error));
+    unmount();
+
+    fetch.mockResolvedValueOnce(jsonResponse({
+      ...setup,
+      id: 91,
+      deviceSnapshots: '{bad json',
+    }));
+    const first = renderSetup('/setups/91');
+    expect(await screen.findByText(setup.name)).toBeInTheDocument();
+    expect(screen.queryByText('Device-uri folosite')).not.toBeInTheDocument();
+    first.unmount();
+
+    getCurrentUser.mockResolvedValueOnce({ username: 'ana' });
+    fetch.mockImplementation((url) => {
+      const target = String(url);
+      if (target.endsWith('/like')) return Promise.reject(new Error('like offline'));
+      if (target.endsWith('/wishlist')) return Promise.resolve(jsonResponse({}, false, 401));
+      return Promise.resolve(jsonResponse(setup));
+    });
+
+    const second = renderSetup('/setups/92');
+    expect(await screen.findByText(setup.name)).toBeInTheDocument();
+    const [likeButton, wishlistButton] = second.container.querySelectorAll('.setup-detail-actions .action-btn');
+    fireEvent.click(likeButton);
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('Failed to toggle like:', expect.any(Error)));
+
+    fireEvent.click(wishlistButton);
+    expect(await screen.findByText('Session expired. Please login again.')).toBeInTheDocument();
+    expect(window.location.href).toBe('/login');
+    second.unmount();
+
+    window.location.href = '';
+    localStorage.setItem('accessToken', 'token');
+    getCurrentUser.mockResolvedValueOnce({ username: 'ana' });
+    fetch.mockImplementation((url) => {
+      const target = String(url);
+      if (target.endsWith('/wishlist')) return Promise.reject(new Error('wishlist offline'));
+      return Promise.resolve(jsonResponse(setup));
+    });
+
+    const third = renderSetup('/setups/93');
+    expect(await screen.findByText(setup.name)).toBeInTheDocument();
+    const failedWishlistButton = third.container.querySelectorAll('.setup-detail-actions .action-btn')[1];
+    fireEvent.click(failedWishlistButton);
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('Failed to toggle wishlist:', expect.any(Error)));
   });
 });

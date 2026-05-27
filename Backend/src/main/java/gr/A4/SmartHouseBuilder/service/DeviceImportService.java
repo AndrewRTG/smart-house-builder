@@ -29,73 +29,171 @@ public class DeviceImportService {
 
     @Transactional
     public void importDevicesFromXml(String storeIdentifier, InputStream xmlStream) {
-        // 1. Obținem parserul potrivit de la Factory (ex: pentru "ROVISION")
         StoreParser parser = parserFactory.getParserForStore(storeIdentifier);
 
-        // 2. Parsăm XML-ul și obținem lista de produse (DTOs)
         List<DeviceImportDto> importedDevices = parser.parse(xmlStream);
 
-        // 3. Trecem prin fiecare produs și îl salvăm în baza de date
+        int savedCount = 0;
+        int skippedCount = 0;
+
         for (DeviceImportDto dto : importedDevices) {
-            saveOrUpdateDevice(dto);
+            boolean saved = saveOrUpdateDevice(dto);
+
+            if (saved) {
+                savedCount++;
+            } else {
+                skippedCount++;
+            }
         }
 
-        System.out.println("Import finalizat pentru magazinul: " + storeIdentifier + ". S-au procesat " + importedDevices.size() + " produse.");
+        System.out.println("Import finalizat pentru magazinul: " + storeIdentifier);
+        System.out.println("Produse primite de la parser: " + importedDevices.size());
+        System.out.println("Produse salvate/actualizate: " + savedCount);
+        System.out.println("Produse sarite: " + skippedCount);
     }
 
-    private void saveOrUpdateDevice(DeviceImportDto dto) {
-        // Verificăm dacă produsul există deja în baza de date (după nume)
+    private boolean saveOrUpdateDevice(DeviceImportDto dto) {
+        if (!isValidDto(dto)) {
+            System.out.println("SARIT: DTO invalid: " + getSafeName(dto));
+            return false;
+        }
+
+        Category category = categoryRepository.findById(dto.getCategoryId()).orElse(null);
+
+        if (category == null) {
+            System.out.println("SARIT: Produsul '" + dto.getName() + "' are categoryId invalid: " + dto.getCategoryId());
+            return false;
+        }
+
         Optional<Device> existingDeviceOpt = deviceRepository.findByName(dto.getName());
+
         Device device;
 
         if (existingDeviceOpt.isPresent()) {
             device = existingDeviceOpt.get();
-            if (device.getBestPrice() == null || dto.getPrice() < device.getBestPrice()) {
+
+            updateExistingDeviceBasicFields(device, dto, category);
+
+            if (isBetterPrice(dto.getPrice(), device.getBestPrice())) {
                 device.setBestPrice(dto.getPrice());
-                device = deviceRepository.save(device);
+                device.setBestPriceUrl(dto.getProductUrl());
             }
+
+            device = deviceRepository.save(device);
         } else {
-            device = new Device();
-            device.setName(dto.getName());
-            device.setBrand(dto.getBrand());
-            device.setDescription(dto.getDescription());
-            device.setImageUrl(dto.getImageUrl());
-            device.setBestPrice(dto.getPrice());
-
-            // --- LOGICA NOUĂ DE SIGURANȚĂ PENTRU CATEGORIE ---
-
-            // Încercăm să găsim categoria primită de la parser
-            Category category = null;
-            if (dto.getCategoryId() != null) {
-                category = categoryRepository.findById(dto.getCategoryId()).orElse(null);
-            }
-
-            // Dacă parserul nu a dat categorie (null) SAU ID-ul nu există în DB
-            if (category == null) {
-                // Încercăm să luăm categoria cu ID 1 (Fallback)
-                category = categoryRepository.findById(1).orElse(null);
-            }
-
-            // Dacă am găsit o categorie (fie a parserului, fie cea de fallback), o setăm
-            if (category != null) {
-                device.setCategory(category);
-            } else {
-                // Dacă nici categoria 1 nu există, dăm skip la produs ca să nu crape tot importul
-                System.out.println("SĂRIT: Produsul '" + dto.getName() + "' nu are categorie și ID 1 lipsește din DB.");
-                return;
-            }
-            // ------------------------------------------------
-
+            device = createNewDevice(dto, category);
             device = deviceRepository.save(device);
         }
 
-        // Adăugăm la istoricul de prețuri
+        savePriceHistory(device, dto);
+
+        return true;
+    }
+
+    private Device createNewDevice(DeviceImportDto dto, Category category) {
+        Device device = new Device();
+
+        device.setName(dto.getName());
+        device.setBrand(dto.getBrand());
+        device.setDescription(dto.getDescription());
+        device.setImageUrl(dto.getImageUrl());
+        device.setCategory(category);
+
+        device.setBestPrice(dto.getPrice());
+        device.setBestPriceUrl(dto.getProductUrl());
+
+        device.setCommunicationProtocol(dto.getCommunicationProtocol());
+        device.setSpecifications(dto.getSpecifications());
+
+        return device;
+    }
+
+    private void updateExistingDeviceBasicFields(Device device, DeviceImportDto dto, Category category) {
+        if (isBlank(device.getBrand()) && !isBlank(dto.getBrand())) {
+            device.setBrand(dto.getBrand());
+        }
+
+        if (isBlank(device.getDescription()) && !isBlank(dto.getDescription())) {
+            device.setDescription(dto.getDescription());
+        }
+
+        if (isBlank(device.getImageUrl()) && !isBlank(dto.getImageUrl())) {
+            device.setImageUrl(dto.getImageUrl());
+        }
+
+        if (device.getCategory() == null) {
+            device.setCategory(category);
+        }
+
+        if (isBlank(device.getCommunicationProtocol()) && !isBlank(dto.getCommunicationProtocol())) {
+            device.setCommunicationProtocol(dto.getCommunicationProtocol());
+        }
+        if (dto.getSpecifications() != null) {
+            device.setSpecifications(dto.getSpecifications());
+        }
+    }
+
+    private void savePriceHistory(Device device, DeviceImportDto dto) {
         PriceHistory priceHistory = new PriceHistory();
+
         priceHistory.setDevice(device);
         priceHistory.setStoreName(dto.getSourceStore());
         priceHistory.setPrice(dto.getPrice());
+        priceHistory.setProductUrl(dto.getProductUrl());
         priceHistory.setScrapedAt(LocalDateTime.now());
 
         priceHistoryRepository.save(priceHistory);
+    }
+
+    private boolean isValidDto(DeviceImportDto dto) {
+        if (dto == null) {
+            return false;
+        }
+
+        if (isBlank(dto.getName())) {
+            return false;
+        }
+
+        if (dto.getPrice() == null || dto.getPrice() <= 0) {
+            return false;
+        }
+
+        if (dto.getCategoryId() == null) {
+            return false;
+        }
+
+        if (isBlank(dto.getSourceStore())) {
+            return false;
+        }
+
+        if (isBlank(dto.getProductUrl())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isBetterPrice(Double newPrice, Double currentBestPrice) {
+        if (newPrice == null || newPrice <= 0) {
+            return false;
+        }
+
+        if (currentBestPrice == null || currentBestPrice <= 0) {
+            return true;
+        }
+
+        return newPrice < currentBestPrice;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String getSafeName(DeviceImportDto dto) {
+        if (dto == null || dto.getName() == null) {
+            return "null";
+        }
+
+        return dto.getName();
     }
 }

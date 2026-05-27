@@ -118,6 +118,18 @@ public class ArticleService {
         return articleRepository.findByUserIdAndStatus(userId, ArticleStatus.PUBLISHED);
     }
 
+    @Transactional(readOnly = true)
+    public Page<Article> getUserDrafts(String email, Pageable pageable) {
+        Long userId = getUserId(email);
+        return articleRepository.findByUserIdAndStatus(userId, ArticleStatus.DRAFT, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> getUserPublished(String email, Pageable pageable) {
+        Long userId = getUserId(email);
+        return articleRepository.findByUserIdAndStatus(userId, ArticleStatus.PUBLISHED, pageable);
+    }
+
     public Page<Article> getAllArticles(Pageable pageable) {
         // Public feed only — drafts must never leak. Prior versions called
         // findAll() and would have started returning drafts the moment the

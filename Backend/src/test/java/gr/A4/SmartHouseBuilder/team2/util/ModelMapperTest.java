@@ -1,11 +1,17 @@
 package gr.A4.SmartHouseBuilder.team2.util;
 
 import gr.A4.SmartHouseBuilder.model.PlacedDevice;
+import gr.A4.SmartHouseBuilder.model.Room;
+import gr.A4.SmartHouseBuilder.model.Segment2D;
 import gr.A4.SmartHouseBuilder.model.SetupBuild;
 import gr.A4.SmartHouseBuilder.team2.dto.CoordinatesDTO;
 import gr.A4.SmartHouseBuilder.team2.dto.DeviceDTO;
+import gr.A4.SmartHouseBuilder.team2.dto.PointDTO;
 import gr.A4.SmartHouseBuilder.team2.dto.PlacedDeviceRichDTO;
+import gr.A4.SmartHouseBuilder.team2.dto.RoomDTO;
 import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
+import gr.A4.SmartHouseBuilder.team2.dto.WallDTO;
+import gr.A4.SmartHouseBuilder.team2.dto.WindowDTO;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -28,12 +34,16 @@ class ModelMapperTest {
     @Test
     void toEngineModel_copiesScalarFields() {
         SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setId("layout-1");
+        dto.setScale("1:50");
         dto.setMaxBudget(2500.0);
         dto.setTargetEcosystem("Google Home");
 
         SetupBuild model = mapper.toEngineModel(dto);
 
         assertNotNull(model);
+        assertEquals("layout-1", model.getId());
+        assertEquals("1:50", model.getScale());
         assertEquals(2500.0, model.getMaxBudget());
         assertEquals("Google Home", model.getTargetEcosystem());
     }
@@ -95,6 +105,72 @@ class ModelMapperTest {
     }
 
     @Test
+    void toEngineModel_mapsRooms() {
+        SetupBuildDTO dto = new SetupBuildDTO();
+
+        WallDTO wall = new WallDTO();
+        wall.setX1(0.0);
+        wall.setY1(0.0);
+        wall.setX2(5.0);
+        wall.setY2(0.0);
+
+        PointDTO door = new PointDTO();
+        door.setX(1.0);
+        door.setY(0.0);
+
+        WindowDTO window = new WindowDTO();
+        window.setX(2.0);
+        window.setY(0.0);
+        window.setWidth(1.5);
+
+        PointDTO plug = new PointDTO();
+        plug.setX(3.0);
+        plug.setY(0.2);
+
+        RoomDTO roomDto = new RoomDTO();
+        roomDto.setId("room-001");
+        roomDto.setSquareMeters(24.0);
+        roomDto.setWallType("concrete");
+        roomDto.setWalls(List.of(wall));
+        roomDto.setDoors(List.of(door));
+        roomDto.setWindows(List.of(window));
+        roomDto.setPlugs(List.of(plug));
+
+        dto.setRooms(List.of(roomDto));
+
+        SetupBuild model = mapper.toEngineModel(dto);
+
+        assertNotNull(model.getRooms());
+        assertEquals(1, model.getRooms().size());
+
+        Room room = model.getRooms().get(0);
+        assertEquals("room-001", room.getId());
+        assertEquals(24.0, room.getSquareMeters());
+        assertEquals("concrete", room.getWallType());
+
+        Segment2D mappedWall = room.getWalls().get(0);
+        assertEquals(0.0, mappedWall.getX1());
+        assertEquals(0.0, mappedWall.getY1());
+        assertEquals(5.0, mappedWall.getX2());
+        assertEquals(0.0, mappedWall.getY2());
+
+        Segment2D mappedDoor = room.getDoors().get(0);
+        assertEquals(1.0, mappedDoor.getX1());
+        assertEquals(0.0, mappedDoor.getY1());
+        assertEquals(1.0, mappedDoor.getX2());
+        assertEquals(0.0, mappedDoor.getY2());
+
+        Segment2D mappedWindow = room.getWindows().get(0);
+        assertEquals(2.0, mappedWindow.getX1());
+        assertEquals(0.0, mappedWindow.getY1());
+        assertEquals(3.5, mappedWindow.getX2());
+        assertEquals(0.0, mappedWindow.getY2());
+
+        assertEquals(3.0, room.getPlugs().get(0).getX());
+        assertEquals(0.2, room.getPlugs().get(0).getY());
+    }
+
+    @Test
     void toEngineModel_handlesPlacedDeviceWithoutDeviceOrCoordinates() {
         SetupBuildDTO dto = new SetupBuildDTO();
         dto.setDevices(List.of(new PlacedDeviceRichDTO()));
@@ -125,5 +201,72 @@ class ModelMapperTest {
         assertNull(pd.getDevice().getName());
         assertNull(pd.getX());
         assertNull(pd.getY());
+    }
+
+    @Test
+    void toEngineModel_handlesNullRoomEntries() {
+        SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setRooms(Arrays.asList((RoomDTO) null));
+
+        SetupBuild model = mapper.toEngineModel(dto);
+
+        assertNotNull(model.getRooms());
+        assertEquals(1, model.getRooms().size());
+
+        Room room = model.getRooms().get(0);
+        assertNull(room.getId());
+        assertNull(room.getSquareMeters());
+        assertNull(room.getWallType());
+    }
+
+    @Test
+    void toEngineModel_mapsNullNestedRoomElementsToEmptyModels() {
+        SetupBuildDTO dto = new SetupBuildDTO();
+
+        WindowDTO windowWithoutWidth = new WindowDTO();
+        windowWithoutWidth.setX(4.0);
+        windowWithoutWidth.setY(1.0);
+
+        WindowDTO windowWithoutX = new WindowDTO();
+        windowWithoutX.setY(2.0);
+        windowWithoutX.setWidth(3.0);
+
+        RoomDTO roomDto = new RoomDTO();
+        roomDto.setWalls(Arrays.asList((WallDTO) null));
+        roomDto.setDoors(Arrays.asList((PointDTO) null));
+        roomDto.setWindows(Arrays.asList(windowWithoutWidth, windowWithoutX));
+        roomDto.setPlugs(Arrays.asList((PointDTO) null));
+
+        dto.setRooms(List.of(roomDto));
+
+        SetupBuild model = mapper.toEngineModel(dto);
+
+        Room room = model.getRooms().get(0);
+        Segment2D emptyWall = room.getWalls().get(0);
+        assertNull(emptyWall.getX1());
+        assertNull(emptyWall.getY1());
+        assertNull(emptyWall.getX2());
+        assertNull(emptyWall.getY2());
+
+        Segment2D emptyDoor = room.getDoors().get(0);
+        assertNull(emptyDoor.getX1());
+        assertNull(emptyDoor.getY1());
+        assertNull(emptyDoor.getX2());
+        assertNull(emptyDoor.getY2());
+
+        Segment2D windowSameEnd = room.getWindows().get(0);
+        assertEquals(4.0, windowSameEnd.getX1());
+        assertEquals(1.0, windowSameEnd.getY1());
+        assertEquals(4.0, windowSameEnd.getX2());
+        assertEquals(1.0, windowSameEnd.getY2());
+
+        Segment2D windowWithoutStart = room.getWindows().get(1);
+        assertNull(windowWithoutStart.getX1());
+        assertEquals(2.0, windowWithoutStart.getY1());
+        assertNull(windowWithoutStart.getX2());
+        assertEquals(2.0, windowWithoutStart.getY2());
+
+        assertNull(room.getPlugs().get(0).getX());
+        assertNull(room.getPlugs().get(0).getY());
     }
 }

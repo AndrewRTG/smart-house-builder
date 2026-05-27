@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect, lazy, Suspense } from "react";
 import Navbar from "./components/Navbar";
 import ErrorBanner from "./components/ErrorBanner";
@@ -20,12 +20,18 @@ import NotFoundPage from "./pages/NotFoundPage";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProductsPage from "./pages/CatalogPage";
+import ProductPage from "./pages/ProductPage";
 import './App.css';
 
 const BuilderPage = lazy(() => import("./pages/BuilderPage"));
 
 function HomePage() {
-  return <div></div>;
+  const hasToken = Boolean(localStorage.getItem("accessToken"));
+  return <Navigate to={hasToken ? "/profile" : "/login"} replace />;
+}
+function LoginRoute() {
+  const hasToken = Boolean(localStorage.getItem("accessToken"));
+  return hasToken ? <Navigate to="/profile" replace /> : <LoginPage />;
 }
 
 function BuilderLoading({ darkMode }) {
@@ -48,7 +54,7 @@ function AppContent({ darkMode, setDarkMode }) {
 
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginRoute />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/builder"
@@ -59,6 +65,7 @@ function AppContent({ darkMode, setDarkMode }) {
             }
           />
           <Route path="/products" element={<ProductsPage darkMode={darkMode} />} />
+          <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/community" element={<CommunityPage darkMode={darkMode} />} />
           <Route path="/mfa/verify" element={<MfaVerifyPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

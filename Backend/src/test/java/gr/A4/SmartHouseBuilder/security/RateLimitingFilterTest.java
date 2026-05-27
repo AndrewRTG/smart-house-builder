@@ -47,6 +47,32 @@ class RateLimitingFilterTest {
     }
 
     @Test
+    void refreshAndUsernameAvailabilityBypassEvenAfterIpIsLimited() throws Exception {
+        MockHttpServletRequest firstRequest = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+        firstRequest.setRemoteAddr("10.0.0.6");
+        filter.doFilter(firstRequest, new MockHttpServletResponse(), new MockFilterChain());
+
+        MockHttpServletRequest refreshRequest = new MockHttpServletRequest("POST", "/api/v1/auth/refresh");
+        refreshRequest.setRemoteAddr("10.0.0.6");
+        MockHttpServletResponse refreshResponse = new MockHttpServletResponse();
+        MockFilterChain refreshChain = new MockFilterChain();
+
+        filter.doFilter(refreshRequest, refreshResponse, refreshChain);
+
+        MockHttpServletRequest usernameRequest = new MockHttpServletRequest("GET", "/api/v1/auth/check-username");
+        usernameRequest.setRemoteAddr("10.0.0.6");
+        MockHttpServletResponse usernameResponse = new MockHttpServletResponse();
+        MockFilterChain usernameChain = new MockFilterChain();
+
+        filter.doFilter(usernameRequest, usernameResponse, usernameChain);
+
+        assertThat(refreshResponse.getStatus()).isEqualTo(200);
+        assertThat(refreshChain.getRequest()).isNotNull();
+        assertThat(usernameResponse.getStatus()).isEqualTo(200);
+        assertThat(usernameChain.getRequest()).isNotNull();
+    }
+
+    @Test
     void secondProtectedAuthRequestFromSameIpGetsRateLimited() throws Exception {
         MockHttpServletRequest firstRequest = new MockHttpServletRequest("POST", "/api/v1/auth/login");
         firstRequest.setRemoteAddr("10.0.0.5");
@@ -63,5 +89,31 @@ class RateLimitingFilterTest {
         assertThat(firstResponse.getStatus()).isEqualTo(200);
         assertThat(secondResponse.getStatus()).isEqualTo(429);
         assertThat(secondResponse.getContentAsString()).contains("Too many requests");
+    }
+
+    @Test
+    void forwardedForHeaderUsesFirstIpAsBucketKey() throws Exception {
+        MockHttpServletRequest firstRequest = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+        firstRequest.addHeader("X-Forwarded-For", "203.0.113.10, 10.0.0.1");
+        firstRequest.setRemoteAddr("127.0.0.1");
+        filter.doFilter(firstRequest, new MockHttpServletResponse(), new MockFilterChain());
+
+        MockHttpServletRequest secondRequest = new MockHttpServletRequest("POST", "/api/v1/auth/register");
+        secondRequest.addHeader("X-Forwarded-For", "203.0.113.10, 10.0.0.2");
+        secondRequest.setRemoteAddr("127.0.0.2");
+        MockHttpServletResponse secondResponse = new MockHttpServletResponse();
+
+        filter.doFilter(secondRequest, secondResponse, new MockFilterChain());
+
+        MockHttpServletRequest otherIpRequest = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+        otherIpRequest.addHeader("X-Forwarded-For", "203.0.113.11");
+        MockHttpServletResponse otherIpResponse = new MockHttpServletResponse();
+        MockFilterChain otherIpChain = new MockFilterChain();
+
+        filter.doFilter(otherIpRequest, otherIpResponse, otherIpChain);
+
+        assertThat(secondResponse.getStatus()).isEqualTo(429);
+        assertThat(otherIpResponse.getStatus()).isEqualTo(200);
+        assertThat(otherIpChain.getRequest()).isNotNull();
     }
 }

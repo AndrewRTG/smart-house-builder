@@ -3,6 +3,8 @@ package gr.A4.SmartHouseBuilder.service;
 import gr.A4.SmartHouseBuilder.entity.Setup;
 import gr.A4.SmartHouseBuilder.entity.User;
 import gr.A4.SmartHouseBuilder.entity.Wishlist;
+import gr.A4.SmartHouseBuilder.entity.Device;
+import gr.A4.SmartHouseBuilder.repository.DeviceRepository;
 import gr.A4.SmartHouseBuilder.repository.SetupRepository;
 import gr.A4.SmartHouseBuilder.repository.UserRepository;
 import gr.A4.SmartHouseBuilder.repository.WishlistRepository;
@@ -23,8 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WishlistServiceTest {
@@ -43,6 +44,9 @@ class WishlistServiceTest {
 
     @Mock
     private ActivityEmailService activityEmailService;
+
+    @Mock
+    private DeviceRepository deviceRepository;
 
     @InjectMocks
     private WishlistService wishlistService;
@@ -108,7 +112,8 @@ class WishlistServiceTest {
         var pageable = PageRequest.of(0, 10);
         var page = new PageImpl<>(List.of(new Wishlist()));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
-        when(wishlistRepository.findByUserId(5L, pageable)).thenReturn(page);
+
+        when(wishlistRepository.findByUserIdAndSetupIsNotNull(5L, pageable)).thenReturn(page);
 
         var result = wishlistService.getUserWishlist("user@example.com", pageable);
 
@@ -125,4 +130,75 @@ class WishlistServiceTest {
         assertThat(wishlistService.getWishlistCount(12L)).isEqualTo(8L);
         assertThat(wishlistService.isWishlisted(12L, "user@example.com")).isTrue();
     }
+
+    @Test
+    void toggleDeviceWishlist_removesExistingWishlistEntry() {
+        User user = User.builder().id(1L).email("user@example.com").build();
+        Device device = new Device();
+        device.setId(100);
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(deviceRepository.findById(100)).thenReturn(Optional.of(device));
+        when(wishlistRepository.findByUserIdAndDeviceId(1L, 100)).thenReturn(Optional.of(new Wishlist()));
+
+        boolean result = wishlistService.toggleDeviceWishlist(100, "user@example.com");
+
+        assertThat(result).isFalse();
+        verify(wishlistRepository).deleteByUserIdAndDeviceId(1L, 100);
+    }
+
+    @Test
+    void toggleDeviceWishlist_addsEntryWhenMissing() {
+        User user = User.builder().id(1L).email("user@example.com").build();
+        Device device = new Device();
+        device.setId(100);
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(deviceRepository.findById(100)).thenReturn(Optional.of(device));
+        when(wishlistRepository.findByUserIdAndDeviceId(1L, 100)).thenReturn(Optional.empty());
+
+        boolean result = wishlistService.toggleDeviceWishlist(100, "user@example.com");
+
+        assertThat(result).isTrue();
+        ArgumentCaptor<Wishlist> captor = ArgumentCaptor.forClass(Wishlist.class);
+        verify(wishlistRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(user);
+        assertThat(captor.getValue().getDevice()).isEqualTo(device);
+
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void toggleDeviceWishlist_throwsWhenDeviceIsMissing() {
+        User user = User.builder().id(1L).email("user@example.com").build();
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(deviceRepository.findById(999)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> wishlistService.toggleDeviceWishlist(999, "user@example.com"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Device not found");
+    }
+
+    @Test
+    void getUserDeviceWishlist_returnsPagedResults() {
+        User user = User.builder().id(5L).email("user@example.com").build();
+        var pageable = PageRequest.of(0, 10);
+        var page = new PageImpl<>(List.of(new Wishlist()));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(wishlistRepository.findByUserIdAndDeviceIsNotNull(5L, pageable)).thenReturn(page);
+
+        var result = wishlistService.getUserDeviceWishlist("user@example.com", pageable);
+
+        assertThat(result).isSameAs(page);
+    }
+
+    @Test
+    void delegatesDeviceWishlistCountAndStateChecks() {
+        User user = User.builder().id(5L).email("user@example.com").build();
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(wishlistRepository.countByDeviceId(100)).thenReturn(42L);
+        when(wishlistRepository.findByUserIdAndDeviceId(5L, 100)).thenReturn(Optional.of(new Wishlist()));
+
+        assertThat(wishlistService.getDeviceWishlistCount(100)).isEqualTo(42L);
+        assertThat(wishlistService.isDeviceWishlisted(100, "user@example.com")).isTrue();
+    }
+
 }

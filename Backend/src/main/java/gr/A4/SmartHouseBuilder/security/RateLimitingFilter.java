@@ -64,12 +64,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.getWriter().write("{\"error\": \"Too many requests. Please try again later.\"}");
         }
-
-
-        if (!path.startsWith("/api/v1/auth/") && !path.startsWith("/api/v1/notifications/")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
     }
 
     private Bucket newBucket() {

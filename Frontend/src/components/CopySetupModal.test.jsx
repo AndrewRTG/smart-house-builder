@@ -62,7 +62,7 @@ describe('CopySetupModal', () => {
     fireEvent.keyDown(screen.getByPlaceholderText('Enter setup name'), { key: 'Enter' });
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/10/copy',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/10/copy`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ name: 'My copy' }),

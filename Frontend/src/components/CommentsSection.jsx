@@ -3,7 +3,7 @@ import { Trash2, Send } from 'lucide-react';
 import { useError } from '../context/ErrorContext';
 import './CommentsSection.css';
 
-const API_BASE = 'http://localhost:20025/api/v1';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1`;
 
 function parseDate(value) {
   if (!value) return null;
@@ -91,7 +91,9 @@ function CommentNode({ comment, targetId, targetType, user, depth = 0, onDelete,
         setShowReplyForm(false);
         onReplySubmit();
       } else {
-        showError('Failed to post reply');
+        const data = await response.json().catch(() => null);
+        const msg = data?.message || data?.error || `Failed to post reply (HTTP ${response.status})`;
+        showError(msg);
       }
     } catch (error) {
       console.error('Error posting reply:', error);
@@ -270,7 +272,9 @@ export default function CommentsSection({ targetId, targetType, user, highlightC
         setPage(0);
         fetchComments();
       } else {
-        showError('Failed to add comment');
+        const data = await response.json().catch(() => null);
+        const msg = data?.message || data?.error || `Failed to add comment (HTTP ${response.status})`;
+        showError(msg);
       }
     } catch (error) {
       console.error('Error adding comment:', error);

@@ -3,11 +3,13 @@ package gr.A4.SmartHouseBuilder.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gr.A4.SmartHouseBuilder.dto.PublishSetupRequest;
 import gr.A4.SmartHouseBuilder.dto.SetupRequest;
 import gr.A4.SmartHouseBuilder.entity.Setup;
 import gr.A4.SmartHouseBuilder.entity.SetupStatus;
 import gr.A4.SmartHouseBuilder.entity.User;
 import gr.A4.SmartHouseBuilder.exception.DuplicateSetupNameException;
+import gr.A4.SmartHouseBuilder.exception.ResourceNotFoundException;
 import gr.A4.SmartHouseBuilder.exception.UnchangedCopyPublishException;
 import gr.A4.SmartHouseBuilder.repository.CommentRepository;
 import gr.A4.SmartHouseBuilder.repository.LikeRepository;
@@ -66,6 +68,10 @@ public class SetupService {
                 .description(request.getDescription())
                 .deviceIds(serializeDeviceIds(request.getDeviceIds()))
                 .publicSetup(request.isPublic())
+                .tags(serializeTags(request.getTags()))
+                .thumbnailUrl(request.getThumbnailUrl())
+                .canvasState(request.getCanvasState())
+                .deviceSnapshots(request.getDeviceSnapshots())
                 .build();
 
         Setup saved = setupRepository.save(setup);
@@ -75,14 +81,14 @@ public class SetupService {
 
     public Setup getSetup(Long id) {
         return setupRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Setup not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Setup not found"));
     }
 
     @Transactional
     public Setup updateSetup(Long id, String email, SetupRequest request) {
         Long userId = getUserId(email);
         Setup setup = setupRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Setup not found or not owned by you"));
+                .orElseThrow(() -> new ResourceNotFoundException("Setup not found or not owned by you"));
 
         String requestedName = request.getName() != null ? request.getName().trim() : "";
         // Rename guard: allow keeping the current name, but reject a rename that
@@ -97,6 +103,10 @@ public class SetupService {
         setup.setDescription(request.getDescription());
         setup.setDeviceIds(serializeDeviceIds(request.getDeviceIds()));
         setup.setPublicSetup(request.isPublic());
+        setup.setTags(serializeTags(request.getTags()));
+        if (request.getThumbnailUrl() != null) setup.setThumbnailUrl(request.getThumbnailUrl());
+        if (request.getCanvasState() != null) setup.setCanvasState(request.getCanvasState());
+        if (request.getDeviceSnapshots() != null) setup.setDeviceSnapshots(request.getDeviceSnapshots());
 
         Setup updated = setupRepository.save(setup);
         log.info("Setup updated: {} by user: {}", id, email);
@@ -107,7 +117,7 @@ public class SetupService {
     public void deleteSetup(Long id, String email) {
         Long userId = getUserId(email);
         Setup setup = setupRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Setup not found or not owned by you"));
+                .orElseThrow(() -> new ResourceNotFoundException("Setup not found or not owned by you"));
 
         // Owners can delete their own setups regardless of status (DRAFT or
         // PUBLISHED). There's no reason to lock a user out of removing their
@@ -171,11 +181,20 @@ public class SetupService {
         // device list. We also freeze a SNAPSHOT of description + deviceIds
         // at this moment — publishSetup later compares against this snapshot
         // to reject unchanged republishes.
+        // Carry over the visual + canvas state too, so the draft opens in the
+        // builder with the exact same components, positions, walls and
+        // furniture as the original. Without this the copy looks empty even
+        // though deviceIds carries the part list, and the thumbnail card in
+        // My Setups -> Drafts has no image to show.
         Setup copy = Setup.builder()
                 .user(user)
                 .name(name)
                 .description(original.getDescription())
                 .deviceIds(original.getDeviceIds())
+                .tags(original.getTags())
+                .thumbnailUrl(original.getThumbnailUrl())
+                .canvasState(original.getCanvasState())
+                .deviceSnapshots(original.getDeviceSnapshots())
                 .publicSetup(false)
                 .status(SetupStatus.DRAFT)
                 .copiedFromId(original.getId())
@@ -258,10 +277,10 @@ public class SetupService {
     }
 
     @Transactional
-    public Setup publishSetup(Long id, String email) {
+    public Setup publishSetup(Long id, String email, PublishSetupRequest req) {
         Long userId = getUserId(email);
         Setup setup = setupRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Setup not found or not owned by you"));
+                .orElseThrow(() -> new ResourceNotFoundException("Setup not found or not owned by you"));
 
         List<Long> deviceIds = deserializeDeviceIds(setup.getDeviceIds());
         if (deviceIds == null || deviceIds.isEmpty()) {
@@ -275,6 +294,11 @@ public class SetupService {
         // anything and we reject the publish. The set-based comparison means
         // "remove device X then add device X back" doesn't fool the check —
         // the final set still equals the snapshot.
+        if (req != null) {
+            if (req.getDescription() != null) setup.setDescription(req.getDescription());
+            if (req.getTags() != null) setup.setTags(serializeTags(req.getTags()));
+        }
+
         if (setup.getCopiedFromId() != null && isUnchangedFromOriginal(setup)) {
             throw new UnchangedCopyPublishException(
                     "You cannot publish a copy without changing it. "
@@ -283,6 +307,9 @@ public class SetupService {
 
         setup.setStatus(SetupStatus.PUBLISHED);
         setup.setPublicSetup(true);
+        if (setup.getPublishedAt() == null) {
+            setup.setPublishedAt(java.time.LocalDateTime.now());
+        }
         Setup updated = setupRepository.save(setup);
         log.info("Setup published: {} by user: {}", id, email);
         return updated;
@@ -314,6 +341,24 @@ public class SetupService {
     private String normalizeForCompare(String s) {
         if (s == null) return "";
         return s.trim();
+    }
+
+    public List<String> deserializeTags(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private String serializeTags(List<String> tags) {
+        if (tags == null) return null;
+        try {
+            return objectMapper.writeValueAsString(tags);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize tags", e);
+        }
     }
 
     private String serializeDeviceIds(List<Long> deviceIds) {

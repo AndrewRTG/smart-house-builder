@@ -22,8 +22,12 @@ public class Wishlist {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "setup_id", nullable = false)
+    @JoinColumn(name = "setup_id")
     private Setup setup;
+
+    @ManyToOne
+    @JoinColumn(name = "device_id")
+    private Device device;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

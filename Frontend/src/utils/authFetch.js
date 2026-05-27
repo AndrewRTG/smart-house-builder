@@ -27,7 +27,7 @@
  * response.
  */
 
-const API_ROOT = "http://localhost:20025";
+const API_ROOT = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}`;
 const NETWORK_ERROR_STATUS = 503;
 
 // Single shared in-flight refresh promise so 5 parallel 401s → 1 refresh.

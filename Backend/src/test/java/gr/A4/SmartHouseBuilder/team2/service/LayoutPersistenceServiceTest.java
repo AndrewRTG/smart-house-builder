@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,6 +59,41 @@ class LayoutPersistenceServiceTest {
         assertNotNull(saved.getDrawing());
         assertNull(saved.getUserId());
         assertNull(saved.getThumbnailPng());
+    }
+
+    @Test
+    void loadAsJson_returnsDeserializedPayload() throws Exception {
+        SetupBuildDTO dto = new SetupBuildDTO();
+        dto.setId("layout-123");
+
+        Layout layout = new Layout();
+        layout.setDrawing(objectMapper.writeValueAsString(dto));
+        when(layoutRepository.findById(123)).thenReturn(Optional.of(layout));
+
+        Optional<SetupBuildDTO> loaded = service.loadAsJson(123);
+
+        org.junit.jupiter.api.Assertions.assertTrue(loaded.isPresent());
+        assertEquals("layout-123", loaded.get().getId());
+    }
+
+    @Test
+    void loadAsJson_returnsEmptyWhenLayoutMissing() {
+        when(layoutRepository.findById(321)).thenReturn(Optional.empty());
+
+        Optional<SetupBuildDTO> loaded = service.loadAsJson(321);
+
+        org.junit.jupiter.api.Assertions.assertTrue(loaded.isEmpty());
+    }
+
+    @Test
+    void loadAsJson_wrapsJsonProcessingExceptionInRuntime() {
+        Layout layout = new Layout();
+        layout.setDrawing("{not-valid-json");
+        when(layoutRepository.findById(77)).thenReturn(Optional.of(layout));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.loadAsJson(77));
+
+        assertEquals("Failed to deserialize layout payload from JSON", ex.getMessage());
     }
 
     @Test

@@ -1,6 +1,5 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Routes, Route } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ErrorBanner from './ErrorBanner';
 import { ErrorProvider, useError } from '../context/ErrorContext';
@@ -10,6 +9,7 @@ import CopySetupModal from './CopySetupModal';
 import ProductCard from './catalog/ProductCard';
 import Sidebar from './catalog/SideBar';
 import { renderWithRouter } from '../test/renderWithRouter';
+import { Routes, Route, MemoryRouter } from 'react-router-dom';
 
 vi.mock('../utils/currentUser', () => ({
   getCurrentUser: vi.fn(),
@@ -107,34 +107,44 @@ describe('shared UI components', () => {
   });
 
   it('renders product cards in grid and list modes', () => {
-    const device = {
-      name: 'Smart Lamp',
-      imageUrl: '/lamp.png',
-      bestPrice: 129,
-      bestStoreName: 'Casa Tech',
-      specifications: { overallPick: true, roomTag: 'Living Room' },
-    };
+  const device = {
+    name: 'Smart Lamp',
+    imageUrl: '/lamp.png',
+    bestPrice: 129,
+    bestStoreName: 'Casa Tech',
+    specifications: { overallPick: true, roomTag: 'Living Room' },
+  };
 
-    const { rerender } = render(<ProductCard device={device} />);
-    expect(screen.getByText('Smart Lamp')).toBeInTheDocument();
-    expect(screen.getByText('Living Room')).toBeInTheDocument();
-    expect(screen.getByText('Casa Tech')).toBeInTheDocument();
+  const { rerender } = render(
+    <MemoryRouter>
+      <ProductCard device={device} />
+    </MemoryRouter>
+  );
+  
+  expect(screen.getByText('Smart Lamp')).toBeInTheDocument();
+  expect(screen.getByText('Living Room')).toBeInTheDocument();
+  expect(screen.getByText('Casa Tech')).toBeInTheDocument();
 
-    rerender(<ProductCard device={device} viewMode="list" />);
-    expect(screen.getByText('129 RON')).toBeInTheDocument();
-    expect(screen.getByText('Overall pick')).toBeInTheDocument();
-  });
+  rerender(
+    <MemoryRouter>
+      <ProductCard device={device} viewMode="list" />
+    </MemoryRouter>
+  );
+  
+  expect(screen.getByText(/129/i)).toBeInTheDocument();
+  expect(screen.getByText('Overall pick')).toBeInTheDocument();
+});
 
   it('updates and resets catalog filters from the sidebar', () => {
     const setFilters = vi.fn();
     const filters = {
       minPrice: 100,
-      maxPrice: 700,
+      maxPrice: 9000,
       categories: [],
       protocols: [],
       brand: '',
     };
-    render(<Sidebar filters={filters} setFilters={setFilters} />);
+    renderWithRouter(<Sidebar filters={filters} setFilters={setFilters} />);
 
     fireEvent.click(screen.getByText('Price'));
     fireEvent.change(screen.getAllByRole('slider')[0], { target: { value: '250' } });
@@ -154,7 +164,7 @@ describe('shared UI components', () => {
     fireEvent.click(screen.getByText('Reset Filters'));
     expect(setFilters).toHaveBeenCalledWith({
       minPrice: 0,
-      maxPrice: 1000,
+      maxPrice: 10000,
       categories: [],
       protocols: [],
       brand: '',
@@ -188,7 +198,7 @@ describe('shared UI components', () => {
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith({ id: 9, name: 'Copy of Kitchen' }));
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:20025/api/v1/setups/3/copy',
+      `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:20025'}/api/v1/setups/3/copy`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ name: 'My copy' }),

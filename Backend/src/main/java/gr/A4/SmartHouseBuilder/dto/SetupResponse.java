@@ -21,6 +21,7 @@ public class SetupResponse {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime publishedAt;
 
     /** Id of the setup this one was copied from, or null if it's an original. */
     private Long copiedFromId;
@@ -42,4 +43,11 @@ public class SetupResponse {
     // the card without joining /auth/me. Populated in SetupController.toResponse.
     private Long authorId;
     private String authorUsername;
+    private String authorAvatarUrl;
+
+    private List<String> tags;
+    private String thumbnailUrl;
+    private String canvasState;
+    private int deviceCount;
+    private String deviceSnapshots;
 }

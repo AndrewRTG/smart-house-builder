@@ -27,7 +27,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -87,6 +90,20 @@ class ArticleServiceTest {
     }
 
     @Test
+    void createArticle_treatsEmptyTagsAndBlankStatusAsDefaults() {
+        User user = User.builder().id(1L).email("u@e").username("u").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ArticleRequest req = request("Title", "Body text content", null, List.of(), List.of());
+        req.setStatus("   ");
+
+        Article saved = articleService.createArticle("u@e", req);
+        assertThat(saved.getTags()).isNull();
+        assertThat(saved.getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+    }
+
+    @Test
     void createArticle_throwsWhenUserMissing() {
         when(userRepository.findByEmail("missing@e")).thenReturn(Optional.empty());
 
@@ -141,6 +158,41 @@ class ArticleServiceTest {
     }
 
     @Test
+    void updateArticle_skipsS3DeleteWhenOldImageIsMissingAndUpdatesStatus() {
+        User user = User.builder().id(1L).email("u@e").build();
+        Article existing = Article.builder().id(7L).user(user).status(ArticleStatus.DRAFT).imageUrl(null).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findByIdAndUserId(7L, 1L)).thenReturn(Optional.of(existing));
+        when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ArticleRequest req = request("T", "Body", "https://s3/new.jpg", List.of(), List.of("guide"));
+        req.setStatus(" published ");
+
+        Article updated = articleService.updateArticle(7L, "u@e", req);
+
+        verify(s3Service, never()).deleteByUrl(any());
+        assertThat(updated.getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+        assertThat(updated.getTags()).isEqualTo("[\"guide\"]");
+    }
+
+    @Test
+    void updateArticle_preservesStatusForBlankStatusAndFallsBackForInvalidStatus() {
+        User user = User.builder().id(1L).email("u@e").build();
+        Article existing = Article.builder().id(7L).user(user).status(ArticleStatus.PUBLISHED).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findByIdAndUserId(7L, 1L)).thenReturn(Optional.of(existing));
+        when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ArticleRequest blankStatus = request("T", "Body", null, List.of(), null);
+        blankStatus.setStatus("   ");
+        assertThat(articleService.updateArticle(7L, "u@e", blankStatus).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+
+        ArticleRequest invalidStatus = request("T", "Body", null, List.of(), null);
+        invalidStatus.setStatus("not-a-status");
+        assertThat(articleService.updateArticle(7L, "u@e", invalidStatus).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+    }
+
+    @Test
     void updateArticle_throwsWhenArticleNotOwned() {
         User user = User.builder().id(1L).email("u@e").build();
         when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
@@ -149,6 +201,15 @@ class ArticleServiceTest {
         assertThatThrownBy(() -> articleService.updateArticle(7L, "u@e", request("T", "Body", null, List.of(), null)))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("not owned");
+    }
+
+    @Test
+    void getUserArticles_throwsWhenUserMissing() {
+        when(userRepository.findByEmail("missing@e")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> articleService.getUserArticles("missing@e"))
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessageContaining("missing@e");
     }
 
     @Test
@@ -227,6 +288,22 @@ class ArticleServiceTest {
     }
 
     @Test
+    void pagedDraftsAndPublishedDelegateToRepository() {
+        User user = User.builder().id(1L).email("u@e").build();
+        Pageable pageable = PageRequest.of(0, 2);
+        Article draft = Article.builder().id(8L).status(ArticleStatus.DRAFT).build();
+        Article published = Article.builder().id(9L).status(ArticleStatus.PUBLISHED).build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.findByUserIdAndStatus(1L, ArticleStatus.DRAFT, pageable))
+                .thenReturn(new PageImpl<>(List.of(draft), pageable, 1));
+        when(articleRepository.findByUserIdAndStatus(1L, ArticleStatus.PUBLISHED, pageable))
+                .thenReturn(new PageImpl<>(List.of(published), pageable, 1));
+
+        assertThat(articleService.getUserDrafts("u@e", pageable).getContent()).containsExactly(draft);
+        assertThat(articleService.getUserPublished("u@e", pageable).getContent()).containsExactly(published);
+    }
+
+    @Test
     void publishArticle_promotesDraftToPublished() {
         User user = User.builder().id(1L).email("u@e").build();
         Article draft = Article.builder().id(7L).user(user).status(ArticleStatus.DRAFT).build();
@@ -271,5 +348,39 @@ class ArticleServiceTest {
         req.setStatus("DRAFT");
         Article saved = articleService.createArticle("u@e", req);
         assertThat(saved.getStatus()).isEqualTo(ArticleStatus.DRAFT);
+    }
+
+    @Test
+    void createArticleFallsBackToPublishedForInvalidStatus() {
+        User user = User.builder().id(1L).email("u@e").username("u").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ArticleRequest req = request("Title", "Body content xyz", null, List.of(), null);
+        req.setStatus("invalid");
+
+        assertThat(articleService.createArticle("u@e", req).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+    }
+
+    @Test
+    void wrapsSerializationFailures() throws Exception {
+        User user = User.builder().id(1L).email("u@e").username("u").build();
+        when(userRepository.findByEmail("u@e")).thenReturn(Optional.of(user));
+        List<Long> deviceIds = List.of(99L);
+        doThrow(new com.fasterxml.jackson.core.JsonProcessingException("device boom") {})
+                .when(objectMapper).writeValueAsString(deviceIds);
+
+        assertThatThrownBy(() -> articleService.createArticle("u@e", request("T", "Body", null, deviceIds, null)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to serialize device IDs");
+
+        reset(objectMapper);
+        List<String> tags = List.of("matter");
+        lenient().doThrow(new com.fasterxml.jackson.core.JsonProcessingException("tag boom") {})
+                .when(objectMapper).writeValueAsString(tags);
+
+        assertThatThrownBy(() -> articleService.createArticle("u@e", request("T", "Body", null, List.of(), tags)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to serialize tags");
     }
 }

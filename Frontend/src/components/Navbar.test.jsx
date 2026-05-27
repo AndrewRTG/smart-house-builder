@@ -27,9 +27,9 @@ describe('Navbar', () => {
     const setDarkMode = vi.fn();
     renderWithRouter(<Navbar darkMode={false} setDarkMode={setDarkMode} />);
 
-    expect(screen.getByText('Builder')).toBeInTheDocument();
-    expect(screen.getByText('Register')).toBeInTheDocument();
-    expect(screen.getByText('Log In')).toBeInTheDocument();
+    expect(screen.getAllByText('Builder').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Register').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Log In').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByLabelText('Toggle dark mode'));
     expect(setDarkMode).toHaveBeenCalledWith(true);
@@ -52,7 +52,7 @@ describe('Navbar', () => {
     fireEvent.error(screen.getByAltText('Profile'));
     expect(screen.getByText('A')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Setup Wizard'));
+    fireEvent.click(screen.getAllByText('Setup Wizard')[0]);
     expect(screen.getByText('Builder route')).toBeInTheDocument();
   });
 
@@ -69,8 +69,8 @@ describe('Navbar', () => {
       </Routes>
     );
 
-    expect(await screen.findByText('Logout')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Logout'));
+    expect(await screen.findAllByText('Logout')).toHaveLength(2);
+    fireEvent.click(screen.getAllByText('Logout')[0]);
 
     await waitFor(() => expect(screen.getByText('Login route')).toBeInTheDocument());
     expect(localStorage.getItem('accessToken')).toBeNull();
@@ -84,7 +84,46 @@ describe('Navbar', () => {
 
     renderWithRouter(<Navbar darkMode={false} setDarkMode={vi.fn()} />);
 
-    expect(screen.getByText('Log In')).toBeInTheDocument();
-    expect(screen.getByText('Register')).toBeInTheDocument();
+    expect(screen.getAllByText('Log In').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Register').length).toBeGreaterThan(0);
+  });
+
+  it('treats malformed and non-expiring tokens as valid states', async () => {
+    localStorage.setItem('accessToken', 'malformed-token');
+    getCurrentUser.mockResolvedValue({ username: 'fallback', profileImageUrl: '/profile.png' });
+
+    const { unmount } = renderWithRouter(<Navbar darkMode={false} setDarkMode={vi.fn()} />);
+    expect(await screen.findByAltText('Profile')).toHaveAttribute('src', '/profile.png');
+    unmount();
+
+    const noExpiryPayload = btoa(JSON.stringify({ sub: 'user-1' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    localStorage.setItem('accessToken', `header.${noExpiryPayload}.signature`);
+    getCurrentUser.mockResolvedValue({ username: 'image', imageUrl: '/image.png' });
+    renderWithRouter(<Navbar darkMode={false} setDarkMode={vi.fn()} />);
+
+    expect(await screen.findByAltText('Profile')).toHaveAttribute('src', '/image.png');
+  });
+
+  it('refreshes auth state from auth, storage, visibility and interval events', async () => {
+    localStorage.setItem('accessToken', makeToken(Math.floor(Date.now() / 1000) + 600));
+    getCurrentUser
+      .mockResolvedValueOnce({ username: 'ana', avatarUrl: '/old.png' })
+      .mockResolvedValueOnce({ username: 'ana', avatarUrl: '/fresh.png' });
+
+    renderWithRouter(<Navbar darkMode={false} setDarkMode={vi.fn()} />);
+    expect(await screen.findByAltText('Profile')).toHaveAttribute('src', '/old.png');
+
+    window.dispatchEvent(new CustomEvent('auth-change', { detail: { avatarUrl: '/optimistic.png' } }));
+    await waitFor(() => expect(getCurrentUser).toHaveBeenCalledWith({ force: true }));
+    expect(await screen.findByAltText('Profile')).toHaveAttribute('src', '/fresh.png');
+
+    localStorage.removeItem('accessToken');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'accessToken' }));
+    await waitFor(() => expect(screen.getAllByText('Log In').length).toBeGreaterThan(0));
+
+    localStorage.setItem('accessToken', makeToken(Math.floor(Date.now() / 1000) + 600));
+    window.dispatchEvent(new StorageEvent('storage', { key: null }));
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
   });
 });

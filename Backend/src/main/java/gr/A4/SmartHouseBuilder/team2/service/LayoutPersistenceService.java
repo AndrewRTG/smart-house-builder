@@ -8,6 +8,7 @@ import gr.A4.SmartHouseBuilder.team2.dto.SetupBuildDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
+import java.util.Optional;
 
 @Service
 public class LayoutPersistenceService {
@@ -44,6 +45,17 @@ public class LayoutPersistenceService {
         layout.setThumbnailPng(thumbnail);
         layout.setRating(null);
         return layoutRepository.save(layout).getId();
+    }
+
+    public Optional<SetupBuildDTO> loadAsJson(Integer layoutId) {
+        return layoutRepository.findById(layoutId)
+                .map(layout -> {
+                    try {
+                        return objectMapper.readValue(layout.getDrawing(), SetupBuildDTO.class);
+                    } catch (JsonProcessingException e) {
+                        throw new RuntimeException("Failed to deserialize layout payload from JSON", e);
+                    }
+                });
     }
 
     private static byte[] extractThumbnailBytes(SetupBuildDTO dto) {

@@ -23,7 +23,6 @@ class HubRequirementRuleTest {
 
     @Test
     void testValidate_NullBuild() {
-        // Acoperă ramura: build == null
         ValidationResult result = rule.validate(null);
         assertTrue(result.isValid());
         assertEquals("INFO", result.getLevel());
@@ -31,7 +30,6 @@ class HubRequirementRuleTest {
 
     @Test
     void testValidate_NullDevices() {
-        // Acoperă ramura: build.getDevices() == null
         SetupBuild build = new SetupBuild();
         build.setDevices(null);
         ValidationResult result = rule.validate(build);
@@ -40,13 +38,12 @@ class HubRequirementRuleTest {
 
     @Test
     void testValidate_MissingHubForZigbee() {
-        // Acoperă: are Zigbee dar lipsește Hub (needsHub = true, hasHub = false)
         SetupBuild build = new SetupBuild();
 
         Device zigbeeDev = new Device();
-        zigbeeDev.setName("Senzor");
-        zigbeeDev.setProtocol("Zigbee"); // S-a corectat în setProtocol conform model
-        zigbeeDev.setDeviceType("SENSOR"); // S-a corectat în setDeviceType conform model
+        zigbeeDev.setName("Senzor Zigbee");
+        zigbeeDev.setProtocol("Zigbee");
+        zigbeeDev.setDeviceType("SENSOR");
 
         PlacedDevice pd = new PlacedDevice();
         pd.setDevice(zigbeeDev);
@@ -60,14 +57,15 @@ class HubRequirementRuleTest {
 
     @Test
     void testValidate_WithHubPresent() {
-        // Acoperă: are Zigbee ȘI are Hub (needsHub = true, hasHub = true)
         SetupBuild build = new SetupBuild();
 
         Device zigbeeDev = new Device();
-        zigbeeDev.setProtocol("z-wave"); // Testăm și varianta z-wave
+        zigbeeDev.setName("Senzor Z-Wave");
+        zigbeeDev.setProtocol("z-wave");
 
-        Device hubDev = new Device();
-        hubDev.setDeviceType("Smart Hub"); // Conține "hub", deci hasHub devine true
+        Device hubDev = new HubDevPlaceholder();
+        hubDev.setName("Main Hub");
+        hubDev.setDeviceType("Smart Hub");
 
         PlacedDevice pd1 = new PlacedDevice();
         pd1.setDevice(zigbeeDev);
@@ -84,7 +82,6 @@ class HubRequirementRuleTest {
 
     @Test
     void testValidate_ContinueBranches() {
-        // Acoperă ramurile de 'continue' pentru elemente nule
         SetupBuild build = new SetupBuild();
         List<PlacedDevice> devices = new ArrayList<>();
         devices.add(null);
@@ -101,9 +98,9 @@ class HubRequirementRuleTest {
 
     @Test
     void testValidate_NoZigbeeNoHub() {
-        // Acoperă cazul în care nu avem nici Zigbee nici Hub (ambele false)
         SetupBuild build = new SetupBuild();
         Device wifiDev = new Device();
+        wifiDev.setName("Lumina Wifi");
         wifiDev.setProtocol("Wifi");
         wifiDev.setDeviceType("Light");
 
@@ -114,4 +111,6 @@ class HubRequirementRuleTest {
         ValidationResult result = rule.validate(build);
         assertTrue(result.isValid());
     }
+
+    private static class HubDevPlaceholder extends Device {}
 }

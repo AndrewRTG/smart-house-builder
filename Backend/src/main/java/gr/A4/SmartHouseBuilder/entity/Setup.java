@@ -45,6 +45,23 @@ public class Setup {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    /** Set ONCE when the setup transitions from DRAFT to PUBLISHED. */
+    private LocalDateTime publishedAt;
+
+    @Column(columnDefinition = "text")
+    private String tags;
+
+    @Column(columnDefinition = "text")
+    private String thumbnailUrl;
+
+    /** Full canvas state JSON ({lines, placedIcons, placedFurniture}) for builder resume. */
+    @Column(columnDefinition = "text")
+    private String canvasState;
+
+    /** JSON snapshot of devices used: [{id, name, brand, priceEUR, type}, ...]. */
+    @Column(columnDefinition = "text")
+    private String deviceSnapshots;
+
     // ---- Copy lineage (null when this setup is an original) ----
 
     /**

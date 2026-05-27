@@ -10,7 +10,13 @@ import useWizardStore from '../store/wizardStore';
 function BuilderPage({ darkMode = false, setDarkMode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialView = new URLSearchParams(location.search).get('mode') === 'wizard' ? 'wizard' : 'canvas';
+  const searchParams = new URLSearchParams(location.search);
+  const initialView = searchParams.get('mode') === 'wizard' ? 'wizard' : 'canvas';
+  const parseIdParam = (value) => value && value.trim() ? value.trim() : null;
+  const setupIdParam = searchParams.get('setupId');
+  const setupId = parseIdParam(setupIdParam);
+  const layoutIdParam = searchParams.get('layoutId');
+  const layoutId = parseIdParam(layoutIdParam);
   const [activeView, setActiveView] = useState(initialView);
   const setStoreDarkMode = useFilterStore((state) => state.setDarkMode);
   const setWizardDarkMode = useWizardStore((state) => state.setDarkMode);
@@ -46,9 +52,10 @@ function BuilderPage({ darkMode = false, setDarkMode }) {
       {activeView === 'wizard' ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <SetupWizard
-            onFinish={() => {
+            onFinish={(_selectedProducts, selectedSetup) => {
               setActiveView('canvas');
-              navigate('/builder', { replace: true });
+              const selectedSetupId = parseIdParam(selectedSetup?.id?.toString());
+              navigate(selectedSetupId ? `/builder?setupId=${encodeURIComponent(selectedSetupId)}` : '/builder', { replace: true });
             }}
           />
 
@@ -64,6 +71,8 @@ function BuilderPage({ darkMode = false, setDarkMode }) {
         <LayoutCanvas
           isDarkMode={darkMode}
           onBack={() => setActiveView('wizard')}
+          setupId={setupId}
+          layoutId={layoutId}
         />
       )}
 

@@ -1,5 +1,6 @@
 package gr.A4.SmartHouseBuilder.repository;
 
+import org.springframework.data.repository.query.Param;
 import gr.A4.SmartHouseBuilder.model.HardwareDevice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,4 +12,21 @@ import java.util.List;
 public interface HardwareDeviceRepository extends JpaRepository<HardwareDevice, Long> {
     @Query(value = "SELECT * FROM devices ORDER BY RANDOM() LIMIT 5", nativeQuery = true)
     List<HardwareDevice> findRandomDevices();
+    List<HardwareDevice> findByCategoryId(Integer categoryId);
+
+    // Caută după preț
+    List<HardwareDevice> findByPriceLessThanEqual(Double price);
+
+    // Caută după brand
+    List<HardwareDevice> findByBrandIgnoreCase(String brand);
+
+    List<HardwareDevice> findTop50ByCategoryId(Integer categoryId);
+
+    List<HardwareDevice> findTop50ByPriceLessThanEqual(Double price);
+
+    List<HardwareDevice> findTop50ByBrandIgnoreCase(String brand);
+
+    @Query("SELECT d FROM HardwareDevice d WHERE d.categoryId IN :categoryIds AND (d.price IS NULL OR d.price <= :maxAllowedPrice)")
+    List<HardwareDevice> findCandidatesForAlgorithm(@Param("categoryIds") List<Integer> categoryIds, @Param("maxAllowedPrice") double maxAllowedPrice);
+
 }

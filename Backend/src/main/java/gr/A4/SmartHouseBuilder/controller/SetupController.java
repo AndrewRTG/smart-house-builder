@@ -3,6 +3,7 @@ package gr.A4.SmartHouseBuilder.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.A4.SmartHouseBuilder.dto.CopySetupRequest;
+import gr.A4.SmartHouseBuilder.dto.PublishSetupRequest;
 import gr.A4.SmartHouseBuilder.dto.SetupRequest;
 import gr.A4.SmartHouseBuilder.dto.SetupResponse;
 import gr.A4.SmartHouseBuilder.entity.Setup;
@@ -79,8 +80,9 @@ public class SetupController {
     @PutMapping("/{id}/publish")
     public ResponseEntity<SetupResponse> publishSetup(
             @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Setup setup = setupService.publishSetup(id, userDetails.getUsername());
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody(required = false) PublishSetupRequest req) {
+        Setup setup = setupService.publishSetup(id, userDetails.getUsername(), req);
         return ResponseEntity.ok(toResponse(setup));
     }
 
@@ -130,22 +132,31 @@ public class SetupController {
         // separate /auth/me lookup just to render the avatar.
         Long authorId = setup.getUser() != null ? setup.getUser().getId() : null;
         String authorName = setup.getUser() != null ? setup.getUser().getUsername() : "User";
+        String authorAvatar = setup.getUser() != null ? setup.getUser().getAvatarUrl() : null;
 
+        List<Long> deviceIds = deserializeDeviceIds(setup.getDeviceIds());
         return SetupResponse.builder()
                 .id(setup.getId())
                 .name(setup.getName())
                 .description(setup.getDescription())
-                .deviceIds(deserializeDeviceIds(setup.getDeviceIds()))
+                .deviceIds(deviceIds)
                 .isPublic(setup.isPublicSetup())
-                .status(setup.getStatus().toString())
+                .status(setup.getStatus() != null ? setup.getStatus().toString() : "DRAFT")
                 .createdAt(setup.getCreatedAt())
                 .updatedAt(setup.getUpdatedAt())
+                .publishedAt(setup.getPublishedAt())
                 .copiedFromId(setup.getCopiedFromId())
                 .likeCount(likes)
                 .wishlistCount(wishlists)
                 .commentCount(comments)
                 .authorId(authorId)
                 .authorUsername(authorName)
+                .authorAvatarUrl(authorAvatar)
+                .tags(setupService.deserializeTags(setup.getTags()))
+                .thumbnailUrl(setup.getThumbnailUrl())
+                .canvasState(setup.getCanvasState())
+                .deviceCount(deviceIds != null ? deviceIds.size() : 0)
+                .deviceSnapshots(setup.getDeviceSnapshots())
                 .build();
     }
 

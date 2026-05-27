@@ -126,6 +126,18 @@
   margin-top: -0.25rem;
 }
 
+.field-hint-error {
+  font-size: 0.8rem;
+  color: #d32f2f;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.create-article-page.dark .field-hint-error {
+  color: #ff6b6b;
+}
+
 .content-input {
   width: 100%;
   padding: 1rem;
